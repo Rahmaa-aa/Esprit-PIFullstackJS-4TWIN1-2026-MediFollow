@@ -1,0 +1,233 @@
+.profile-img-edit {
+    position: relative;
+    display: inline-block;
+    height: 150px;
+    width: 150px;
+}
+
+.profile-pic {
+    max-width: 100%;
+    display: block;
+    border-radius: 50%;
+    -webkit-border-radius: 50%;
+}
+
+.docter-profile {
+    margin-top: -70px;
+}
+
+.p-image {
+    position: absolute;
+    top: auto;
+    right: 8px;
+    bottom: 10px;
+    transition: all .3s cubic-bezier(.175, .885, .32, 1.275);
+    background: #089bab;
+    color: #fff;
+    border-radius: 50%;
+    height: 30px;
+    width: 30px;
+    line-height: 28px;
+    text-align: center;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.edit-profile .nav-link {
+    border-radius: 0;
+}
+
+ul.edit-profile li:first-child a {
+    border-radius: 6px 0 0 6px;
+    border-left: none;
+}
+
+ul.edit-profile li:last-child a {
+    border-radius: 0px 6px 6px 0;
+}
+
+.cust-form-input .form-control {
+    background: transparent;
+    border: 1px solid #d7dbda;
+}
+
+/*---------------------------------------------------------------------
+                               Timeline
+-----------------------------------------------------------------------*/
+.timeline {
+    margin: 0 0 0 5px;
+    padding: 0;
+    width: 100%;
+    border-left: 3px solid #f2edff;
+}
+
+.timeline li {
+    margin-left: 15px;
+    position: relative;
+    padding: 15px 15px 0 5px;
+    list-style-type: none;
+}
+
+.timeline li .timeline-dots {
+    position: absolute;
+    top: 20px;
+    left: -24px;
+    border: 3px solid #089bab;
+    border-radius: 90px;
+    padding: 5px;
+    background: #fff;
+}
+
+.timeline li .timeline-dots-fill {
+    position: absolute;
+    top: 20px;
+    left: -23px;
+    background: #089bab;
+    border-radius: 90px;
+    padding: 7px;
+}
+
+.timeline0 ul li {
+    width: 50%;
+    padding: 5px 30px 2.5rem 30px;
+    cursor: pointer;
+    margin: 0px;
+}
+
+.timeline0 ul li:nth-child(odd) {
+    float: left;
+    text-align: left;
+    width: 100%;
+    padding: 0 0 0 60px;
+    margin-bottom: 20px;
+}
+
+.timeline0 ul li:nth-child(odd) .timeline-dots {
+    left: 12px;
+    right: auto;
+}
+
+.timeline0 ul li:nth-child(odd) .timeline-dots.timeline-dot1 {
+    left: 12px;
+    right: auto;
+}
+
+.timeline0 ul li:nth-child(even) {
+    float: left;
+    text-align: left;
+    width: 100%;
+    padding: 0 0 0 60px;
+    margin-bottom: 20px;
+}
+
+.timeline0 ul li:nth-child(even) .timeline-dots {
+    left: 12px;
+    right: auto;
+}
+
+.timeline0 ul li:nth-child(even) .timeline-dots.timeline-dot1 {
+    left: 12px;
+    right: auto;
+}
+
+.timeline0 li .timeline-dots {
+    height: 15px;
+    width: 15px;
+    background: white !important;
+}
+
+.timeline0 li .timeline-dots1 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 3px solid #05bbc9;
+    border-radius: 90px;
+    padding: 5px;
+    background: white;
+    height: 2.5rem;
+    width: 2.5rem;
+    line-height: 25px;
+    text-align: center;
+}
+
+.timeline0 li .timeline-dots.timeline-dot1 {
+    height: 15px;
+    width: 15px;
+}
+
+.timeline0 li {
+    margin-left: 2.188rem;
+    position: relative;
+    padding: 15px 15px 0 5px;
+    list-style-type: none;
+}
+
+.timeline0 li .timeline-dots {
+    position: absolute;
+    top: 20px;
+    left: -54px;
+    border: 3px solid #05bbc9;
+    border-radius: 90px;
+    padding: 5px;
+    background: white;
+    height: 2.5rem;
+    width: 2.5rem;
+    line-height: 25px;
+    text-align: center;
+}
+
+.timeline0:before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 100%;
+    background-color: #ccc;
+}
+
+.doc-social-info ul li {
+    display: inline-block;
+}
+
+.doc-social-info ul li a {
+    display: block;
+    color: #089bab;
+    background: #ceebee;
+    height: 30px;
+    width: 30px;
+    line-height: 30px;
+    border-radius: 5px;
+    margin: 0 3px;
+}
+
+[dir="rtl"] {
+
+    ul.edit-profile li:first-child a {
+        border-radius: 0 13px 13px 0;
+        border-left: none;
+    }
+
+    ul.edit-profile li:last-child a {
+        border-radius: 13px 0 0 13px;
+    }
+}
+
+@media (max-width: 992px) {
+    ul.profile-img-gallary li img {
+        width: 100%;
+    }
+}
+
+@media (max-width : 450px) {
+
+    ul.edit-profile li:first-child a {
+        border-radius: 13px 13px 0 0;
+    }
+
+    ul.edit-profile li:last-child a {
+        border-radius: 0 0 13px 13px
+    }
+
+
+}

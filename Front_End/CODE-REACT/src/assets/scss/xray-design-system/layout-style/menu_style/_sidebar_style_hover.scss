@@ -1,0 +1,19 @@
+
+.sidebar {
+    &.sidebar-hover {
+        &:hover {
+            --sidebar-width: #{$navbar-vertical-width};
+            max-width: var(--sidebar-width);            
+        }
+        &.sidebar-mini{
+            &.sidebar-transparent{
+                &:hover{
+                    +.main-content{
+                        --sidebar-width: #{$navbar-vertical-width};
+                    }
+                }
+            }
+        }
+    }
+}
+
