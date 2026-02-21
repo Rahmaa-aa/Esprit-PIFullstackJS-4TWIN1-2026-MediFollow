@@ -74,6 +74,24 @@ PUT /api/auth/me
 
 Le profil docteur peut ensuite être affiché dans la page `doctor-profile` avec les informations de session.
 
+## Session patient
+
+Pour démarrer une session patient:
+
+```http
+POST /api/auth/patient-login
+```
+
+Le frontend reçoit `access_token` et `user`, puis sauvegarde la session patient (token + profil) dans le stockage local.
+
+Ensuite, la session est utilisée pour accéder au tableau de bord patient et aux endpoints protégés:
+
+```http
+GET /api/auth/me
+GET /api/vitals/my/latest
+GET /api/vitals/my/history
+```
+
 ## Lancement
 
 ```bash
