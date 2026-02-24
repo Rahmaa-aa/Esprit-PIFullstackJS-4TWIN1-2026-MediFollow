@@ -38,6 +38,7 @@ const SignIn = () => {
   const [faceCameraReady, setFaceCameraReady] = useState(false);
   const [faceCameraBooting, setFaceCameraBooting] = useState(false);
   const [faceCameraError, setFaceCameraError] = useState("");
+  const [a11yTextMessage, setA11yTextMessage] = useState("");
   const recognitionRef = useRef(null);
   const utteranceRef = useRef(null);
   const faceVideoRef = useRef(null);
@@ -168,6 +169,25 @@ const SignIn = () => {
   useEffect(() => {
     localStorage.setItem(LARGE_TEXT_KEY, largeTextEnabled ? "1" : "0");
   }, [largeTextEnabled, LARGE_TEXT_KEY]);
+
+  const toggleLargeTextAccessibility = useCallback(() => {
+    setLargeTextEnabled((prev) => {
+      const next = !prev;
+      setA11yTextMessage(next ? "Mode grand texte activé." : "Mode grand texte désactivé.");
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.altKey && event.key.toLowerCase() === "t") {
+        event.preventDefault();
+        toggleLargeTextAccessibility();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [toggleLargeTextAccessibility]);
 
   useEffect(() => {
     return () => {
@@ -430,7 +450,8 @@ const SignIn = () => {
                       <button
                         type="button"
                         className={`btn btn-sm a11y-btn ${largeTextEnabled ? "btn-primary" : "btn-outline-primary"}`}
-                        onClick={() => setLargeTextEnabled((v) => !v)}
+                        onClick={toggleLargeTextAccessibility}
+                        title="Raccourci clavier: Alt + T"
                         data-eye-clickable
                       >
                         <i className="ri-font-size me-1"></i>
@@ -565,6 +586,9 @@ const SignIn = () => {
                         </button>
                       )}
                     </div>
+                    <span className="visually-hidden" aria-live="polite">
+                      {a11yTextMessage}
+                    </span>
                   </div>
                   <div className="form-group mb-3">
                     <div className="d-flex justify-content-between mb-1">
