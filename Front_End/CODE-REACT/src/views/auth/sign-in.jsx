@@ -137,12 +137,13 @@ const SignIn = () => {
     stopPageReading();
 
     const parts = [
+      "Assistant vocal d'accessibilite active.",
       "Bienvenue sur la page de connexion MediFollow.",
-      "Entrez votre email et votre mot de passe pour acceder a votre espace.",
-      "Vous pouvez utiliser la navigation par doigts avec la webcam.",
-      "Pour la dictee vocale, cliquez sur l'icone micro dans le champ email ou mot de passe.",
-      "Dites stop pour arreter la dictee.",
-      "Ensuite, cliquez sur le bouton Se connecter.",
+      "Etape 1 : saisissez votre email puis votre mot de passe.",
+      "Etape 2 : vous pouvez utiliser la lecture vocale, la navigation par doigts et la connexion avec le visage.",
+      "Astuce : utilisez l'icone micro dans les champs pour la dictee manuelle.",
+      "Commande vocale disponible : dites stop pour arreter la dictee en cours.",
+      "Etape finale : cliquez sur le bouton Sign In pour ouvrir votre session.",
     ];
 
     const utterance = new SpeechSynthesisUtterance(parts.join(" "));
@@ -447,6 +448,9 @@ const SignIn = () => {
                         </button>
                       )}
                     </div>
+                    <span className="visually-hidden" aria-live="polite">
+                      {isReadingPage ? "Assistant vocal en cours de lecture." : "Assistant vocal prêt."}
+                    </span>
                   </div>
                   {isSpeechSupported && (
                     <p className="text-muted small mb-2">
