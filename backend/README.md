@@ -57,6 +57,23 @@ POST /api/auth/confirm-login
 
 La réponse retourne `access_token` et l'objet `user`, à stocker côté frontend pour ouvrir la session admin.
 
+## Session docteur et profil
+
+Pour un compte docteur, utilisez:
+
+```http
+POST /api/auth/doctor-login
+```
+
+Après authentification, stockez `access_token` dans le frontend et utilisez ce token pour récupérer/modifier le profil:
+
+```http
+GET /api/auth/me
+PUT /api/auth/me
+```
+
+Le profil docteur peut ensuite être affiché dans la page `doctor-profile` avec les informations de session.
+
 ## Lancement
 
 ```bash

@@ -65,6 +65,9 @@ const DoctorProfile = (props) => {
         ? (doctor.profileImage.startsWith("data:") ? doctor.profileImage
             : (doctor.profileImage.startsWith("http") ? doctor.profileImage : generatePath(doctor.profileImage)))
         : img11;
+    const lastDoctorSession = displayDoctor.updatedAt
+        ? new Date(displayDoctor.updatedAt).toLocaleString("fr-FR")
+        : "Session active";
 
     if (loading) {
         return (
@@ -170,6 +173,12 @@ const DoctorProfile = (props) => {
                                     </Col>
                                     <Col xs={4}>Location:</Col>
                                     <Col xs={8}>{displayDoctor.city || displayDoctor.country || "USA"}</Col>
+                                    <Col xs={4}>Session:</Col>
+                                    <Col xs={8}>
+                                        <span className="badge bg-success-subtle text-success">Connecté</span>
+                                    </Col>
+                                    <Col xs={4}>Dernière session:</Col>
+                                    <Col xs={8}>{lastDoctorSession}</Col>
                                 </Row>
 
                             </div>
