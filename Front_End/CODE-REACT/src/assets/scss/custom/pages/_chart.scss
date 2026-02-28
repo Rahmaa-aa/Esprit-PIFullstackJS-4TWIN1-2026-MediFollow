@@ -1,0 +1,59 @@
+.custom-chart {
+    height: 450px !important;
+}
+
+@media (max-width: 576px) {
+    .custom-chart {
+        height: 300px !important;
+    }
+}
+
+[data-bs-theme="dark"] {
+
+    #am-columnlinr-chart,
+    #am-simple-chart,
+    #am-stackedcolumn-chart,
+    #am-layeredcolumn-chart,
+    #am-layeredcolumn-chart,
+    #am-datedata-chart,
+    #am-barline-chart,
+    #am-zoomable-chart,
+    #am-linescrollzomm-chart,
+    #am-polarscatter-chart,
+    #am-radar-chart,
+    #am-3dpie-chart,
+    #am-polar-chart {
+        tspan {
+            fill: white
+        }
+    }
+}
+
+#SvgjsG2217 {
+    transform: translate(-56px, 3px);
+}
+
+[data-bs-theme="dark"] {
+
+    #SvgjsText1004,
+    #SvgjsText2214,
+    #SvgjsText2551 {
+        fill: white
+    }
+}
+
+
+#SvgjsSvg8979 {
+    height: 450px !important;
+}
+
+
+@media (max-width: 480px) {
+    .apexcharts-toolbar .apexcharts-menu-open .apexcharts-menu-item {
+        padding: 0px !important;
+    }
+}
+
+#SvgjsCircle1522 {
+    fill: #e64141
+}

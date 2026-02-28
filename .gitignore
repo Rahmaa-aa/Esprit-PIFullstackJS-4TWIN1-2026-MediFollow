@@ -1,0 +1,9 @@
+.env
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependencies and build outputs
+**/node_modules/
+**/dist/
+**/.vite/
