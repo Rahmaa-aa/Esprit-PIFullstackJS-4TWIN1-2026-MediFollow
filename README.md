@@ -4,6 +4,14 @@
 
 ### Web Platform for Post-Hospitalization Remote Monitoring and Continuous Patient Follow-up
 
+---
+
+👥 **Team CodeCraft** &nbsp;|&nbsp; 🏫 **ESPRIT — École Supérieure Privée d'Ingénierie et de Technologies** &nbsp;|&nbsp; 📅 **2025/2026**
+
+👩‍🏫 **Supervisor:** Mrs. Asma Ayari
+
+---
+
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react)](https://reactjs.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-Backend-E0234E?style=flat&logo=nestjs)](https://nestjs.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=flat&logo=mongodb)](https://mongodb.com/)
