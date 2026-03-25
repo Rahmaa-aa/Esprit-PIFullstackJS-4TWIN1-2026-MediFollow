@@ -278,15 +278,18 @@ MediFollow/
 
 ## 👥 Équipe du projet
 
+**Équipe CodeCraft**
+
 | Nom | Rôle |
 |---|---|
-| **Imen Khalki** | Développeuse Full Stack — Module Super Admin, Authentification |
-| *(Membre 2)* | *(Rôle à compléter)* |
-| *(Membre 3)* | *(Rôle à compléter)* |
-| *(Membre 4)* | *(Rôle à compléter)* |
+| **Khalki Imen Allah** | Développeuse Full Stack — Module Super Admin, Authentification |
+| **Kacem Trabelsi** | Développeur Full Stack |
+| **Khalil Hlila** | Développeur Full Stack |
+| **Rahma Ayed** | Développeuse Full Stack |
+| **Ayoub Ben Mohamed** | Développeur Full Stack |
 
-> **Encadrant :** *(Nom de l'encadrant à compléter)*
-> **Institution :** ESPRIT — École Supérieure Privée d'Ingénierie et de Technologie
+> **Encadrante :** Mme. Asma Ayari
+> **Institution :** ESPRIT — École Supérieure Privée d'Ingénierie et de Technologies
 > **Année académique :** 2025/2026
 
 ---
@@ -314,6 +317,6 @@ Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus
 
 **MediFollow** — *Connecting Patients and Healthcare Professionals*
 
-Développé avec ❤️ par l'équipe MediFollow — ESPRIT 2025/2026
+Développé avec ❤️ par l'équipe **CodeCraft** — ESPRIT 2025/2026
 
 </div>
