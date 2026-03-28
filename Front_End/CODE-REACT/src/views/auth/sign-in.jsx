@@ -27,6 +27,7 @@ const SignIn = () => {
   const { isActive: handActive, startHandGesture, stopHandGesture, error: handError, setError: setHandError } = useHandGesture();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [largeTextEnabled, setLargeTextEnabled] = useState(() => localStorage.getItem(LARGE_TEXT_KEY) === "1");
@@ -590,27 +591,39 @@ const SignIn = () => {
                     </div>
                     <div className="position-relative">
                       <Form.Control
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         id="exampleInputPassword1"
-                        className="form-control pe-5"
+                        className="form-control"
+                        style={{ paddingRight: isSpeechSupported ? "72px" : "40px" }}
                         placeholder="Mot de passe"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         data-eye-clickable
                       />
-                      {isSpeechSupported && (
+                      <div style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", zIndex: 2, display: "flex", gap: "4px" }}>
                         <button
                           type="button"
-                          className={`btn btn-sm ${listeningField === "password" ? "btn-danger" : "btn-outline-primary"}`}
-                          onClick={() => listeningField === "password" ? stopVoiceInput() : startVoiceInput("password")}
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={() => setShowPassword((v) => !v)}
+                          aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                           data-eye-clickable
-                          aria-label="Micro mot de passe"
-                          style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", zIndex: 2 }}
+                          title={showPassword ? "Masquer" : "Afficher"}
                         >
-                          <i className={listeningField === "password" ? "ri-mic-off-line" : "ri-mic-line"}></i>
+                          <i className={showPassword ? "ri-eye-off-line" : "ri-eye-line"}></i>
                         </button>
-                      )}
+                        {isSpeechSupported && (
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${listeningField === "password" ? "btn-danger" : "btn-outline-primary"}`}
+                            onClick={() => listeningField === "password" ? stopVoiceInput() : startVoiceInput("password")}
+                            data-eye-clickable
+                            aria-label="Micro mot de passe"
+                          >
+                            <i className={listeningField === "password" ? "ri-mic-off-line" : "ri-mic-line"}></i>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="d-flex w-100 justify-content-between align-items-center mt-3">

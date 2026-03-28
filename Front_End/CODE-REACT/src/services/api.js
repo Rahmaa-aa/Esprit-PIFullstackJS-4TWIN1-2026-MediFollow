@@ -152,3 +152,8 @@ export const superAdminApi = {
   updateCareCoordinator: (id, data) => api.put(`/auth/care-coordinators/${id}`, data),
   deleteCareCoordinator: (id) => api.delete(`/auth/care-coordinators/${id}`),
 };
+export const healthLogApi = {
+  submit: (data) => api.post('/health-logs', data),
+  getHistory: (patientId) => api.get(`/health-logs/patient/${patientId}`),
+  getLatest: (patientId) => api.get(`/health-logs/patient/${patientId}/latest`),
+};

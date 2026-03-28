@@ -1,404 +1,428 @@
-import React, { useEffect } from "react";
-import { Row, ProgressBar, Col, Table, Dropdown } from "react-bootstrap";
+import React, { useEffect, useState, useRef } from "react";
+import { Row, Col } from "react-bootstrap";
 import ApexCharts from 'apexcharts';
 import Card from "../../components/Card";
+import DailyCheckIn from "../../components/DailyCheckIn";
+import { healthLogApi } from "../../services/api";
 
-// Import Image
-import img37 from "/assets/images/page-img/37.png"
+// Local date string — avoids UTC timezone bug
+const localDateString = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 const generatePath = (path) => {
     return window.origin + import.meta.env.BASE_URL + path;
 };
 
-const trainings = [
-    { title: "Power Training", imgSrc: '34.png', kcal: '395 kcal / h' },
-    { title: "Yoga Training", imgSrc: '35.png', kcal: '395 kcal / h' },
-    { title: "Stretching", imgSrc: '36.png', kcal: '395 kcal / h' }
-];
+// Helper: HR status label + color
+const hrStatus = (hr) => {
+    if (!hr) return { label: "No data", color: "#6c757d" };
+    if (hr < 60) return { label: "Low — Bradycardia", color: "#dc3545" };
+    if (hr <= 100) return { label: "Normal Range", color: "#28a745" };
+    return { label: "Elevated — Tachycardia", color: "#fd7e14" };
+};
 
+// Helper: BP status
+const bpStatus = (sys) => {
+    if (!sys) return { label: "No data", color: "#6c757d" };
+    if (sys < 90) return { label: "Low Blood Pressure", color: "#dc3545" };
+    if (sys <= 120) return { label: "Normal", color: "#28a745" };
+    if (sys <= 140) return { label: "Slightly Elevated", color: "#fd7e14" };
+    return { label: "High — Monitor Closely", color: "#dc3545" };
+};
+
+// Helper: O2 status
+const o2Status = (o2) => {
+    if (!o2) return { label: "No data", color: "#6c757d" };
+    if (o2 >= 95) return { label: "Normal", color: "#28a745" };
+    if (o2 >= 90) return { label: "Low — Seek Advice", color: "#fd7e14" };
+    return { label: "Critical — Seek Help", color: "#dc3545" };
+};
+
+// Helper: mood emoji
+const moodDisplay = (mood) => {
+    if (mood === "good") return { emoji: "😊", label: "Good", color: "#28a745" };
+    if (mood === "fair") return { emoji: "😐", label: "Fair", color: "#fd7e14" };
+    if (mood === "poor") return { emoji: "😔", label: "Poor", color: "#dc3545" };
+    return { emoji: "—", label: "—", color: "#6c757d" };
+};
+
+const VitalCard = ({ icon, iconColor, title, value, unit, status, noDataMsg }) => (
+    <Card className="h-100 border-0 shadow-sm">
+        <Card.Body>
+            <div className="d-flex justify-content-between align-items-start mb-2">
+                <h6 className="text-primary mb-0 fw-bold">{title}</h6>
+                <i className={`${icon} fs-4`} style={{ color: iconColor }}></i>
+            </div>
+            {value ? (
+                <>
+                    <h3 className="mb-0 fw-bold">{value}<small className="fs-6 text-muted ms-1">{unit}</small></h3>
+                    <span className="badge mt-1" style={{ backgroundColor: status.color, fontSize: "0.7rem" }}>
+                        {status.label}
+                    </span>
+                </>
+            ) : (
+                <p className="text-muted small mt-2 mb-0">{noDataMsg || "Complete today's check-in to see this."}</p>
+            )}
+        </Card.Body>
+    </Card>
+);
 
 const PatientDashboard = () => {
-    const [patientUser] = React.useState(() => {
+    const [patientUser] = useState(() => {
         try {
             const stored = localStorage.getItem("patientUser");
             return stored ? JSON.parse(stored) : null;
         } catch { return null; }
     });
 
+    const [todayLog, setTodayLog] = useState(null);
+    const [history, setHistory] = useState([]);
+    const [activeVital, setActiveVital] = useState("heartRate");
+    const chartRef = useRef(null);
+    const chartInstanceRef = useRef(null);
+
+    const loadTodayLog = async () => {
+        const pid = patientUser?.id || patientUser?._id;
+        if (!pid) return;
+        try {
+            const log = await healthLogApi.getLatest(pid);
+            setTodayLog(log);
+        } catch (e) {
+            console.error('[Dashboard] Failed to load today log:', e);
+            setTodayLog(null);
+        }
+    };
+
+    const loadHistory = async () => {
+        const pid = patientUser?.id || patientUser?._id;
+        if (!pid) return;
+        try {
+            const logs = await healthLogApi.getHistory(pid);
+            setHistory(Array.isArray(logs) ? logs.slice(0, 7).reverse() : []);
+        } catch (e) {
+            console.error('[Dashboard] Failed to load history:', e);
+            setHistory([]);
+        }
+    };
+
+    useEffect(() => {
+        loadTodayLog();
+        loadHistory();
+    }, [patientUser?._id]);
+
+    // Build chart series from history
+    const chartDates = history.map(l => new Date(l.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
+    const vitalOptions = {
+        heartRate: { label: "Heart Rate (bpm)", key: "heartRate", color: "#dc3545", unit: "bpm" },
+        bloodPressureSystolic: { label: "Blood Pressure Systolic (mmHg)", key: "bloodPressureSystolic", color: "#089bab", unit: "mmHg" },
+        oxygenSaturation: { label: "O₂ Saturation (%)", key: "oxygenSaturation", color: "#6f42c1", unit: "%" },
+        temperature: { label: "Temperature (°C)", key: "temperature", color: "#fd7e14", unit: "°C" },
+    };
+
+    const selectedVital = vitalOptions[activeVital];
+    const chartData = history.map(l => l.vitals?.[selectedVital.key] ?? null);
+    const hasChartData = chartData.some(v => v !== null);
+
+    useEffect(() => {
+        if (!chartRef.current) return;
+        if (chartInstanceRef.current) {
+            chartInstanceRef.current.destroy();
+            chartInstanceRef.current = null;
+        }
+        const opts = {
+            series: [{ name: selectedVital.label, data: chartData }],
+            chart: { type: 'area', height: 260, toolbar: { show: false }, animations: { enabled: true } },
+            colors: [selectedVital.color],
+            stroke: { curve: 'smooth', width: 3 },
+            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05 } },
+            dataLabels: { enabled: false },
+            xaxis: {
+                categories: chartDates.length > 0 ? chartDates : ["—"],
+                labels: { style: { fontSize: '11px' } }
+            },
+            yaxis: { title: { text: selectedVital.unit }, labels: { style: { fontSize: '11px' } } },
+            markers: { size: 5, colors: [selectedVital.color], strokeWidth: 2 },
+            tooltip: { y: { formatter: (val) => val ? `${val} ${selectedVital.unit}` : "No data" } },
+            noData: { text: "No data yet — complete a check-in!", style: { color: "#6c757d" } },
+            grid: { borderColor: '#f1f1f1' },
+        };
+        const chart = new ApexCharts(chartRef.current, opts);
+        chart.render();
+        chartInstanceRef.current = chart;
+        return () => { chart.destroy(); chartInstanceRef.current = null; };
+    }, [history, activeVital]);
+
+    const computeAge = (dob) => {
+        if (!dob) return null;
+        const b = new Date(dob), t = new Date();
+        let age = t.getFullYear() - b.getFullYear();
+        if (t.getMonth() - b.getMonth() < 0 || (t.getMonth() === b.getMonth() && t.getDate() < b.getDate())) age--;
+        return age;
+    };
+
     const userData = {
-        name: patientUser ? `${patientUser.firstName || ''} ${patientUser.lastName || ''}`.trim() || patientUser.email : "Bess Willis",
-        age: 27,
-        location: patientUser?.service || "California",
-        weight: { current: 60, goal: 55 },
-        height: 170,
-        steps: { walked: 4532, goal: 6500 },
-        burned: { kcal: 325, goal: 800 },
-        macros: {
-            carbs: 85,
-            protein: 65,
-            fat: 70,
-        },
+        name: patientUser ? `${patientUser.firstName || ''} ${patientUser.lastName || ''}`.trim() || patientUser.email : "Patient",
+        age: computeAge(patientUser?.dateOfBirth),
+        gender: patientUser?.gender || null,
+        bloodType: patientUser?.bloodType || null,
+        location: [patientUser?.city, patientUser?.country].filter(Boolean).join(', ') || patientUser?.service || "—",
+        weight: patientUser?.weight || todayLog?.vitals?.weight || "—",
+        height: patientUser?.height || "—",
         profileImage: patientUser?.profileImage?.startsWith("data:") ? patientUser.profileImage
             : patientUser?.profileImage?.startsWith("http") ? patientUser.profileImage
             : patientUser?.profileImage ? generatePath(patientUser.profileImage.startsWith("/") ? patientUser.profileImage.slice(1) : patientUser.profileImage)
             : generatePath(`/assets/images/user/11.png`)
     };
 
-    const chartOptions = {
-        series: [{
-            name: 'Servings',
-            data: [44, 55, 41, 67, 22, 43, 21, 33, 45, 31]
-        }],
-        annotations: {
-            points: [{
-                x: 'Bananas',
-                seriesIndex: 0,
-                label: {
-                    borderColor: '#775DD0',
-                    offsetY: 0,
-                    style: {
-                        color: '#fff',
-                        background: '#775DD0',
-                    },
-                    text: 'Bananas are good',
-                }
-            }]
-        },
-        chart: {
-            height: 280,
-            type: 'bar',
-            rtl: true
-        },
-        colors: ['#089bab'],
-        plotOptions: {
-            bar: {
-                columnWidth: '50%',
-                borderRadius: 14,
-                borderRadiusApplication: 'end'
-            }
-        },
-        dataLabels: {
-            enabled: false
-        },
-        stroke: {
-            width: 2
-        },
-        grid: {
-            row: {
-                colors: ['#fff', '#f2f2f2']
-            }
-        },
-        xaxis: {
-            labels: {
-                rotate: -45
-            },
-            categories: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'],
-            tickPlacement: 'on'
-        },
-        yaxis: {
-            title: {
-                text: 'Servings',
-            },
-        },
-        fill: {
-            type: 'gradient',
-            gradient: {
-                shade: 'light',
-                type: "horizontal",
-                shadeIntensity: 0.25,
-                gradientToColors: undefined,
-                inverseColors: true,
-                opacityFrom: 0.85,
-                opacityTo: 0.85,
-                stops: [50, 0, 100]
-            },
-        }
-    };
-
-    useEffect(() => {
-        const chart = new ApexCharts(document.querySelector("#patient-chart-1"), chartOptions);
-        chart.render();
-        return () => {
-            chart.destroy();
-        };
-    }, []);
-
-    const myTraining = [
-        { training: "TRX Cardio", burned: "350 kcal", spend: "1hr 45m" },
-        { training: "Stretching", burned: "180 kcal", spend: "30m" }
-    ];
+    // Today's vitals
+    const v = todayLog?.vitals || {};
+    const hr = hrStatus(v.heartRate);
+    const bp = bpStatus(v.bloodPressureSystolic);
+    const o2 = o2Status(v.oxygenSaturation);
+    const mood = moodDisplay(todayLog?.mood);
+    const painLevel = todayLog?.painLevel ?? null;
 
     return (
         <>
-            <Row>
-                <div className="col-lg-4">
-                    <Card className="user-profile-block">
-                        <Card.Body className="mt-2">
-                            <div className="user-details-block text-center">
-                                <img src={userData.profileImage} alt="profile-img" className="avatar-130 img-fluid" />
-                                <div className="mt-3">
-                                    <h4><b>{userData.name}</b></h4>
-                                    <p>{userData.age} years, {userData.location}</p>
+            {/* Risk alert banner */}
+            {todayLog?.flagged && (
+                <div className="alert alert-danger d-flex align-items-center mb-3" role="alert">
+                    <i className="ri-alert-line me-2 fs-5"></i>
+                    <span><b>Attention:</b> Your vitals require follow-up — your care team has been notified.</span>
+                </div>
+            )}
+
+            <Row className="g-3">
+                {/* LEFT COLUMN */}
+                <Col lg={4}>
+                    {/* Profile Card */}
+                    <Card className="border-0 shadow-sm">
+                        <Card.Body className="text-center pt-4">
+                            <img src={userData.profileImage} alt="profile" className="avatar-130 img-fluid rounded-circle mb-3" style={{ border: "3px solid #089bab" }} />
+                            <h5 className="fw-bold mb-0">{userData.name}</h5>
+                            <p className="text-muted small mb-1">
+                                {userData.age ? `${userData.age} yrs` : ''}
+                                {userData.age && userData.location !== '—' ? ' • ' : ''}
+                                {userData.location}
+                            </p>
+                            {(userData.bloodType || userData.gender) && (
+                                <p className="text-muted small mb-0">
+                                    {userData.bloodType && <span className="me-2"><i className="ri-heart-pulse-line text-danger me-1"></i>{userData.bloodType}</span>}
+                                    {userData.gender && <span><i className="ri-user-line text-primary me-1"></i>{userData.gender}</span>}
+                                </p>
+                            )}
+                            <div className="d-flex justify-content-around mt-3 pt-3 border-top">
+                                <div className="text-center">
+                                    <h6 className="text-primary mb-0">{userData.weight}<small className="text-muted ms-1">kg</small></h6>
+                                    <small className="text-muted">Weight</small>
                                 </div>
-                                <ul className="doctoe-sedual d-flex align-items-center justify-content-between p-0 mt-4 mb-0">
-                                    <li className="text-center">
-                                        <h6 className="text-primary">Weight</h6>
-                                        <h3>{userData.weight.current}<span>kg</span></h3>
-                                    </li>
-                                    <li className="text-center">
-                                        <h6 className="text-primary">Height</h6>
-                                        <h3>{userData.height}<span>cm</span></h3>
-                                    </li>
-                                    <li className="text-center">
-                                        <h6 className="text-primary">Goal</h6>
-                                        <h3>{userData.weight.goal}<span>kg</span></h3>
-                                    </li>
-                                </ul>
+                                <div className="text-center">
+                                    <h6 className="text-primary mb-0">{userData.height}<small className="text-muted ms-1">cm</small></h6>
+                                    <small className="text-muted">Height</small>
+                                </div>
+                                <div className="text-center">
+                                    <h6 className="text-primary mb-0">{userData.bloodType || "—"}</h6>
+                                    <small className="text-muted">Blood Type</small>
+                                </div>
                             </div>
                         </Card.Body>
                     </Card>
 
-                    <Card className="mt-3">
+                    {/* Daily Check-In Card */}
+                    <div className="mt-3">
+                        <DailyCheckIn
+                            patientId={patientUser?.id || patientUser?._id}
+                            existingLog={todayLog?.date === localDateString() ? todayLog : null}
+                            onSubmitted={() => { loadTodayLog(); loadHistory(); }}
+                        />
+                    </div>
+
+                    {/* Today's Wellbeing */}
+                    <Card className="mt-3 border-0 shadow-sm">
                         <Card.Body>
-                            <div className="patient-steps">
-                                <div className="d-flex align-items-center justify-content-between">
-                                    <div className="col-md-6">
-                                        <div className="data-block">
-                                            <p className="mb-0">Walked</p>
-                                            <h5>{userData.steps.walked} steps</h5>
+                            <h6 className="text-primary fw-bold mb-3"><i className="ri-mental-health-line me-2"></i>Today's Wellbeing</h6>
+                            {todayLog ? (
+                                <>
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <span className="text-muted small">Mood</span>
+                                        <span className="fw-bold" style={{ color: mood.color }}>{mood.emoji} {mood.label}</span>
+                                    </div>
+                                    <div className="mb-2">
+                                        <div className="d-flex justify-content-between mb-1">
+                                            <span className="text-muted small">Pain Level</span>
+                                            <span className="fw-bold small">{painLevel}/10</span>
                                         </div>
-                                        <div className="data-block mt-3">
-                                            <p className="mb-0">My Goal</p>
-                                            <h5>{userData.steps.goal} steps</h5>
+                                        <div className="progress" style={{ height: 8, borderRadius: 8 }}>
+                                            <div className="progress-bar"
+                                                role="progressbar"
+                                                style={{ width: `${(painLevel / 10) * 100}%`, borderRadius: 8, backgroundColor: painLevel >= 7 ? "#dc3545" : painLevel >= 4 ? "#fd7e14" : "#28a745" }}
+                                            />
                                         </div>
                                     </div>
-                                    <div className="col-md-6">
-                                        <div className="progress-round patient-progress mx-auto" data-value="80">
-                                            <span className="progress-left">
-                                                <span
-                                                    className="progress-bar border-secondary"
-                                                    style={{ transform: 'rotate(108deg)' }}
-                                                ></span>
-                                            </span>
-                                            <span className="progress-right">
-                                                <span
-                                                    className="progress-bar border-secondary"
-                                                    style={{ transform: 'rotate(180deg)' }}
-                                                ></span>
-                                            </span>
-                                            <div className="progress-value w-100 h-100 rounded-circle d-flex align-items-center justify-content-center text-center">
-                                                <div className="h4 mb-0">
-                                                    4532<br />
-                                                    <span className="font-size-14">left</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                                <ul className="patient-role list-inline d-flex align-items-center justify-content-between p-0 mt-4 mb-0 border-bottom pb-5">
-                                    {Object.entries(userData.macros).map(([key, value]) => (
-                                        <li key={key} className="text-start">
-                                            <h6 className="text-primary">{key.charAt(0).toUpperCase() + key.slice(1)}</h6>
-                                            <ProgressBar now={value} variant="primary" className="bg-primary-subtle" style={{ height: '6px' }} />
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            <hr />
-
-                            <div className="patient-steps2">
-                                <div className="d-flex align-items-center justify-content-between">
-                                    <div className="col-md-6">
-                                        <div className="data-block">
-                                            <p className="mb-0">Burned</p>
-                                            <h5>{userData.burned.kcal} kcal</h5>
-                                        </div>
-                                        <div className="data-block mt-3">
-                                            <p className="mb-0">My Goal</p>
-                                            <h5>{userData.burned.goal} kcal</h5>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-6">
-                                        <div className="progress-round patient-progress mx-auto" data-value="80">
-                                            <span className="progress-left">
-                                                <span
-                                                    className="progress-bar border-secondary"
-                                                    style={{ transform: 'rotate(108deg)' }}
-                                                ></span>
-                                            </span>
-                                            <span className="progress-right">
-                                                <span
-                                                    className="progress-bar border-secondary"
-                                                    style={{ transform: 'rotate(180deg)' }}
-                                                ></span>
-                                            </span>
-                                            <div className="progress-value w-100 h-100 rounded-circle d-flex align-items-center justify-content-center text-center">
-                                                <div className="h4 mb-0 text-warning">
-                                                    325<br />
-                                                    <span className="font-size-14">left</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <ul className="patient-role list-inline d-flex align-items-center justify-content-between p-0 mt-4 mb-0">
-                                    {Object.entries(userData.macros).map(([key, value]) => (
-                                        <li key={key} className="text-start">
-                                            <h6 className="text-primary">{key.charAt(0).toUpperCase() + key.slice(1)}</h6>
-                                            <ProgressBar now={value} variant="primary" className="bg-primary-subtle" style={{ height: '6px' }} />
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </Card.Body>
-                    </Card>
-                </div>
-                <div className="col-lg-8">
-                    <Card>
-                        <Card.Body className="pb-0">
-                            <Row>
-                                <Col sm={12}>
-                                    <Card>
-                                        <Card.Body className="bg-primary rounded-4 pt-2 pb-2 pe-2">
-                                            <div className="d-flex align-items-center justify-content-between">
-                                                <p className="mb-0 text-white custom-marigin-right">
-                                                    Advice! Connect your Apple Watch for better results.
-                                                </p>
-                                                <div className="rounded-4 card-icon bg-white">
-                                                    <img src={img37} className="img-fluid" alt="icon" />
-                                                </div>
-                                            </div>
-                                        </Card.Body>
-                                    </Card>
-                                    <Card>
-                                        <div className="header-title">
-                                            <h4 className="card-title text-primary">Popular Training</h4>
-                                        </div>
-                                        <Card.Body className="ps-0 pe-0 pb-0">
-                                            <Row>
-                                                {trainings.map((training, index) => (
-                                                    <Col md={4} key={index}>
-                                                        <div className="training-block d-flex align-items-center mb-md-0 mb-4">
-                                                            <div className="rounded-circle card-icon bg-primary-subtle">
-                                                                <img src={generatePath(`/assets/images/page-img/${training.imgSrc}`)} className="img-fluid filter-img-dark" alt="icon" />
-                                                            </div>
-                                                            <div className="ms-3">
-                                                                <h5>{training.title}</h5>
-                                                                <p className="mb-0">{training.kcal}</p>
-                                                            </div>
-                                                        </div>
-                                                    </Col>
+                                    {todayLog.symptoms?.length > 0 && (
+                                        <div className="mt-2">
+                                            <span className="text-muted small d-block mb-1">Symptoms</span>
+                                            <div className="d-flex flex-wrap gap-1">
+                                                {todayLog.symptoms.map(s => (
+                                                    <span key={s} className="badge bg-warning text-dark" style={{ fontSize: "0.7rem" }}>{s}</span>
                                                 ))}
-                                            </Row>
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                                <Col lg={8}>
-                                    <Card>
-                                        <Card.Header className="d-flex justify-content-between p-0">
-                                            <div className="header-title">
-                                                <h4 className="card-title text-primary mb-3">Activity Statistic</h4>
-                                            </div>
-                                        </Card.Header>
-                                        <Card.Body className="p-0 text-center">
-                                            <div id="patient-chart-1"></div>
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                                <Col lg={4}>
-                                    <Card className="mb-0">
-                                        <div className="border-bottom d-flex justify-content-between align-items-center ">
-                                            <div className="header-title mb-3">
-                                                <h4 className="card-title text-primary">My Training</h4>
-                                            </div>
-                                            <div className="card-header-toolbar d-flex align-items-center mb-3 patient-dash">
-                                                <Dropdown>
-                                                    <Dropdown.Toggle variant="link" id="dropdownMenuButton4" className="bg-primary-subtle btn" style={{ fontSize: '22px' }}>
-                                                        <span className="ri-add-line"></span>
-                                                    </Dropdown.Toggle>
-                                                    <Dropdown.Menu align="end">
-                                                        <Dropdown.Item href="#"><i className="ri-eye-fill me-2"></i>View</Dropdown.Item>
-                                                        <Dropdown.Item href="#"><i className="ri-delete-bin-6-fill me-2"></i>Delete</Dropdown.Item>
-                                                        <Dropdown.Item href="#"><i className="ri-pencil-fill me-2"></i>Edit</Dropdown.Item>
-                                                        <Dropdown.Item href="#"><i className="ri-printer-fill me-2"></i>Print</Dropdown.Item>
-                                                        <Dropdown.Item href="#"><i className="ri-file-download-fill me-2"></i>Download</Dropdown.Item>
-                                                    </Dropdown.Menu>
-                                                </Dropdown>
                                             </div>
                                         </div>
-                                        <Card.Body className="p-0 custom-overflow-hidden-none">
-                                            {myTraining.map((item, index) => (
-                                                <Table key={index} className={`mb-0 table-borderless table-box-shadow ${index === 1 ? 'mt-4' : ''}`}>
-                                                    <thead>
-                                                        <tr>
-                                                            <th scope="col">Training</th>
-                                                            <th scope="col">{item.training}</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr>
-                                                            <td>Burned</td>
-                                                            <td>{item.burned}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>Spend</td>
-                                                            <td>{item.spend}</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </Table>
-                                            ))}
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                                <Col md={6}>
-                                    <Card>
-                                        <Card.Header className="d-flex justify-content-between p-0 min-height-auto mb-2 pb-3">
-                                            <div className="header-title">
-                                                <h4 className="card-title text-primary">Heart Rate</h4>
-                                            </div>
-                                        </Card.Header>
-                                        <Card.Body className="p-0">
-                                            <div className="d-flex align-items-center">
-                                                <div className="me-3">
-                                                    <h4>75 bpm</h4>
-                                                    <p className="mb-0 text-primary">Health Zone</p>
-                                                </div>
-                                                <div className="rounded-circle card-icon bg-primary-subtle">
-                                                    <i className="ri-windy-fill"></i>
-                                                </div>
-                                            </div>
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                                <Col md={6}>
-                                    <Card>
-                                        <Card.Header className="d-flex justify-content-between p-0 min-height-auto mb-2 pb-3">
-                                            <div className="header-title">
-                                                <h4 className="card-title text-primary">Water Balance</h4>
-                                            </div>
-                                        </Card.Header>
-                                        <Card.Body className="p-0">
-                                            <div className="d-flex align-items-center">
-                                                <div className="me-3 text-start">
-                                                    <p className="mb-0 text-primary">Drunk</p>
-                                                    <h4>1250 ml/ 2000 ml</h4>
-                                                </div>
-                                                <div className="rounded-circle card-icon bg-primary-subtle">
-                                                    <i className="ri-add-fill"></i>
-                                                </div>
-                                            </div>
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                            </Row>
+                                    )}
+                                </>
+                            ) : (
+                                <p className="text-muted small mb-0">Complete today's check-in to see your wellbeing summary.</p>
+                            )}
                         </Card.Body>
                     </Card>
-                </div>
+                </Col>
+
+                {/* RIGHT COLUMN */}
+                <Col lg={8}>
+                    {/* Today's Vitals — 4 cards */}
+                    <Row className="g-3 mb-3">
+                        <Col md={3}>
+                            <VitalCard
+                                icon="ri-heart-line"
+                                iconColor="#dc3545"
+                                title="Heart Rate"
+                                value={v.heartRate}
+                                unit="bpm"
+                                status={hr}
+                                noDataMsg="Log your vitals to see heart rate."
+                            />
+                        </Col>
+                        <Col md={3}>
+                            <VitalCard
+                                icon="ri-drop-line"
+                                iconColor="#089bab"
+                                title="Blood Pressure"
+                                value={v.bloodPressureSystolic ? `${v.bloodPressureSystolic}/${v.bloodPressureDiastolic}` : null}
+                                unit="mmHg"
+                                status={bp}
+                                noDataMsg="Log your vitals to see BP."
+                            />
+                        </Col>
+                        <Col md={3}>
+                            <VitalCard
+                                icon="ri-lungs-line"
+                                iconColor="#6f42c1"
+                                title="O₂ Saturation"
+                                value={v.oxygenSaturation}
+                                unit="%"
+                                status={o2}
+                                noDataMsg="Log your vitals to see O₂."
+                            />
+                        </Col>
+                        <Col md={3}>
+                            <VitalCard
+                                icon="ri-temp-hot-line"
+                                iconColor="#fd7e14"
+                                title="Temperature"
+                                value={v.temperature}
+                                unit="°C"
+                                status={v.temperature ? { label: v.temperature < 36 ? "Low" : v.temperature > 38.5 ? "Fever" : "Normal", color: v.temperature < 36 || v.temperature > 38.5 ? "#dc3545" : "#28a745" } : { label: "—", color: "#6c757d" }}
+                                noDataMsg="Log your vitals to see temperature."
+                            />
+                        </Col>
+                    </Row>
+
+                    {/* Vitals History Chart */}
+                    <Card className="border-0 shadow-sm mb-3">
+                        <Card.Body>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h6 className="text-primary fw-bold mb-0">
+                                    <i className="ri-line-chart-line me-2"></i>7-Day Vitals History
+                                </h6>
+                                <div className="d-flex gap-1 flex-wrap">
+                                    {Object.entries(vitalOptions).map(([key, opt]) => (
+                                        <button key={key}
+                                            className={`btn btn-sm ${activeVital === key ? "btn-primary" : "btn-outline-secondary"}`}
+                                            style={{ fontSize: "0.72rem", padding: "2px 10px", borderRadius: 20 }}
+                                            onClick={() => setActiveVital(key)}
+                                        >
+                                            {key === "heartRate" ? "HR" : key === "bloodPressureSystolic" ? "BP" : key === "oxygenSaturation" ? "O₂" : "Temp"}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            {!hasChartData && (
+                                <p className="text-muted small text-center mb-0" style={{ paddingBottom: 32 }}>
+                                    No data yet — start logging your daily check-ins to see trends here.
+                                </p>
+                            )}
+                            <div ref={chartRef}></div>
+                        </Card.Body>
+                    </Card>
+
+                    {/* Bottom row: Risk Score + Symptoms summary */}
+                    <Row className="g-3">
+                        <Col md={6}>
+                            <Card className="border-0 shadow-sm h-100">
+                                <Card.Body>
+                                    <h6 className="text-primary fw-bold mb-3">
+                                        <i className="ri-shield-check-line me-2"></i>Recovery Risk Score
+                                    </h6>
+                                    {todayLog ? (
+                                        <>
+                                            <div className="d-flex align-items-end gap-2 mb-2">
+                                                <h2 className="mb-0 fw-bold" style={{ color: todayLog.riskScore >= 50 ? "#dc3545" : todayLog.riskScore >= 25 ? "#fd7e14" : "#28a745" }}>
+                                                    {todayLog.riskScore}
+                                                </h2>
+                                                <span className="text-muted small mb-1">/ 100</span>
+                                            </div>
+                                            <div className="progress mb-2" style={{ height: 10, borderRadius: 10 }}>
+                                                <div className="progress-bar" role="progressbar"
+                                                    style={{ width: `${todayLog.riskScore}%`, borderRadius: 10, backgroundColor: todayLog.riskScore >= 50 ? "#dc3545" : todayLog.riskScore >= 25 ? "#fd7e14" : "#28a745" }}
+                                                />
+                                            </div>
+                                            <p className="text-muted small mb-0">
+                                                {todayLog.riskScore < 25 ? "✅ Low risk — keep it up!" :
+                                                    todayLog.riskScore < 50 ? "⚠️ Moderate — monitor closely." :
+                                                        "🔴 High risk — please contact your care team."}
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <p className="text-muted small mb-0">Complete today's check-in to calculate your risk score.</p>
+                                    )}
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                        <Col md={6}>
+                            <Card className="border-0 shadow-sm h-100">
+                                <Card.Body>
+                                    <h6 className="text-primary fw-bold mb-3">
+                                        <i className="ri-history-line me-2"></i>Recent Check-ins
+                                    </h6>
+                                    {history.length > 0 ? (
+                                        <div className="d-flex flex-column gap-2">
+                                            {history.slice(-4).reverse().map((log) => (
+                                                <div key={log._id} className="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                                    <span className="small text-muted">
+                                                        {new Date(log.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                                    </span>
+                                                    <span className="small">
+                                                        {log.vitals?.heartRate ? `❤️ ${log.vitals.heartRate} bpm` : "—"}
+                                                    </span>
+                                                    <span className="badge" style={{ backgroundColor: log.riskScore >= 50 ? "#dc3545" : log.riskScore >= 25 ? "#fd7e14" : "#28a745", fontSize: "0.68rem" }}>
+                                                        Risk: {log.riskScore}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-muted small mb-0">No history yet. Logs will appear here after your first check-in.</p>
+                                    )}
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    </Row>
+                </Col>
             </Row>
         </>
-    )
-}
+    );
+};
 
-export default PatientDashboard
+export default PatientDashboard;

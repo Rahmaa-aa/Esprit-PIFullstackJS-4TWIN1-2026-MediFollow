@@ -543,15 +543,25 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
       user: {
         id: p._id,
+        _id: p._id,     // include both for compatibility
         email: p.email,
         firstName: p.firstName,
         lastName: p.lastName,
         role: 'patient',
         service: p.service,
         profileImage: p.profileImage,
+        phone: p.phone,
+        dateOfBirth: p.dateOfBirth,
+        gender: p.gender,
+        bloodType: p.bloodType,
+        city: p.city,
+        country: p.country,
+        weight: (p as any).weight,
+        height: (p as any).height,
       },
     };
   }
+
 
   async loginNurse(email: string, password: string) {
     const nurse = await this.nurseModel.findOne({ email }).exec();

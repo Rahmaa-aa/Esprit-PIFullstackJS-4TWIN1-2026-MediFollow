@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Carousel, Form, Container, Row, Col } from 'react-bootstrap';
 import { Link } from "react-router-dom";
 
@@ -7,6 +7,8 @@ const generatePath = (path) => {
 };
 
 const SignUp = () => {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <>
       <section className="sign-in-page d-md-flex align-items-center custom-auth-height">
@@ -56,7 +58,23 @@ const SignUp = () => {
                   </Form.Group>
                   <Form.Group className="form-group" controlId="formPassword">
                     <label>Password</label>
-                    <Form.Control type="password" placeholder="Password" />
+                    <div className="position-relative">
+                      <Form.Control
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        style={{ paddingRight: "40px" }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        title={showPassword ? "Hide" : "Show"}
+                        style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", zIndex: 2 }}
+                      >
+                        <i className={showPassword ? "ri-eye-off-line" : "ri-eye-line"}></i>
+                      </button>
+                    </div>
                   </Form.Group>
                   <div className="d-flex justify-content-between w-100 align-items-center">
                     <label className="d-inline-block form-group mb-0 d-flex">
