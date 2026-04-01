@@ -39,4 +39,9 @@ export class PatientController {
   async toggleActive(@Param('id') id: string) {
     return this.patientService.toggleActive(id);
   }
+
+  @Get(':id/care-team')
+  async getCareTeam(@Param('id') id: string) {
+    return this.patientService.getCareTeam(id);
+  }
 }

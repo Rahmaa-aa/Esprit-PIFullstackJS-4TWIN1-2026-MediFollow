@@ -103,4 +103,17 @@ export class PatientService {
     await this.patientModel.updateOne({ _id: id }, { $set: { isActive: newStatus } }).exec();
     return { id, isActive: newStatus, message: newStatus ? 'Compte activé' : 'Compte désactivé' };
   }
+
+  async getCareTeam(id: string) {
+    const patient = await this.patientModel.findById(id).select('-password').exec();
+    if (!patient) throw new NotFoundException('Patient non trouvé');
+    return {
+      doctorId: patient.doctorId,
+      nurseId: patient.nurseId,
+      dischargeDate: (patient as any).dischargeDate,
+      admissionDate: (patient as any).admissionDate,
+      diagnosis: (patient as any).diagnosis,
+      dischargeNotes: (patient as any).dischargeNotes,
+    };
+  }
 }

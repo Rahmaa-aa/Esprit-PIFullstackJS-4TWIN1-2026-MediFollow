@@ -143,7 +143,36 @@ const EditPatient = () => {
     if (password) payload.password = password;
 
     try {
-      await patientApi.update(id, payload);
+      const updated = await patientApi.update(id, payload);
+
+      // If the edited patient is the logged-in patient, sync localStorage
+      const stored = localStorage.getItem("patientUser");
+      if (stored) {
+        const currentUser = JSON.parse(stored);
+        const currentId = (currentUser.id || currentUser._id)?.toString();
+        if (currentId === id) {
+          const refreshed = {
+            ...currentUser,
+            firstName: payload.firstName,
+            lastName: payload.lastName,
+            email: payload.email,
+            phone: payload.phone,
+            dateOfBirth: payload.dateOfBirth,
+            gender: payload.gender,
+            bloodType: payload.bloodType,
+            address: payload.address,
+            city: payload.city,
+            country: payload.country,
+            pinCode: payload.pinCode,
+            service: payload.service,
+            profileImage: payload.profileImage,
+          };
+          localStorage.setItem("patientUser", JSON.stringify(refreshed));
+          // Notify other components (dashboard, header) that localStorage changed
+          window.dispatchEvent(new Event("patientUserUpdated"));
+        }
+      }
+
       navigate("/patient/patient-list");
     } catch (err) {
       if (err.status === 401) {

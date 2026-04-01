@@ -53,6 +53,33 @@ export class Patient extends Document {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  // ─── Care Team ───────────────────────────────────────────────────────────
+  @Prop()
+  doctorId: string;
+
+  @Prop()
+  nurseId: string;
+
+  // ─── Discharge Info ──────────────────────────────────────────────────────
+  @Prop()
+  admissionDate: string;
+
+  @Prop()
+  dischargeDate: string;
+
+  @Prop()
+  diagnosis: string;
+
+  @Prop()
+  dischargeNotes: string; // Post-discharge care instructions
+
+  // ─── Physical Stats ──────────────────────────────────────────────────────
+  @Prop()
+  weight: number;
+
+  @Prop()
+  height: number;
 }
 
 export const PatientSchema = SchemaFactory.createForClass(Patient);

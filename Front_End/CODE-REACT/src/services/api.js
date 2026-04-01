@@ -126,6 +126,7 @@ export const patientApi = {
   update: (id, data) => api.put(`/patients/${id}`, data),
   delete: (id) => api.delete(`/patients/${id}`),
   toggleActive: (id) => api.put(`/patients/${id}/toggle-active`, {}),
+  getCareTeam: (id) => api.get(`/patients/${id}/care-team`),
 };
 
 export const nurseApi = {
@@ -156,4 +157,20 @@ export const healthLogApi = {
   submit: (data) => api.post('/health-logs', data),
   getHistory: (patientId) => api.get(`/health-logs/patient/${patientId}`),
   getLatest: (patientId) => api.get(`/health-logs/patient/${patientId}/latest`),
+};
+
+export const medicationApi = {
+  create: (data) => api.post('/medications', data),
+  getByPatient: (patientId) => api.get(`/medications/patient/${patientId}`),
+  toggleTaken: (id) => api.put(`/medications/${id}/toggle-taken`, {}),
+  update: (id, data) => api.put(`/medications/${id}`, data),
+  remove: (id) => api.delete(`/medications/${id}`),
+};
+
+export const appointmentApi = {
+  create: (data) => api.post('/appointments', data),
+  getByPatient: (patientId) => api.get(`/appointments/patient/${patientId}`),
+  getUpcoming: (patientId) => api.get(`/appointments/patient/${patientId}/upcoming`),
+  update: (id, data) => api.put(`/appointments/${id}`, data),
+  remove: (id) => api.delete(`/appointments/${id}`),
 };

@@ -3,7 +3,11 @@ import { Row, Col } from "react-bootstrap";
 import ApexCharts from 'apexcharts';
 import Card from "../../components/Card";
 import DailyCheckIn from "../../components/DailyCheckIn";
-import { healthLogApi } from "../../services/api";
+import MedicationsCard from "../../components/MedicationsCard";
+import AppointmentsCard from "../../components/AppointmentsCard";
+import CareTeamCard from "../../components/CareTeamCard";
+import DischargeSummaryCard from "../../components/DischargeSummaryCard";
+import { healthLogApi, medicationApi, appointmentApi, patientApi, doctorApi, nurseApi } from "../../services/api";
 
 // Local date string — avoids UTC timezone bug
 const localDateString = () => {
@@ -70,21 +74,38 @@ const VitalCard = ({ icon, iconColor, title, value, unit, status, noDataMsg }) =
 );
 
 const PatientDashboard = () => {
-    const [patientUser] = useState(() => {
+    const [patientUser, setPatientUser] = useState(() => {
         try {
             const stored = localStorage.getItem("patientUser");
             return stored ? JSON.parse(stored) : null;
         } catch { return null; }
     });
 
+    // Re-read profile when updated from edit-patient page
+    useEffect(() => {
+        const refresh = () => {
+            try {
+                const stored = localStorage.getItem("patientUser");
+                if (stored) setPatientUser(JSON.parse(stored));
+            } catch { /* ignore */ }
+        };
+        window.addEventListener("patientUserUpdated", refresh);
+        return () => window.removeEventListener("patientUserUpdated", refresh);
+    }, []);
+
     const [todayLog, setTodayLog] = useState(null);
     const [history, setHistory] = useState([]);
     const [activeVital, setActiveVital] = useState("heartRate");
+    const [medications, setMedications] = useState([]);
+    const [appointments, setAppointments] = useState([]);
+    const [careDoctor, setCareDoctor] = useState(null);
+    const [careNurse, setCareNurse] = useState(null);
     const chartRef = useRef(null);
     const chartInstanceRef = useRef(null);
 
+    const pid = patientUser?.id || patientUser?._id;
+
     const loadTodayLog = async () => {
-        const pid = patientUser?.id || patientUser?._id;
         if (!pid) return;
         try {
             const log = await healthLogApi.getLatest(pid);
@@ -96,7 +117,6 @@ const PatientDashboard = () => {
     };
 
     const loadHistory = async () => {
-        const pid = patientUser?.id || patientUser?._id;
         if (!pid) return;
         try {
             const logs = await healthLogApi.getHistory(pid);
@@ -107,9 +127,41 @@ const PatientDashboard = () => {
         }
     };
 
+    const loadMedications = async () => {
+        if (!pid) return;
+        try {
+            const meds = await medicationApi.getByPatient(pid);
+            setMedications(Array.isArray(meds) ? meds : []);
+        } catch (e) { console.error('[Dashboard] Failed to load medications:', e); }
+    };
+
+    const loadAppointments = async () => {
+        if (!pid) return;
+        try {
+            const appts = await appointmentApi.getByPatient(pid);
+            setAppointments(Array.isArray(appts) ? appts : []);
+        } catch (e) { console.error('[Dashboard] Failed to load appointments:', e); }
+    };
+
+    const loadCareTeam = async () => {
+        if (!pid) return;
+        try {
+            const info = await patientApi.getCareTeam(pid);
+            if (info?.doctorId) {
+                doctorApi.getById(info.doctorId).then(setCareDoctor).catch(() => {});
+            }
+            if (info?.nurseId) {
+                nurseApi.getById(info.nurseId).then(setCareNurse).catch(() => {});
+            }
+        } catch (e) { console.error('[Dashboard] Failed to load care team:', e); }
+    };
+
     useEffect(() => {
         loadTodayLog();
         loadHistory();
+        loadMedications();
+        loadAppointments();
+        loadCareTeam();
     }, [patientUser?._id]);
 
     // Build chart series from history
@@ -419,6 +471,33 @@ const PatientDashboard = () => {
                             </Card>
                         </Col>
                     </Row>
+                </Col>
+            </Row>
+
+            {/* ─── NEW BOTTOM ROW: Medications | Appointments | Care Team | Discharge ─── */}
+            <Row className="g-3 mt-1">
+                <Col lg={3} md={6}>
+                    <MedicationsCard
+                        patientId={pid}
+                        medications={medications}
+                        onUpdate={loadMedications}
+                    />
+                </Col>
+                <Col lg={3} md={6}>
+                    <AppointmentsCard
+                        patientId={pid}
+                        appointments={appointments}
+                        onUpdate={loadAppointments}
+                    />
+                </Col>
+                <Col lg={3} md={6}>
+                    <CareTeamCard
+                        doctor={careDoctor}
+                        nurse={careNurse}
+                    />
+                </Col>
+                <Col lg={3} md={6}>
+                    <DischargeSummaryCard patient={patientUser} />
                 </Col>
             </Row>
         </>

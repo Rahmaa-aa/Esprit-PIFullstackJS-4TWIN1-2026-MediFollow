@@ -131,11 +131,13 @@ const Header = () => {
       window.addEventListener("admin-updated", onAdminUpdated);
       window.addEventListener("doctor-updated", onDoctorUpdated);
       window.addEventListener("patient-updated", onPatientUpdated);
+      window.addEventListener("patientUserUpdated", onPatientUpdated); // from edit-patient
       window.addEventListener("nurse-updated", onNurseUpdated);
       return () => {
          window.removeEventListener("admin-updated", onAdminUpdated);
          window.removeEventListener("doctor-updated", onDoctorUpdated);
          window.removeEventListener("patient-updated", onPatientUpdated);
+         window.removeEventListener("patientUserUpdated", onPatientUpdated);
          window.removeEventListener("nurse-updated", onNurseUpdated);
       };
    }, [])
