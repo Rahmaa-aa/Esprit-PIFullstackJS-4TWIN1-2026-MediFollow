@@ -23,6 +23,17 @@ export class DepartmentController {
     return this.departmentService.getNursesForDoctor(String(user.id));
   }
 
+  /** GET /api/departments/doctor/my-doctors */
+  @UseGuards(JwtAuthGuard)
+  @Get('doctor/my-doctors')
+  async myDoctorsForDoctor(@Req() req: { user?: { id: unknown; role: string } }) {
+    const user = req.user;
+    if (!user || user.role !== 'doctor') {
+      throw new ForbiddenException('Accès réservé aux médecins');
+    }
+    return this.departmentService.getDoctorsForDoctor(String(user.id));
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('users')
   async usersByDepartment(@Query('department') department: string) {

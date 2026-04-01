@@ -129,4 +129,20 @@ export class DepartmentService {
       .exec();
     return { department: name, nurses };
   }
+
+  /** Médecins du même département (champ department sur Doctor). */
+  async getDoctorsForDoctor(currentDoctorId: string) {
+    const doctor = await this.doctorModel.findById(currentDoctorId).select('department').lean().exec();
+    if (!doctor?.department?.trim()) {
+      return { department: '', doctors: [] };
+    }
+    const name = doctor.department.trim();
+    const doctors = await this.doctorModel
+      .find({ department: name })
+      .select('-password')
+      .sort({ lastName: 1, firstName: 1 })
+      .lean()
+      .exec();
+    return { department: name, doctors };
+  }
 }

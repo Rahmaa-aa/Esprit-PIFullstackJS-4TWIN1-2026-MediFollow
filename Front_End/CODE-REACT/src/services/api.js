@@ -144,6 +144,8 @@ export const departmentApi = {
   summary: () => api.get("/departments/summary"),
   /** Médecin connecté : infirmiers du même département (JWT). */
   getMyNursesAsDoctor: () => api.get("/departments/doctor/my-nurses"),
+  /** Médecin connecté : médecins du même département (JWT). */
+  getMyDoctorsAsDoctor: () => api.get("/departments/doctor/my-doctors"),
   usersByDepartment: (department) =>
     api.get(`/departments/users?department=${encodeURIComponent(department)}`),
 };

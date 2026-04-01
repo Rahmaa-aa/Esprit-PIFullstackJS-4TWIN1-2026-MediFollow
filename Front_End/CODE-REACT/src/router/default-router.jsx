@@ -21,6 +21,7 @@ import EditDoctor from "../views/doctor/edit-doctor"
 import DoctorPrescriptions from "../views/doctor/doctor-prescriptions"
 import DoctorMyPatients from "../views/doctor/doctor-my-patients"
 import DoctorDepartmentNurses from "../views/doctor/doctor-department-nurses"
+import DoctorDepartmentDoctors from "../views/doctor/doctor-department-doctors"
 
 // Patient Page
 import AddPatient from "../views/patient/add-patient"
@@ -205,6 +206,10 @@ export const DefaultRoute = [
       {
         path: '/doctor/department-nurses',
         element: <DoctorDepartmentNurses />
+      },
+      {
+        path: '/doctor/department-doctors',
+        element: <DoctorDepartmentDoctors />
       },
 
       //  ------ Patient Route ------
