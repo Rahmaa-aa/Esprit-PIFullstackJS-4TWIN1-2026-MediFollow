@@ -322,6 +322,9 @@ export const appointmentApi = {
   getUpcoming: (patientId) => api.get(`/appointments/patient/${patientId}/upcoming`),
   /** RDV confirmés à venir (JWT médecin) */
   getUpcomingForDoctor: () => api.getWithDoctorToken('/appointments/doctor/upcoming'),
+  /** RDV confirmés pour un mois YYYY-MM (JWT médecin) — calendrier */
+  getConfirmedForDoctorMonth: (yearMonth) =>
+    api.getWithDoctorToken(`/appointments/doctor/month/${encodeURIComponent(yearMonth)}`),
   /** Demandes en attente (JWT admin / superadmin) */
   getPendingForAdmin: () => api.getWithAdminToken('/appointments/admin/pending'),
   /** RDV confirmés à venir (JWT admin / superadmin) */

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, Col, Container, Form, Row, Button, Alert, Spinner, Modal } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import { doctorAvailabilityApi } from "../../services/api";
+import { doctorAvailabilityApi, appointmentApi } from "../../services/api";
 
 function daysInMonth(yearMonth) {
   const [y, m] = yearMonth.split("-").map(Number);
@@ -82,6 +82,33 @@ const WEEK_DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
 const emptyRange = () => ({ from: "09:00", to: "12:00" });
 
+function patientLabel(p) {
+  if (p && typeof p === "object") {
+    return `${p.firstName || ""} ${p.lastName || ""}`.trim() || p.email || "Patient";
+  }
+  return "Patient";
+}
+
+/** Regroupe les RDV API par date YYYY-MM-DD pour le mois affiché. */
+function groupAppointmentsByDate(rows, ds) {
+  const map = {};
+  ds.forEach((d) => {
+    map[d] = [];
+  });
+  if (!Array.isArray(rows)) return map;
+  rows.forEach((row) => {
+    const key = normalizeDateKey(row.date);
+    if (!key || map[key] === undefined) return;
+    map[key].push({
+      _id: row._id,
+      title: row.title || "",
+      time: row.time || "",
+      patientLabel: patientLabel(row.patientId),
+    });
+  });
+  return map;
+}
+
 const DoctorAvailabilityCalendar = () => {
   const [doctorUser] = useState(() => {
     try {
@@ -103,6 +130,8 @@ const DoctorAvailabilityCalendar = () => {
   const [success, setSuccess] = useState(false);
   const [savedSummary, setSavedSummary] = useState("");
   const [modalDate, setModalDate] = useState(null);
+  /** @type {Record<string, { _id: string; title: string; time: string; patientLabel: string }[]>} */
+  const [appointmentsByDate, setAppointmentsByDate] = useState({});
 
   const dates = useMemo(() => monthDates(yearMonth), [yearMonth]);
   const cells = useMemo(() => calendarCells(yearMonth), [yearMonth]);
@@ -141,8 +170,14 @@ const DoctorAvailabilityCalendar = () => {
       setError("");
       setSuccess(false);
       try {
-        const raw = await doctorAvailabilityApi.getMyMonth(yearMonth);
-        if (!cancelled) loadMonthIntoState(raw, ds);
+        const [raw, appts] = await Promise.all([
+          doctorAvailabilityApi.getMyMonth(yearMonth),
+          appointmentApi.getConfirmedForDoctorMonth(yearMonth).catch(() => []),
+        ]);
+        if (!cancelled) {
+          loadMonthIntoState(raw, ds);
+          setAppointmentsByDate(groupAppointmentsByDate(appts, ds));
+        }
       } catch (e) {
         if (!cancelled) setError(e.message || "Chargement impossible.");
       } finally {
@@ -212,9 +247,13 @@ const DoctorAvailabilityCalendar = () => {
       await doctorAvailabilityApi.saveMyMonth(yearMonth, slots);
       setSuccess(true);
       setSavedSummary(`${slots.length} jour(s) avec plages enregistré(s).`);
-      const raw = await doctorAvailabilityApi.getMyMonth(yearMonth);
       const ds = monthDates(yearMonth);
+      const [raw, appts] = await Promise.all([
+        doctorAvailabilityApi.getMyMonth(yearMonth),
+        appointmentApi.getConfirmedForDoctorMonth(yearMonth).catch(() => []),
+      ]);
       loadMonthIntoState(raw, ds);
+      setAppointmentsByDate(groupAppointmentsByDate(appts, ds));
       setModalDate(null);
     } catch (err) {
       const msg = err.message || "Enregistrement impossible.";
@@ -230,18 +269,7 @@ const DoctorAvailabilityCalendar = () => {
     }
   };
 
-  const dayBadge = (dateKey) => {
-    const n = (rangesByDate[dateKey] || []).length;
-    if (n === 0) return null;
-    return (
-      <span
-        className="position-absolute bottom-0 start-50 translate-middle-x mb-1 badge rounded-pill"
-        style={{ fontSize: "0.65rem", background: "linear-gradient(135deg, #089bab, #0d9488)" }}
-      >
-        {n} plage{n > 1 ? "s" : ""}
-      </span>
-    );
-  };
+  const modalAppointments = modalDate ? appointmentsByDate[modalDate] || [] : [];
 
   if (!doctorUser) {
     return (
@@ -269,8 +297,9 @@ const DoctorAvailabilityCalendar = () => {
             Calendrier de disponibilités
           </h4>
           <p className="text-muted small mb-0 mt-1">
-            Cliquez un jour pour définir des <strong>plages horaires</strong> (de … à …). Chaque plage est découpée en
-            créneaux de 30 minutes pour les demandes de rendez-vous patients.
+            Les <strong>rendez-vous validés par l&apos;administration</strong> s&apos;affichent automatiquement sur chaque
+            jour. Cliquez un jour pour modifier vos <strong>plages de disponibilité</strong> (de … à …), découpées en
+            créneaux de 30 minutes pour les nouvelles demandes.
           </p>
         </Col>
       </Row>
@@ -351,30 +380,65 @@ const DoctorAvailabilityCalendar = () => {
                           );
                         }
                         const isToday = dateKey === localToday;
-                        const n = (rangesByDate[dateKey] || []).length;
+                        const nPlages = (rangesByDate[dateKey] || []).length;
+                        const rdv = appointmentsByDate[dateKey] || [];
                         const dayNum = parseInt(dateKey.split("-")[2], 10);
+                        const hasRdv = rdv.length > 0;
                         return (
                           <button
                             key={dateKey}
                             type="button"
-                            className={`doctor-cal-cell position-relative border-0 rounded-3 text-start p-2 w-100 ${
-                              n > 0 ? "doctor-cal-cell--active" : "bg-white"
-                            }`}
+                            className={`doctor-cal-cell border-0 rounded-3 text-start p-2 w-100 ${
+                              nPlages > 0 ? "doctor-cal-cell--active" : "bg-white"
+                            } ${hasRdv ? "doctor-cal-cell--rdv" : ""}`}
                             style={{
-                              minHeight: 96,
+                              minHeight: 112,
                               boxShadow: "0 1px 4px rgba(15,23,42,0.08)",
                               outline: isToday ? "2px solid #089bab" : undefined,
                               cursor: "pointer",
                             }}
                             onClick={() => setModalDate(dateKey)}
                           >
-                            <span
-                              className={`fw-bold ${isToday ? "text-primary" : "text-dark"}`}
-                              style={{ fontSize: "1.05rem" }}
-                            >
-                              {dayNum}
-                            </span>
-                            {dayBadge(dateKey)}
+                            <div className="d-flex flex-column h-100" style={{ minHeight: 96 }}>
+                              <span
+                                className={`fw-bold ${isToday ? "text-primary" : "text-dark"}`}
+                                style={{ fontSize: "1.05rem" }}
+                              >
+                                {dayNum}
+                              </span>
+                              <div
+                                className="flex-grow-1 mt-1"
+                                style={{ fontSize: "0.62rem", lineHeight: 1.2, maxHeight: 44, overflow: "hidden" }}
+                              >
+                                {rdv.slice(0, 2).map((a) => (
+                                  <div key={a._id} className="text-truncate text-dark" title={`${a.time} ${a.patientLabel}`}>
+                                    <span className="text-warning me-1">●</span>
+                                    {a.time} {a.patientLabel}
+                                  </div>
+                                ))}
+                                {rdv.length > 2 && (
+                                  <div className="text-muted">+{rdv.length - 2} RDV</div>
+                                )}
+                              </div>
+                              <div className="d-flex flex-wrap gap-1 mt-auto pt-1">
+                                {nPlages > 0 && (
+                                  <span
+                                    className="badge rounded-pill"
+                                    style={{
+                                      fontSize: "0.6rem",
+                                      background: "linear-gradient(135deg, #089bab, #0d9488)",
+                                    }}
+                                  >
+                                    {nPlages} plage{nPlages > 1 ? "s" : ""}
+                                  </span>
+                                )}
+                                {hasRdv && (
+                                  <span className="badge bg-warning text-dark rounded-pill" style={{ fontSize: "0.6rem" }}>
+                                    {rdv.length} RDV
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </button>
                         );
                       })}
@@ -395,6 +459,22 @@ const DoctorAvailabilityCalendar = () => {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {modalAppointments.length > 0 && (
+            <div className="mb-4 p-3 rounded-3 border" style={{ background: "#fffbeb", borderColor: "#fcd34d" }}>
+              <div className="small fw-bold text-dark mb-2">
+                <i className="ri-calendar-check-line me-1"></i>
+                Rendez-vous confirmés (administration)
+              </div>
+              <ul className="list-unstyled mb-0 small">
+                {modalAppointments.map((a) => (
+                  <li key={a._id} className="mb-2">
+                    <span className="fw-semibold">{a.time || "—"}</span> — {a.patientLabel}
+                    {a.title && <span className="text-muted"> — {a.title}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <p className="small text-muted mb-3">
             Indiquez une ou plusieurs plages continues (ex. 09:00 → 12:00). La fin est exclusive : le dernier créneau
             commence 30 min avant l&apos;heure de fin.
@@ -445,6 +525,9 @@ const DoctorAvailabilityCalendar = () => {
       <style>{`
         .doctor-cal-cell--active {
           background: linear-gradient(160deg, #ecfdf5 0%, #f0fdfa 100%);
+        }
+        .doctor-cal-cell--rdv {
+          box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
         }
         .doctor-cal-cell:hover {
           filter: brightness(0.98);

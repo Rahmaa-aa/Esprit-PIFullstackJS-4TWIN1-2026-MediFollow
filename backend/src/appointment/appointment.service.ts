@@ -118,6 +118,30 @@ export class AppointmentService {
       .exec();
   }
 
+  /** RDV confirmés / planifiés pour un mois donné (calendrier médecin YYYY-MM). */
+  async findConfirmedByDoctorForMonth(doctorId: string, yearMonth: string) {
+    const id = normalizeDoctorId(doctorId);
+    const ym = String(yearMonth || '').trim();
+    const parts = ym.split('-');
+    if (parts.length < 2) return [];
+    const y = parseInt(parts[0], 10);
+    const mo = parseInt(parts[1], 10);
+    if (Number.isNaN(y) || Number.isNaN(mo)) return [];
+    const lastDay = new Date(y, mo, 0).getDate();
+    const start = `${y}-${String(mo).padStart(2, '0')}-01`;
+    const end = `${y}-${String(mo).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    return this.appointmentModel
+      .find({
+        doctorId: id,
+        date: { $gte: start, $lte: end },
+        status: { $in: ['confirmed', 'scheduled'] },
+      })
+      .populate('patientId', 'firstName lastName email phone')
+      .sort({ date: 1, time: 1 })
+      .lean()
+      .exec();
+  }
+
   /** RDV confirmés à venir (vue admin). */
   async findConfirmedUpcomingForAdmin() {
     const today = this.localTodayYmd();

@@ -54,6 +54,16 @@ export class AppointmentController {
     return this.appointmentService.findUpcomingByDoctor(String(req.user.id));
   }
 
+  /** RDV confirmés pour le mois affiché (calendrier médecin) — param YYYY-MM */
+  @UseGuards(JwtAuthGuard)
+  @Get('doctor/month/:yearMonth')
+  getDoctorMonth(@Req() req: { user?: { id?: string; role?: string } }, @Param('yearMonth') yearMonth: string) {
+    if (req.user?.role !== 'doctor') {
+      throw new ForbiddenException('Accès réservé aux médecins');
+    }
+    return this.appointmentService.findConfirmedByDoctorForMonth(String(req.user.id), yearMonth);
+  }
+
   @Get('patient/:id')
   getByPatient(@Param('id') id: string) {
     return this.appointmentService.getByPatient(id);
