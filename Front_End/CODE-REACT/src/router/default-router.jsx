@@ -23,6 +23,7 @@ import DoctorProfile from "../views/doctor/doctor-profile"
 import EditDoctor from "../views/doctor/edit-doctor"
 import DoctorPrescriptions from "../views/doctor/doctor-prescriptions"
 import DoctorMyPatients from "../views/doctor/doctor-my-patients"
+import DoctorPatientDossierPage from "../views/doctor/doctor-patient-dossier"
 import DoctorDepartmentNurses from "../views/doctor/doctor-department-nurses"
 import DoctorDepartmentDoctors from "../views/doctor/doctor-department-doctors"
 import DoctorAvailabilityCalendar from "../views/doctor/doctor-availability-calendar"
@@ -223,6 +224,10 @@ export const DefaultRoute = [
       {
         path: '/doctor/my-patients',
         element: <DoctorMyPatients />
+      },
+      {
+        path: '/doctor/my-patients/:patientId',
+        element: <DoctorPatientDossierPage />
       },
       {
         path: '/doctor/department-nurses',

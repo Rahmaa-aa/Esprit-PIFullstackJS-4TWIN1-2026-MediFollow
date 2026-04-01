@@ -243,7 +243,12 @@ const VerticalNav = () => {
                 <Nav.Item as="li">
                     <Link
                         to="/doctor/my-patients"
-                        className={`nav-link ${location.pathname === "/doctor/my-patients" ? "active" : ""}`}
+                        className={`nav-link ${
+                            location.pathname === "/doctor/my-patients" ||
+                            location.pathname.startsWith("/doctor/my-patients/")
+                              ? "active"
+                              : ""
+                        }`}
                     >
                         <i className="ri-user-heart-line"></i>
                         <span className="item-name">Mes patients</span>
