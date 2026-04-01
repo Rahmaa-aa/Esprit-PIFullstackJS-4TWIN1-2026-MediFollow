@@ -197,8 +197,10 @@ export const superAdminApi = {
 };
 export const healthLogApi = {
   submit: (data) => api.post('/health-logs', data),
-  getHistory: (patientId) => api.get(`/health-logs/patient/${patientId}`),
-  getLatest: (patientId) => api.get(`/health-logs/patient/${patientId}/latest`),
+  getHistory: (patientId) =>
+    api.get(`/health-logs/patient/${encodeURIComponent(String(patientId))}`),
+  getLatest: (patientId) =>
+    api.get(`/health-logs/patient/${encodeURIComponent(String(patientId))}/latest`),
 };
 
 export const medicationApi = {

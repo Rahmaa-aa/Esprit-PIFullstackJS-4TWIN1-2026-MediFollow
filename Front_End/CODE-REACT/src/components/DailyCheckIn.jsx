@@ -8,6 +8,13 @@ const localDateString = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+/** Même logique que le dashboard : id Mongo / JSON étendu { $oid } */
+function normalizePatientId(raw) {
+  if (raw == null) return undefined;
+  if (typeof raw === "object" && raw !== null && "$oid" in raw) return String(raw.$oid);
+  return String(raw);
+}
+
 const SYMPTOMS = [
   "Fatigue", "Headache", "Dizziness", "Nausea",
   "Shortness of breath", "Chest pain", "Swelling (legs/ankles)",
@@ -53,15 +60,22 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
     setLoading(true);
     setError("");
     try {
+      const pid = normalizePatientId(patientId);
+      if (!pid) {
+        setError("Session invalide : identifiant patient manquant. Reconnectez-vous.");
+        setLoading(false);
+        return;
+      }
       const cleanVitals = {};
       Object.entries(form.vitals).forEach(([k, v]) => {
         if (v !== "" && v !== null) cleanVitals[k] = Number(v);
       });
       await healthLogApi.submit({
-        patientId,
-        localDate: localDateString(), // Send local date to avoid UTC timezone bug
+        patientId: pid,
+        localDate: localDateString(),
+        recordedAt: new Date().toISOString(),
         ...form,
-        vitals: cleanVitals
+        vitals: cleanVitals,
       });
       setSuccess(true);
       setShow(false);
@@ -97,7 +111,11 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
 
           {alreadyDone || success ? (
             <div>
-              <p className="text-muted small mb-2">You've completed today's check-in.</p>
+              <p className="text-muted small mb-2">
+                {existingLog
+                  ? `Last check-in today at ${new Date(existingLog.recordedAt || existingLog.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} — you can add more readings below.`
+                  : "You've completed today's check-in."}
+              </p>
               {existingLog && (
                 <div className="row g-2 text-center">
                   {existingLog.vitals?.heartRate && (
@@ -136,7 +154,8 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
                 </div>
               )}
               <button className="btn btn-sm btn-outline-primary mt-2 w-100" onClick={() => setShow(true)}>
-                Update Today's Check-in
+                <i className="ri-add-line me-1"></i>
+                Add another check-in
               </button>
             </div>
           ) : (

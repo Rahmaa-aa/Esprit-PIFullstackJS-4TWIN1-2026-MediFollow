@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { Row, Col } from "react-bootstrap";
 import ApexCharts from 'apexcharts';
 import Card from "../../components/Card";
@@ -15,6 +15,33 @@ const localDateString = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
+
+/** Affichage du graphique vitals : fuseau GMT+1 (ex. Tunis / CET hiver) */
+const VITALS_CHART_TIMEZONE = "Africa/Tunis";
+
+function formatVitalChartAxisLabel(ms) {
+    return new Intl.DateTimeFormat("fr-FR", {
+        timeZone: VITALS_CHART_TIMEZONE,
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(new Date(ms));
+}
+
+function formatVitalChartTooltip(ms) {
+    return new Intl.DateTimeFormat("fr-FR", {
+        timeZone: VITALS_CHART_TIMEZONE,
+        weekday: "short",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZoneName: "short",
+    }).format(new Date(ms));
+}
 
 const generatePath = (path) => {
     return window.origin + import.meta.env.BASE_URL + path;
@@ -127,7 +154,7 @@ const PatientDashboard = () => {
         if (!pid) return;
         try {
             const logs = await healthLogApi.getHistory(pid);
-            setHistory(Array.isArray(logs) ? logs.slice(0, 7).reverse() : []);
+            setHistory(Array.isArray(logs) ? logs : []);
         } catch (e) {
             console.error('[Dashboard] Failed to load history:', e);
             setHistory([]);
@@ -171,8 +198,6 @@ const PatientDashboard = () => {
         loadCareTeam();
     }, [pid]);
 
-    // Build chart series from history
-    const chartDates = history.map(l => new Date(l.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
     const vitalOptions = {
         heartRate: { label: "Heart Rate (bpm)", key: "heartRate", color: "#dc3545", unit: "bpm" },
         bloodPressureSystolic: { label: "Blood Pressure Systolic (mmHg)", key: "bloodPressureSystolic", color: "#089bab", unit: "mmHg" },
@@ -181,8 +206,30 @@ const PatientDashboard = () => {
     };
 
     const selectedVital = vitalOptions[activeVital];
-    const chartData = history.map(l => l.vitals?.[selectedVital.key] ?? null);
-    const hasChartData = chartData.some(v => v !== null);
+
+    const chartSeriesPoints = useMemo(() => {
+        const key = selectedVital.key;
+        return history
+            .map((l) => {
+                const raw = l.vitals?.[key];
+                if (raw === undefined || raw === null || raw === "") return null;
+                const t = l.recordedAt || l.createdAt;
+                const ms = t ? new Date(t).getTime() : null;
+                if (ms == null || Number.isNaN(ms)) return null;
+                return { x: ms, y: Number(raw) };
+            })
+            .filter((p) => p != null && p.y != null && !Number.isNaN(p.y));
+    }, [history, activeVital, selectedVital.key]);
+
+    const hasChartData = chartSeriesPoints.length > 0;
+
+    /** Fenêtre fixe 30 jours pour l’axe X (évite le zoom sur quelques minutes si plusieurs points le même jour) */
+    const vitalChartXAxisRange = useMemo(() => {
+        const now = Date.now();
+        const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+        if (chartSeriesPoints.length === 0) return null;
+        return { min: thirtyDaysAgo, max: now };
+    }, [chartSeriesPoints]);
 
     useEffect(() => {
         if (!chartRef.current) return;
@@ -191,19 +238,34 @@ const PatientDashboard = () => {
             chartInstanceRef.current = null;
         }
         const opts = {
-            series: [{ name: selectedVital.label, data: chartData }],
-            chart: { type: 'area', height: 260, toolbar: { show: false }, animations: { enabled: true } },
+            series: [{ name: selectedVital.label, data: chartSeriesPoints }],
+            chart: { type: 'area', height: 260, toolbar: { show: false }, animations: { enabled: true }, zoom: { enabled: true } },
             colors: [selectedVital.color],
-            stroke: { curve: 'smooth', width: 3 },
+            stroke: { curve: 'smooth', width: 2 },
             fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05 } },
             dataLabels: { enabled: false },
             xaxis: {
-                categories: chartDates.length > 0 ? chartDates : ["—"],
-                labels: { style: { fontSize: '11px' } }
+                type: 'datetime',
+                ...(vitalChartXAxisRange || {}),
+                labels: {
+                    style: { fontSize: '10px' },
+                    datetimeUTC: false,
+                    formatter: (val) => {
+                        if (val == null || val === "") return "";
+                        const ms = typeof val === "number" ? val : new Date(val).getTime();
+                        if (Number.isNaN(ms)) return "";
+                        return formatVitalChartAxisLabel(ms);
+                    },
+                },
             },
             yaxis: { title: { text: selectedVital.unit }, labels: { style: { fontSize: '11px' } } },
-            markers: { size: 5, colors: [selectedVital.color], strokeWidth: 2 },
-            tooltip: { y: { formatter: (val) => val ? `${val} ${selectedVital.unit}` : "No data" } },
+            markers: { size: 4, colors: [selectedVital.color], strokeWidth: 2 },
+            tooltip: {
+                x: {
+                    formatter: (val) => formatVitalChartTooltip(val),
+                },
+                y: { formatter: (val) => (val != null ? `${val} ${selectedVital.unit}` : "No data") },
+            },
             noData: { text: "No data yet — complete a check-in!", style: { color: "#6c757d" } },
             grid: { borderColor: '#f1f1f1' },
         };
@@ -211,7 +273,7 @@ const PatientDashboard = () => {
         chart.render();
         chartInstanceRef.current = chart;
         return () => { chart.destroy(); chartInstanceRef.current = null; };
-    }, [history, activeVital]);
+    }, [chartSeriesPoints, activeVital, selectedVital.label, selectedVital.color, selectedVital.unit, vitalChartXAxisRange]);
 
     const computeAge = (dob) => {
         if (!dob) return null;
@@ -221,13 +283,16 @@ const PatientDashboard = () => {
         return age;
     };
 
+    const todayYmd = localDateString();
+    const todayLogIsToday = !!(todayLog && todayLog.date === todayYmd);
+
     const userData = {
         name: patientUser ? `${patientUser.firstName || ''} ${patientUser.lastName || ''}`.trim() || patientUser.email : "Patient",
         age: computeAge(patientUser?.dateOfBirth),
         gender: patientUser?.gender || null,
         bloodType: patientUser?.bloodType || null,
         location: [patientUser?.city, patientUser?.country].filter(Boolean).join(', ') || patientUser?.service || "—",
-        weight: patientUser?.weight || todayLog?.vitals?.weight || "—",
+        weight: patientUser?.weight || (todayLogIsToday ? todayLog?.vitals?.weight : null) || "—",
         height: patientUser?.height || "—",
         profileImage: patientUser?.profileImage?.startsWith("data:") ? patientUser.profileImage
             : patientUser?.profileImage?.startsWith("http") ? patientUser.profileImage
@@ -235,21 +300,20 @@ const PatientDashboard = () => {
             : generatePath(`/assets/images/user/11.png`)
     };
 
-    // Today's vitals
-    const v = todayLog?.vitals || {};
+    // Today's vitals (dernier relevé du jour uniquement)
+    const v = (todayLogIsToday ? todayLog : null)?.vitals || {};
     const hr = hrStatus(v.heartRate);
     const bp = bpStatus(v.bloodPressureSystolic);
     const o2 = o2Status(v.oxygenSaturation);
-    const mood = moodDisplay(todayLog?.mood);
-    const painLevel = todayLog?.painLevel ?? null;
+    const mood = moodDisplay(todayLogIsToday ? todayLog?.mood : null);
+    const painLevel = todayLogIsToday ? todayLog?.painLevel ?? null : null;
 
-    const todayYmd = localDateString();
     const activeMedications = medications.filter((m) => isMedicationCurrentTreatment(m, todayYmd));
 
     return (
         <>
             {/* Risk alert banner */}
-            {todayLog?.flagged && (
+            {todayLogIsToday && todayLog?.flagged && (
                 <div className="alert alert-danger d-flex align-items-center mb-3" role="alert">
                     <i className="ri-alert-line me-2 fs-5"></i>
                     <span><b>Attention:</b> Your vitals require follow-up — your care team has been notified.</span>
@@ -295,7 +359,7 @@ const PatientDashboard = () => {
                     {/* Daily Check-In Card */}
                     <div className="mt-3">
                         <DailyCheckIn
-                            patientId={patientUser?.id || patientUser?._id}
+                            patientId={pid}
                             existingLog={todayLog?.date === localDateString() ? todayLog : null}
                             onSubmitted={() => { loadTodayLog(); loadHistory(); }}
                         />
@@ -305,7 +369,7 @@ const PatientDashboard = () => {
                     <Card className="mt-3 border-0 shadow-sm">
                         <Card.Body>
                             <h6 className="text-primary fw-bold mb-3"><i className="ri-mental-health-line me-2"></i>Today's Wellbeing</h6>
-                            {todayLog ? (
+                            {todayLogIsToday && todayLog ? (
                                 <>
                                     <div className="d-flex justify-content-between align-items-center mb-3">
                                         <span className="text-muted small">Mood</span>
@@ -396,7 +460,7 @@ const PatientDashboard = () => {
                         <Card.Body>
                             <div className="d-flex justify-content-between align-items-center mb-3">
                                 <h6 className="text-primary fw-bold mb-0">
-                                    <i className="ri-line-chart-line me-2"></i>7-Day Vitals History
+                                    <i className="ri-line-chart-line me-2"></i>30-Day Vitals History
                                 </h6>
                                 <div className="d-flex gap-1 flex-wrap">
                                     {Object.entries(vitalOptions).map(([key, opt]) => (
@@ -412,7 +476,7 @@ const PatientDashboard = () => {
                             </div>
                             {!hasChartData && (
                                 <p className="text-muted small text-center mb-0" style={{ paddingBottom: 32 }}>
-                                    No data yet — start logging your daily check-ins to see trends here.
+                                    No data yet — log your vitals (you can add several times per day) to see trends here.
                                 </p>
                             )}
                             <div ref={chartRef}></div>
@@ -427,7 +491,7 @@ const PatientDashboard = () => {
                                     <h6 className="text-primary fw-bold mb-3">
                                         <i className="ri-shield-check-line me-2"></i>Recovery Risk Score
                                     </h6>
-                                    {todayLog ? (
+                                    {todayLogIsToday && todayLog ? (
                                         <>
                                             <div className="d-flex align-items-end gap-2 mb-2">
                                                 <h2 className="mb-0 fw-bold" style={{ color: todayLog.riskScore >= 50 ? "#dc3545" : todayLog.riskScore >= 25 ? "#fd7e14" : "#28a745" }}>
@@ -463,7 +527,13 @@ const PatientDashboard = () => {
                                             {history.slice(-4).reverse().map((log) => (
                                                 <div key={log._id} className="d-flex justify-content-between align-items-center py-1 border-bottom">
                                                     <span className="small text-muted">
-                                                        {new Date(log.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                                        {new Date(log.recordedAt || log.createdAt || log.date).toLocaleString("fr-FR", {
+                                                            timeZone: VITALS_CHART_TIMEZONE,
+                                                            day: "2-digit",
+                                                            month: "short",
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                        })}
                                                     </span>
                                                     <span className="small">
                                                         {log.vitals?.heartRate ? `❤️ ${log.vitals.heartRate} bpm` : "—"}

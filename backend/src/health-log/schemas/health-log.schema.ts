@@ -9,6 +9,10 @@ export class HealthLog extends Document {
   @Prop({ required: true, default: () => new Date().toISOString().split('T')[0] })
   date: string;
 
+  /** Moment de la saisie (plusieurs relevés possibles le même jour) */
+  @Prop({ type: Date })
+  recordedAt?: Date;
+
   @Prop({ type: Object, default: {} })
   vitals: {
     bloodPressureSystolic?: number;

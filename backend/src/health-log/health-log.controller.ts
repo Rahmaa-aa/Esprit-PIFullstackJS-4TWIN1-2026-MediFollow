@@ -1,16 +1,36 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { BadRequestException, Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { HealthLogService } from './health-log.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+
+function userIdToString(raw: unknown): string | undefined {
+  if (raw == null) return undefined;
+  if (typeof raw === 'object' && raw !== null && '$oid' in (raw as object)) {
+    return String((raw as { $oid: string }).$oid);
+  }
+  if (typeof raw === 'object' && raw !== null && 'toString' in raw) {
+    const s = (raw as { toString: () => string }).toString();
+    if (s && s !== '[object Object]') return s;
+  }
+  return String(raw);
+}
 
 @Controller('health-logs')
 export class HealthLogController {
   constructor(private healthLogService: HealthLogService) {}
 
-  // POST requires auth to identify the submitting patient
+  // POST requires auth — pour un patient connecté, l’ID vient toujours du JWT (pas du body)
   @UseGuards(JwtAuthGuard)
   @Post()
   async submit(@Request() req: any, @Body() body: any) {
-    const patientId = body.patientId || req.user?.sub || req.user?.id;
+    let patientId: string | undefined;
+    if (req.user?.role === 'patient') {
+      patientId = userIdToString(req.user?.id ?? req.user?.sub);
+    } else {
+      patientId = userIdToString(body.patientId ?? req.user?.id ?? req.user?.sub);
+    }
+    if (!patientId || patientId === 'undefined') {
+      throw new BadRequestException('Identifiant patient invalide');
+    }
     return this.healthLogService.submit(patientId, body);
   }
 

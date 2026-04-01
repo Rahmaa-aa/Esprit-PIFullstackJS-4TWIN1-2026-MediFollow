@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { HealthLog } from './schemas/health-log.schema';
 
 const computeRiskScore = (data: any): { score: number; flagged: boolean } => {
@@ -36,17 +36,33 @@ const computeRiskScore = (data: any): { score: number; flagged: boolean } => {
 export class HealthLogService {
   constructor(@InjectModel(HealthLog.name) private healthLogModel: Model<HealthLog>) {}
 
-  async submit(patientId: string, data: any) {
-    // Use the date sent by the client (local timezone), fallback to UTC date
-    const date = data.localDate || new Date().toISOString().split('T')[0];
+  private toPatientObjectId(patientId: string) {
+    const s = String(patientId).trim();
+    if (!s || !Types.ObjectId.isValid(s)) {
+      throw new BadRequestException('Identifiant patient invalide');
+    }
+    return new Types.ObjectId(s);
+  }
 
-    // One entry per day — update if already exists
-    const existing = await this.healthLogModel.findOne({ patientId, date }).exec();
+  private patientIdFilter(patientId: string) {
+    const s = String(patientId).trim();
+    if (!Types.ObjectId.isValid(s)) return { patientId: s };
+    const oid = new Types.ObjectId(s);
+    return { $or: [{ patientId: oid }, { patientId: s }] };
+  }
+
+  async submit(patientId: string, data: any) {
+    const pid = this.toPatientObjectId(patientId);
+    const date = data.localDate || new Date().toISOString().split('T')[0];
+    let recordedAt = data.recordedAt ? new Date(data.recordedAt) : new Date();
+    if (Number.isNaN(recordedAt.getTime())) recordedAt = new Date();
+
     const { score, flagged } = computeRiskScore(data);
 
     const payload = {
-      patientId,
+      patientId: pid,
       date,
+      recordedAt,
       vitals: data.vitals || {},
       symptoms: data.symptoms || [],
       painLevel: data.painLevel ?? 0,
@@ -56,25 +72,30 @@ export class HealthLogService {
       flagged,
     };
 
-    if (existing) {
-      return this.healthLogModel.findByIdAndUpdate(existing._id, { $set: payload }, { new: true }).exec();
-    }
     return this.healthLogModel.create(payload);
   }
 
+  /** Derniers 30 jours, tous les relevés (plusieurs par jour), du plus ancien au plus récent */
   async getHistory(patientId: string) {
+    const since = new Date();
+    since.setDate(since.getDate() - 30);
+    since.setHours(0, 0, 0, 0);
+    const sinceYmd = `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, '0')}-${String(since.getDate()).padStart(2, '0')}`;
+
+    const patientPart = this.patientIdFilter(patientId);
     return this.healthLogModel
-      .find({ patientId })
-      .sort({ date: -1 })
-      .limit(30)
+      .find({
+        $and: [
+          patientPart,
+          { $or: [{ createdAt: { $gte: since } }, { date: { $gte: sinceYmd } }] },
+        ],
+      })
+      .sort({ createdAt: 1, _id: 1 })
+      .limit(2000)
       .exec();
   }
 
   async getLatest(patientId: string) {
-    // Return most recent log regardless of date — let frontend check if it's today
-    return this.healthLogModel
-      .findOne({ patientId })
-      .sort({ date: -1 })
-      .exec();
+    return this.healthLogModel.findOne(this.patientIdFilter(patientId)).sort({ createdAt: -1 }).exec();
   }
 }
