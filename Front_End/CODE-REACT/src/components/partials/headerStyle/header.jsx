@@ -27,6 +27,8 @@ import user04 from "/assets/images/user/04.jpg"
 
 import user001 from "/assets/images/user/001.png"
 
+import StaffNotificationsBell from "../../StaffNotificationsBell"
+
 const generatePath = (path) => {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "") || "";
   const p = (path || "").replace(/^\/+/, "");
@@ -370,6 +372,9 @@ const Header = () => {
                            <i className={`ri-fullscreen-exit-line full-normal-screen ${isFullScreen ? '' : " d-none"}`}></i>
                         </a>
                      </Nav.Item>
+                     {(isDoctor || isNurse) ? (
+                        <StaffNotificationsBell role={isDoctor ? "doctor" : "nurse"} />
+                     ) : (
                      <Dropdown as="li" className="nav-item">
                         <Dropdown.Toggle bsPrefix=' ' as="a" to="#" className="nav-link d-none d-xl-block"
                            id="notification-drop" data-bs-toggle="dropdown">
@@ -456,6 +461,7 @@ const Header = () => {
                            </div>
                         </Dropdown.Menu>
                      </Dropdown>
+                     )}
                      <Dropdown as="li" className="nav-item">
                         <Dropdown.Toggle as="a" bsPrefix=' ' to="#" className="nav-link d-none d-xl-block"
                            id="notification-drop" data-bs-toggle="dropdown">
@@ -836,6 +842,12 @@ const Header = () => {
                            <i className={`ri-fullscreen-exit-line full-normal-screen ${isFullScreen ? '' : " d-none"}`}></i>
                         </a>
                      </Nav.Item>{" "}
+                     {(isDoctor || isNurse) ? (
+                        <StaffNotificationsBell
+                           role={isDoctor ? "doctor" : "nurse"}
+                           toggleClassName="nav-link d-block d-xl-none position-relative"
+                        />
+                     ) : (
                      <Dropdown as="li" className="nav-item">
                         <Dropdown.Toggle as="a" bsPrefix=' ' to="#" className="nav-link d-block d-xl-none "
                            id="notification-drop">
@@ -910,7 +922,8 @@ const Header = () => {
                               </div>
                            </div>
                         </Dropdown.Menu>
-                     </Dropdown>{" "}
+                     </Dropdown>
+                     )}{" "}
                      <Dropdown as="li" className="nav-item">
                         <Dropdown.Toggle as="a" bsPrefix=' ' to="#" className="nav-link d-block d-xl-none"
                            id="notification-drop">

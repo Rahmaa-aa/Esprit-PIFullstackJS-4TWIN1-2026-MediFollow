@@ -30,6 +30,36 @@ const MOODS = [
 
 const STEPS = ["Vitals", "Symptoms", "Wellbeing", "Review"];
 
+/** Plages autorisées (valeurs extrêmes mais plausibles) — contrôle min/max côté client */
+const VITAL_LIMITS = {
+  bloodPressureSystolic: { min: 40, max: 250, unit: "mmHg" },
+  bloodPressureDiastolic: { min: 20, max: 180, unit: "mmHg" },
+  heartRate: { min: 25, max: 250, unit: "bpm" },
+  temperature: { min: 30, max: 45, unit: "°C" },
+  oxygenSaturation: { min: 0, max: 100, unit: "%" },
+  weight: { min: 2, max: 400, unit: "kg" },
+};
+
+function validateVitals(vitals) {
+  const errors = {};
+  Object.entries(vitals).forEach(([key, raw]) => {
+    if (raw === "" || raw === null || raw === undefined) return;
+    const n = Number(raw);
+    if (Number.isNaN(n)) {
+      errors[key] = "Saisissez un nombre valide.";
+      return;
+    }
+    const lim = VITAL_LIMITS[key];
+    if (!lim) return;
+    if (n < lim.min) {
+      errors[key] = `Valeur minimale : ${lim.min} ${lim.unit}.`;
+    } else if (n > lim.max) {
+      errors[key] = `Valeur maximale : ${lim.max} ${lim.unit}.`;
+    }
+  });
+  return errors;
+}
+
 const defaultForm = {
   vitals: { bloodPressureSystolic: "", bloodPressureDiastolic: "", heartRate: "", temperature: "", oxygenSaturation: "", weight: "" },
   symptoms: [],
@@ -45,11 +75,31 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [vitalsErrors, setVitalsErrors] = useState({});
 
   const alreadyDone = !!existingLog;
 
-  const handleVital = (key, val) =>
+  const handleVital = (key, val) => {
+    setVitalsErrors((e) => {
+      if (!e[key]) return e;
+      const next = { ...e };
+      delete next[key];
+      return next;
+    });
     setForm((f) => ({ ...f, vitals: { ...f.vitals, [key]: val } }));
+  };
+
+  const goNextStep = () => {
+    if (step === 0) {
+      const errs = validateVitals(form.vitals);
+      if (Object.keys(errs).length > 0) {
+        setVitalsErrors(errs);
+        return;
+      }
+      setVitalsErrors({});
+    }
+    setStep((s) => s + 1);
+  };
 
   const toggleSymptom = (s) =>
     setForm((f) => ({
@@ -60,6 +110,14 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
   const handleSubmit = async () => {
     setLoading(true);
     setError("");
+    const vitalErrs = validateVitals(form.vitals);
+    if (Object.keys(vitalErrs).length > 0) {
+      setVitalsErrors(vitalErrs);
+      setStep(0);
+      setError("Corrigez les constantes hors plage avant d’envoyer le formulaire.");
+      setLoading(false);
+      return;
+    }
     try {
       const pid = normalizePatientId(patientId);
       if (!pid) {
@@ -183,7 +241,17 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
       </div>
 
       {/* Form Modal */}
-      <Modal show={show} onHide={() => setShow(false)} centered size="lg" backdrop="static">
+      <Modal
+        show={show}
+        onHide={() => {
+          setShow(false);
+          setVitalsErrors({});
+          setError("");
+        }}
+        centered
+        size="lg"
+        backdrop="static"
+      >
         <Modal.Header closeButton className="border-0 pb-0">
           <Modal.Title className="text-primary">
             <i className="ri-heart-pulse-line me-2"></i>Daily Health Check-in
@@ -208,47 +276,116 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
           {/* Step 0: Vitals */}
           {step === 0 && (
             <div>
-              <p className="text-muted small mb-3">Enter your vital measurements. Skip any you don't have.</p>
+              <p className="text-muted small mb-3">Enter your vital measurements. Skip any you don&apos;t have.</p>
+              <p className="text-muted small mb-3" style={{ fontSize: "0.8rem" }}>
+                Plages autorisées : TA {VITAL_LIMITS.bloodPressureSystolic.min}–{VITAL_LIMITS.bloodPressureSystolic.max} /{" "}
+                {VITAL_LIMITS.bloodPressureDiastolic.min}–{VITAL_LIMITS.bloodPressureDiastolic.max} mmHg · FC{" "}
+                {VITAL_LIMITS.heartRate.min}–{VITAL_LIMITS.heartRate.max} bpm · T° {VITAL_LIMITS.temperature.min}–
+                {VITAL_LIMITS.temperature.max} °C · SpO₂ {VITAL_LIMITS.oxygenSaturation.min}–
+                {VITAL_LIMITS.oxygenSaturation.max} % · Poids {VITAL_LIMITS.weight.min}–{VITAL_LIMITS.weight.max} kg
+              </p>
               <div className="row g-3">
                 <div className="col-6">
                   <label className="form-label small fw-bold">
                     <i className="ri-drop-line text-primary me-1"></i>Blood Pressure — Systolic (mmHg)
                   </label>
-                  <Form.Control type="number" placeholder="e.g. 120" value={form.vitals.bloodPressureSystolic}
-                    onChange={(e) => handleVital("bloodPressureSystolic", e.target.value)} />
+                  <Form.Control
+                    type="number"
+                    min={VITAL_LIMITS.bloodPressureSystolic.min}
+                    max={VITAL_LIMITS.bloodPressureSystolic.max}
+                    placeholder="e.g. 120"
+                    value={form.vitals.bloodPressureSystolic}
+                    isInvalid={!!vitalsErrors.bloodPressureSystolic}
+                    onChange={(e) => handleVital("bloodPressureSystolic", e.target.value)}
+                  />
+                  <Form.Control.Feedback type="invalid" className="d-block small">
+                    {vitalsErrors.bloodPressureSystolic}
+                  </Form.Control.Feedback>
                 </div>
                 <div className="col-6">
                   <label className="form-label small fw-bold">Diastolic (mmHg)</label>
-                  <Form.Control type="number" placeholder="e.g. 80" value={form.vitals.bloodPressureDiastolic}
-                    onChange={(e) => handleVital("bloodPressureDiastolic", e.target.value)} />
+                  <Form.Control
+                    type="number"
+                    min={VITAL_LIMITS.bloodPressureDiastolic.min}
+                    max={VITAL_LIMITS.bloodPressureDiastolic.max}
+                    placeholder="e.g. 80"
+                    value={form.vitals.bloodPressureDiastolic}
+                    isInvalid={!!vitalsErrors.bloodPressureDiastolic}
+                    onChange={(e) => handleVital("bloodPressureDiastolic", e.target.value)}
+                  />
+                  <Form.Control.Feedback type="invalid" className="d-block small">
+                    {vitalsErrors.bloodPressureDiastolic}
+                  </Form.Control.Feedback>
                 </div>
                 <div className="col-6">
                   <label className="form-label small fw-bold">
                     <i className="ri-heart-line text-danger me-1"></i>Heart Rate (bpm)
                   </label>
-                  <Form.Control type="number" placeholder="e.g. 75" value={form.vitals.heartRate}
-                    onChange={(e) => handleVital("heartRate", e.target.value)} />
+                  <Form.Control
+                    type="number"
+                    min={VITAL_LIMITS.heartRate.min}
+                    max={VITAL_LIMITS.heartRate.max}
+                    placeholder="e.g. 75"
+                    value={form.vitals.heartRate}
+                    isInvalid={!!vitalsErrors.heartRate}
+                    onChange={(e) => handleVital("heartRate", e.target.value)}
+                  />
+                  <Form.Control.Feedback type="invalid" className="d-block small">
+                    {vitalsErrors.heartRate}
+                  </Form.Control.Feedback>
                 </div>
                 <div className="col-6">
                   <label className="form-label small fw-bold">
                     <i className="ri-temp-hot-line text-warning me-1"></i>Temperature (°C)
                   </label>
-                  <Form.Control type="number" step="0.1" placeholder="e.g. 37.0" value={form.vitals.temperature}
-                    onChange={(e) => handleVital("temperature", e.target.value)} />
+                  <Form.Control
+                    type="number"
+                    step="0.1"
+                    min={VITAL_LIMITS.temperature.min}
+                    max={VITAL_LIMITS.temperature.max}
+                    placeholder="e.g. 37.0"
+                    value={form.vitals.temperature}
+                    isInvalid={!!vitalsErrors.temperature}
+                    onChange={(e) => handleVital("temperature", e.target.value)}
+                  />
+                  <Form.Control.Feedback type="invalid" className="d-block small">
+                    {vitalsErrors.temperature}
+                  </Form.Control.Feedback>
                 </div>
                 <div className="col-6">
                   <label className="form-label small fw-bold">
                     <i className="ri-lungs-line text-info me-1"></i>O₂ Saturation (%)
                   </label>
-                  <Form.Control type="number" placeholder="e.g. 98" value={form.vitals.oxygenSaturation}
-                    onChange={(e) => handleVital("oxygenSaturation", e.target.value)} />
+                  <Form.Control
+                    type="number"
+                    min={VITAL_LIMITS.oxygenSaturation.min}
+                    max={VITAL_LIMITS.oxygenSaturation.max}
+                    placeholder="e.g. 98"
+                    value={form.vitals.oxygenSaturation}
+                    isInvalid={!!vitalsErrors.oxygenSaturation}
+                    onChange={(e) => handleVital("oxygenSaturation", e.target.value)}
+                  />
+                  <Form.Control.Feedback type="invalid" className="d-block small">
+                    {vitalsErrors.oxygenSaturation}
+                  </Form.Control.Feedback>
                 </div>
                 <div className="col-6">
                   <label className="form-label small fw-bold">
                     <i className="ri-scales-3-line text-secondary me-1"></i>Weight (kg)
                   </label>
-                  <Form.Control type="number" step="0.1" placeholder="e.g. 72.5" value={form.vitals.weight}
-                    onChange={(e) => handleVital("weight", e.target.value)} />
+                  <Form.Control
+                    type="number"
+                    step="0.1"
+                    min={VITAL_LIMITS.weight.min}
+                    max={VITAL_LIMITS.weight.max}
+                    placeholder="e.g. 72.5"
+                    value={form.vitals.weight}
+                    isInvalid={!!vitalsErrors.weight}
+                    onChange={(e) => handleVital("weight", e.target.value)}
+                  />
+                  <Form.Control.Feedback type="invalid" className="d-block small">
+                    {vitalsErrors.weight}
+                  </Form.Control.Feedback>
                 </div>
               </div>
             </div>
@@ -343,7 +480,7 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
             {step > 0 ? "← Back" : "Cancel"}
           </button>
           {step < STEPS.length - 1 ? (
-            <button className="btn btn-primary" onClick={() => setStep(s => s + 1)}>
+            <button type="button" className="btn btn-primary" onClick={goNextStep}>
               Next →
             </button>
           ) : (

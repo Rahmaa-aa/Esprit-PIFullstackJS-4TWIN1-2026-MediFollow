@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { HealthLog } from './schemas/health-log.schema';
+import { NotificationService } from '../notification/notification.service';
 
 const computeRiskScore = (data: any): { score: number; flagged: boolean } => {
   let score = 0;
@@ -34,7 +35,10 @@ const computeRiskScore = (data: any): { score: number; flagged: boolean } => {
 
 @Injectable()
 export class HealthLogService {
-  constructor(@InjectModel(HealthLog.name) private healthLogModel: Model<HealthLog>) {}
+  constructor(
+    @InjectModel(HealthLog.name) private healthLogModel: Model<HealthLog>,
+    private notificationService: NotificationService,
+  ) {}
 
   private toPatientObjectId(patientId: string) {
     const s = String(patientId).trim();
@@ -72,7 +76,21 @@ export class HealthLogService {
       flagged,
     };
 
-    return this.healthLogModel.create(payload);
+    const doc = await this.healthLogModel.create(payload);
+
+    if (flagged) {
+      try {
+        await this.notificationService.createRiskAlertsForPatient({
+          patientId: pid,
+          healthLogId: doc._id as Types.ObjectId,
+          riskScore: score,
+        });
+      } catch (e) {
+        console.error('[HealthLog] Notification error:', e);
+      }
+    }
+
+    return doc;
   }
 
   /** Derniers 30 jours, tous les relevés (plusieurs par jour), du plus ancien au plus récent */
