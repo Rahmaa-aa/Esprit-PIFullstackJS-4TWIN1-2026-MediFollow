@@ -82,6 +82,8 @@ export class DepartmentService {
       lastName: p.lastName,
       email: p.email,
       department: p.department || p.service,
+      doctorId: p.doctorId ? String(p.doctorId) : '',
+      nurseId: p.nurseId ? String(p.nurseId) : '',
       isActive: p.isActive !== false,
     });
     const mapDoctor = (d: any) => ({

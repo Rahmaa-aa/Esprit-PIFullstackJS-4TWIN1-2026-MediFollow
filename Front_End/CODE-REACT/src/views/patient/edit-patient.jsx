@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Card from "../../components/Card";
 import { Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { useNavigate, useParams } from "react-router-dom";
-import { patientApi, doctorApi, nurseApi } from "../../services/api";
+import { patientApi } from "../../services/api";
 import { HOSPITAL_DEPARTMENTS } from "../../constants/hospitalDepartments";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
@@ -30,8 +30,6 @@ const EditPatient = () => {
   const [originalProfileImage, setOriginalProfileImage] = useState("");
   const [formData, setFormData] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [doctors, setDoctors] = useState([]);
-  const [nurses, setNurses] = useState([]);
 
   useEffect(() => {
     const fetchPatient = async () => {
@@ -56,9 +54,6 @@ const EditPatient = () => {
           altconno: data.alternateContact || "",
           service: data.service || "",
           department: data.department || data.service || "",
-          // Care team
-          doctorId: data.doctorId || "",
-          nurseId: data.nurseId || "",
           // Discharge
           admissionDate: data.admissionDate || "",
           dischargeDate: data.dischargeDate || "",
@@ -77,10 +72,6 @@ const EditPatient = () => {
       }
     };
     if (id) fetchPatient();
-
-    // Load doctors and nurses for dropdowns
-    doctorApi.getAll().then(d => setDoctors(Array.isArray(d) ? d : [])).catch(() => {});
-    nurseApi.getAll().then(n => setNurses(Array.isArray(n) ? n : [])).catch(() => {});
   }, [id]);
 
   const handleFileChange = (e) => {
@@ -137,9 +128,6 @@ const EditPatient = () => {
       department: form.department?.value,
       service: form.department?.value || form.service?.value,
       profileImage,
-      // Care team
-      doctorId: form.doctorId?.value || "",
-      nurseId: form.nurseId?.value || "",
       // Discharge info
       admissionDate: form.admissionDate?.value || "",
       dischargeDate: form.dischargeDate?.value || "",
@@ -367,32 +355,6 @@ const EditPatient = () => {
                     <Col md={6} className="form-group">
                       <Form.Label className="mb-0">Code postal :</Form.Label>
                       <Form.Control type="text" className="my-2" name="pno" placeholder="Code postal" defaultValue={formData.pno} />
-                    </Col>
-                  </Row>
-                  <hr />
-                  <h5 className="mb-3">Équipe soignante</h5>
-                  <Row className="cust-form-input">
-                    <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Médecin référent :</Form.Label>
-                      <Form.Control as="select" className="my-2" name="doctorId" defaultValue={formData.doctorId}>
-                        <option value="">— Aucun —</option>
-                        {doctors.map(d => (
-                          <option key={d._id || d.id} value={d._id || d.id}>
-                            Dr. {d.firstName} {d.lastName} {d.specialty ? `(${d.specialty})` : ""}
-                          </option>
-                        ))}
-                      </Form.Control>
-                    </Col>
-                    <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Infirmier(e) assigné(e) :</Form.Label>
-                      <Form.Control as="select" className="my-2" name="nurseId" defaultValue={formData.nurseId}>
-                        <option value="">— Aucun —</option>
-                        {nurses.map(n => (
-                          <option key={n._id || n.id} value={n._id || n.id}>
-                            {n.firstName} {n.lastName} {n.department ? `(${n.department})` : ""}
-                          </option>
-                        ))}
-                      </Form.Control>
                     </Col>
                   </Row>
                   <hr />

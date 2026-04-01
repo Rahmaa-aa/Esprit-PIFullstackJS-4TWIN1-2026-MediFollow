@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Col, Container, Row, Spinner, Table } from "react-bootstrap";
+import { Button, Col, Container, Form, Modal, Row, Spinner, Table } from "react-bootstrap";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/Card";
-import { departmentApi } from "../../services/api";
+import { departmentApi, patientApi } from "../../services/api";
 
 const ROLE_META = {
   patient: { label: "Patient", icon: "ri-user-heart-fill", variant: "info" },
@@ -25,6 +25,17 @@ const AdminDepartmentDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filterRole, setFilterRole] = useState("all");
+  const [assignModal, setAssignModal] = useState(null);
+  const [modalDoctorId, setModalDoctorId] = useState("");
+  const [modalNurseId, setModalNurseId] = useState("");
+  const [assignSaving, setAssignSaving] = useState(false);
+  const [assignError, setAssignError] = useState("");
+
+  const loadDepartmentUsers = async () => {
+    if (!name) return;
+    const res = await departmentApi.usersByDepartment(name);
+    setData(res);
+  };
 
   useEffect(() => {
     if (!name) return;
@@ -33,8 +44,7 @@ const AdminDepartmentDetail = () => {
       setError("");
       setLoading(true);
       try {
-        const res = await departmentApi.usersByDepartment(name);
-        if (!cancelled) setData(res);
+        await loadDepartmentUsers();
       } catch (e) {
         if (!cancelled) setError(e.message || "Erreur de chargement");
       } finally {
@@ -74,6 +84,41 @@ const AdminDepartmentDetail = () => {
     if (u.role === "doctor") return `/doctor/doctor-profile/${u.id}`;
     return `/nurse/nurse-profile/${u.id}`;
   };
+
+  const openAssignModal = (u) => {
+    setAssignError("");
+    setAssignModal(u);
+    setModalDoctorId(u.doctorId || "");
+    setModalNurseId(u.nurseId || "");
+  };
+
+  const closeAssignModal = () => {
+    if (assignSaving) return;
+    setAssignModal(null);
+    setAssignError("");
+  };
+
+  const handleSaveCareTeam = async (e) => {
+    e.preventDefault();
+    if (!assignModal?.id) return;
+    setAssignError("");
+    setAssignSaving(true);
+    try {
+      await patientApi.update(assignModal.id, {
+        doctorId: modalDoctorId || "",
+        nurseId: modalNurseId || "",
+      });
+      await loadDepartmentUsers();
+      setAssignModal(null);
+    } catch (err) {
+      setAssignError(err.message || "Enregistrement impossible");
+    } finally {
+      setAssignSaving(false);
+    }
+  };
+
+  const deptDoctors = data?.doctors || [];
+  const deptNurses = data?.nurses || [];
 
   return (
     <>
@@ -302,15 +347,28 @@ const AdminDepartmentDetail = () => {
                                 )}
                               </td>
                               <td className="text-end pe-4">
-                                <Button
-                                  variant="outline-primary"
-                                  size="sm"
-                                  className="rounded-pill px-3"
-                                  onClick={() => navigate(profilePath(u))}
-                                >
-                                  Voir le profil
-                                  <i className="ri-external-link-line ms-1" />
-                                </Button>
+                                <div className="d-inline-flex flex-wrap gap-2 justify-content-end">
+                                  {u.role === "patient" && (
+                                    <Button
+                                      variant="outline-secondary"
+                                      size="sm"
+                                      className="rounded-pill px-3"
+                                      onClick={() => openAssignModal(u)}
+                                    >
+                                      <i className="ri-team-line me-1" />
+                                      Assigner l&apos;équipe
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    className="rounded-pill px-3"
+                                    onClick={() => navigate(profilePath(u))}
+                                  >
+                                    Voir le profil
+                                    <i className="ri-external-link-line ms-1" />
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -324,6 +382,70 @@ const AdminDepartmentDetail = () => {
           </>
         )}
       </Container>
+
+      <Modal show={!!assignModal} onHide={closeAssignModal} centered backdrop="static">
+        <Modal.Header closeButton>
+          <Modal.Title>Équipe soignante</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleSaveCareTeam}>
+          <Modal.Body>
+            {assignModal && (
+              <>
+                <p className="text-muted small mb-3">
+                  Patient :{" "}
+                  <strong>
+                    {assignModal.firstName} {assignModal.lastName}
+                  </strong>
+                  <span className="d-block mt-1">Département : {name}</span>
+                </p>
+                {assignError && <div className="alert alert-danger py-2 small mb-3">{assignError}</div>}
+                <Form.Group className="mb-3">
+                  <Form.Label>Médecin référent</Form.Label>
+                  <Form.Select
+                    value={modalDoctorId}
+                    onChange={(e) => setModalDoctorId(e.target.value)}
+                    aria-label="Médecin référent"
+                  >
+                    <option value="">— Aucun —</option>
+                    {deptDoctors.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        Dr. {d.firstName} {d.lastName}
+                        {d.specialty ? ` · ${d.specialty}` : ""}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+                <Form.Group className="mb-0">
+                  <Form.Label>Infirmier(e)</Form.Label>
+                  <Form.Select
+                    value={modalNurseId}
+                    onChange={(e) => setModalNurseId(e.target.value)}
+                    aria-label="Infirmier ou infirmière"
+                  >
+                    <option value="">— Aucun —</option>
+                    {deptNurses.map((n) => (
+                      <option key={n.id} value={n.id}>
+                        {n.firstName} {n.lastName}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+                <p className="text-muted small mt-3 mb-0">
+                  Seuls les médecins et infirmiers rattachés à ce département sont proposés.
+                </p>
+              </>
+            )}
+          </Modal.Body>
+          <Modal.Footer className="border-0 pt-0">
+            <Button variant="outline-secondary" type="button" onClick={closeAssignModal} disabled={assignSaving}>
+              Annuler
+            </Button>
+            <Button variant="primary" type="submit" disabled={assignSaving}>
+              {assignSaving ? "Enregistrement…" : "Enregistrer"}
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
     </>
   );
 };

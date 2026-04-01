@@ -3,7 +3,7 @@ import { Col, Row } from "react-bootstrap";
 import { useParams, Link } from "react-router-dom";
 import Card from "../../components/Card";
 import FaceEnrollmentCard from "../../components/FaceEnrollmentCard";
-import { patientApi } from "../../services/api";
+import { patientApi, doctorApi, nurseApi } from "../../services/api";
 
 import img11 from "/assets/images/user/11.png";
 
@@ -14,13 +14,21 @@ const PatientProfile = () => {
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(!!id);
   const [error, setError] = useState("");
+  const [doctors, setDoctors] = useState([]);
+  const [nurses, setNurses] = useState([]);
 
   useEffect(() => {
     if (!id) return;
     const fetchPatient = async () => {
       try {
-        const data = await patientApi.getById(id);
+        const [data, dList, nList] = await Promise.all([
+          patientApi.getById(id),
+          doctorApi.getAll().catch(() => []),
+          nurseApi.getAll().catch(() => []),
+        ]);
         setPatient(data);
+        setDoctors(Array.isArray(dList) ? dList : []);
+        setNurses(Array.isArray(nList) ? nList : []);
       } catch (err) {
         setError(err.message || "Patient non trouvé");
       } finally {
@@ -29,6 +37,13 @@ const PatientProfile = () => {
     };
     fetchPatient();
   }, [id]);
+
+  const assignedDoctor = patient?.doctorId
+    ? doctors.find((d) => (d._id || d.id)?.toString() === patient.doctorId?.toString())
+    : null;
+  const assignedNurse = patient?.nurseId
+    ? nurses.find((n) => (n._id || n.id)?.toString() === patient.nurseId?.toString())
+    : null;
 
   const displayPatient = patient || {};
   const profileImg = patient?.profileImage
@@ -133,8 +148,8 @@ const PatientProfile = () => {
                   </Col>
                   <Col xs={4}>Contact alternatif :</Col>
                   <Col xs={8}>{displayPatient.alternateContact || "—"}</Col>
-                  <Col xs={4}>Service / Consultation :</Col>
-                  <Col xs={8}>{displayPatient.service || "—"}</Col>
+                  <Col xs={4}>Département / service :</Col>
+                  <Col xs={8}>{displayPatient.department || displayPatient.service || "—"}</Col>
                   <Col xs={4}>Adresse :</Col>
                   <Col xs={8}>{displayPatient.address || "—"}</Col>
                   <Col xs={4}>Ville :</Col>
@@ -145,6 +160,57 @@ const PatientProfile = () => {
                   <Col xs={8}>{displayPatient.pinCode || "—"}</Col>
                 </Row>
               </div>
+            </Card.Body>
+          </Card>
+          <Card className="mt-4">
+            <Card.Header>
+              <Card.Header.Title>
+                <h4 className="card-title mb-0">Équipe soignante</h4>
+              </Card.Header.Title>
+            </Card.Header>
+            <Card.Body>
+              <Row className="g-3">
+                <Col md={6}>
+                  <div className="border rounded-3 p-3 h-100 bg-light-subtle">
+                    <div className="text-muted small text-uppercase mb-1">Médecin référent</div>
+                    {assignedDoctor ? (
+                      <>
+                        <div className="fw-semibold">
+                          Dr. {assignedDoctor.firstName} {assignedDoctor.lastName}
+                        </div>
+                        {assignedDoctor.specialty && <div className="small text-muted">{assignedDoctor.specialty}</div>}
+                        {assignedDoctor.email && (
+                          <a href={`mailto:${assignedDoctor.email}`} className="small d-inline-block mt-1">
+                            {assignedDoctor.email}
+                          </a>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-muted">Non assigné</span>
+                    )}
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className="border rounded-3 p-3 h-100 bg-light-subtle">
+                    <div className="text-muted small text-uppercase mb-1">Infirmier(e)</div>
+                    {assignedNurse ? (
+                      <>
+                        <div className="fw-semibold">
+                          {assignedNurse.firstName} {assignedNurse.lastName}
+                        </div>
+                        {assignedNurse.department && <div className="small text-muted">{assignedNurse.department}</div>}
+                        {assignedNurse.email && (
+                          <a href={`mailto:${assignedNurse.email}`} className="small d-inline-block mt-1">
+                            {assignedNurse.email}
+                          </a>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-muted">Non assigné(e)</span>
+                    )}
+                  </div>
+                </Col>
+              </Row>
             </Card.Body>
           </Card>
         </Col>

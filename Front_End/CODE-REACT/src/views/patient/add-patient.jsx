@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Card from "../../components/Card";
 import { Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { patientApi } from "../../services/api";
+import { patientApi, doctorApi, nurseApi } from "../../services/api";
 import { HOSPITAL_DEPARTMENTS } from "../../constants/hospitalDepartments";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
@@ -26,6 +26,31 @@ const AddPatient = () => {
   const [error, setError] = useState("");
   const [profilePreview, setProfilePreview] = useState(generatePath("/assets/images/user/11.png"));
   const [selectedCountry, setSelectedCountry] = useState(null);
+  const [doctors, setDoctors] = useState([]);
+  const [nurses, setNurses] = useState([]);
+  const [patientDepartment, setPatientDepartment] = useState("");
+
+  useEffect(() => {
+    doctorApi.getAll().then((d) => setDoctors(Array.isArray(d) ? d : [])).catch(() => setDoctors([]));
+    nurseApi.getAll().then((n) => setNurses(Array.isArray(n) ? n : [])).catch(() => setNurses([]));
+  }, []);
+
+  const doctorsForSelect = useMemo(() => {
+    if (!patientDepartment) return doctors;
+    const match = doctors.filter((d) => d.department === patientDepartment);
+    return match.length ? match : doctors;
+  }, [doctors, patientDepartment]);
+
+  const nursesForSelect = useMemo(() => {
+    if (!patientDepartment) return nurses;
+    const match = nurses.filter((n) => n.department === patientDepartment);
+    return match.length ? match : nurses;
+  }, [nurses, patientDepartment]);
+
+  const showDeptHint =
+    patientDepartment &&
+    doctors.length > 0 &&
+    !doctors.some((d) => d.department === patientDepartment);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -80,6 +105,8 @@ const AddPatient = () => {
         alternateContact: form.altconno?.value,
         department: form.department?.value,
         service: form.department?.value || form.service?.value,
+        doctorId: form.doctorId?.value || undefined,
+        nurseId: form.nurseId?.value || undefined,
         password,
         profileImage,
       });
@@ -142,7 +169,14 @@ const AddPatient = () => {
                 </Form.Group>
                 <Form.Group className="form-group cust-form-input">
                   <Form.Label className="mb-0">Département hospitalier :</Form.Label>
-                  <Form.Control as="select" className="my-2" name="department" required>
+                  <Form.Control
+                    as="select"
+                    className="my-2"
+                    name="department"
+                    required
+                    value={patientDepartment}
+                    onChange={(e) => setPatientDepartment(e.target.value)}
+                  >
                     <option value="">Sélectionner un département</option>
                     {HOSPITAL_DEPARTMENTS.map((s) => (
                       <option key={s} value={s}>{s}</option>
@@ -240,6 +274,43 @@ const AddPatient = () => {
                     <Col md={6} className="form-group">
                       <Form.Label className="mb-0">Code postal :</Form.Label>
                       <Form.Control type="text" className="my-2" name="pno" placeholder="Code postal" />
+                    </Col>
+                  </Row>
+                  <hr />
+                  <h5 className="mb-3">Équipe soignante</h5>
+                  <p className="text-muted small mb-3">
+                    Assignez le médecin et l’infirmier(e) qui suivent ce patient (recommandé : même département que le patient).
+                  </p>
+                  {showDeptHint && (
+                    <div className="alert alert-info py-2 small mb-3">
+                      Aucun médecin n’est listé avec le département « {patientDepartment} » dans les listes — sélection parmi tous les médecins.
+                    </div>
+                  )}
+                  <Row className="cust-form-input">
+                    <Col md={6} className="form-group">
+                      <Form.Label className="mb-0">Médecin référent :</Form.Label>
+                      <Form.Control as="select" className="my-2" name="doctorId" key={`doc-${patientDepartment}-${doctorsForSelect.length}`}>
+                        <option value="">— Aucun —</option>
+                        {doctorsForSelect.map((d) => (
+                          <option key={d._id || d.id} value={d._id || d.id}>
+                            Dr. {d.firstName} {d.lastName}
+                            {d.specialty ? ` (${d.specialty})` : ""}
+                            {d.department ? ` · ${d.department}` : ""}
+                          </option>
+                        ))}
+                      </Form.Control>
+                    </Col>
+                    <Col md={6} className="form-group">
+                      <Form.Label className="mb-0">Infirmier(e) assigné(e) :</Form.Label>
+                      <Form.Control as="select" className="my-2" name="nurseId" key={`nur-${patientDepartment}-${nursesForSelect.length}`}>
+                        <option value="">— Aucun —</option>
+                        {nursesForSelect.map((n) => (
+                          <option key={n._id || n.id} value={n._id || n.id}>
+                            {n.firstName} {n.lastName}
+                            {n.department ? ` · ${n.department}` : ""}
+                          </option>
+                        ))}
+                      </Form.Control>
                     </Col>
                   </Row>
                   <hr />

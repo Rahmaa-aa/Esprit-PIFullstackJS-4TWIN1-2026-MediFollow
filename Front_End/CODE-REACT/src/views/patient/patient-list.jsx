@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Col, Row, Form, InputGroup } from "react-bootstrap";
 import Card from "../../components/Card";
 import { Link } from "react-router-dom";
-import { patientApi } from "../../services/api";
+import { patientApi, doctorApi, nurseApi } from "../../services/api";
 import ConfirmActionModal from "../../components/ConfirmActionModal";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
@@ -11,6 +11,8 @@ const DEFAULT_AVATAR = generatePath("/assets/images/user/11.png");
 
 const PatientList = () => {
   const [patients, setPatients] = useState([]);
+  const [doctorById, setDoctorById] = useState({});
+  const [nurseById, setNurseById] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
@@ -33,8 +35,24 @@ const PatientList = () => {
 
   const fetchPatients = async () => {
     try {
-      const data = await patientApi.getAll();
+      const [data, doctors, nurses] = await Promise.all([
+        patientApi.getAll(),
+        doctorApi.getAll().catch(() => []),
+        nurseApi.getAll().catch(() => []),
+      ]);
       setPatients(data);
+      const dMap = {};
+      (Array.isArray(doctors) ? doctors : []).forEach((d) => {
+        const id = (d._id || d.id)?.toString();
+        if (id) dMap[id] = d;
+      });
+      const nMap = {};
+      (Array.isArray(nurses) ? nurses : []).forEach((n) => {
+        const id = (n._id || n.id)?.toString();
+        if (id) nMap[id] = n;
+      });
+      setDoctorById(dMap);
+      setNurseById(nMap);
       setError("");
     } catch (err) {
       setError(err.message || "Erreur lors du chargement des patients");
@@ -211,11 +229,29 @@ const PatientList = () => {
                 </div>
                 <div className="doc-info mt-3">
                   <h4>{patient.firstName} {patient.lastName}</h4>
-                  <p className="mb-0">{patient.service || "—"}</p>
+                  <p className="mb-0">{patient.department || patient.service || "—"}</p>
                   <a href={`mailto:${patient.email}`}>{patient.email}</a>
                 </div>
-                <div className="iq-doc-description mt-2">
+                <div className="iq-doc-description mt-2 text-start small px-2">
+                  <p className="mb-1">
+                    <i className="ri-stethoscope-line text-success me-1" />
+                    <span className="text-muted">Médecin : </span>
+                    {(() => {
+                      const id = patient.doctorId?.toString();
+                      const d = id && doctorById[id];
+                      return d ? `Dr. ${d.firstName} ${d.lastName}` : "—";
+                    })()}
+                  </p>
                   <p className="mb-0">
+                    <i className="ri-nurse-line text-warning me-1" />
+                    <span className="text-muted">Infirmier(e) : </span>
+                    {(() => {
+                      const id = patient.nurseId?.toString();
+                      const n = id && nurseById[id];
+                      return n ? `${n.firstName} ${n.lastName}` : "—";
+                    })()}
+                  </p>
+                  <p className="mb-0 mt-2">
                     {patient.phone || "—"}
                   </p>
                 </div>

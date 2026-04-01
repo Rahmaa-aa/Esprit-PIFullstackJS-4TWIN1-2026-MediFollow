@@ -22,10 +22,11 @@ export class PatientService {
     const plainPassword = data.password;
     const hashed = await bcrypt.hash(plainPassword, 10);
 
-    const patient = await this.patientModel.create({
-      ...data,
-      password: hashed,
-    });
+    const createPayload: any = { ...data, password: hashed };
+    if (!createPayload.doctorId) delete createPayload.doctorId;
+    if (!createPayload.nurseId) delete createPayload.nurseId;
+
+    const patient = await this.patientModel.create(createPayload);
 
     try {
       await this.emailService.sendPatientCredentials(
@@ -86,7 +87,21 @@ export class PatientService {
     } else {
       delete updateData.password;
     }
-    const updated = await this.patientModel.findByIdAndUpdate(id, { $set: updateData }, { new: true }).select('-password').exec();
+
+    const $unset: Record<string, 1> = {};
+    if (Object.prototype.hasOwnProperty.call(data, 'doctorId') && !data.doctorId) {
+      delete updateData.doctorId;
+      $unset.doctorId = 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(data, 'nurseId') && !data.nurseId) {
+      delete updateData.nurseId;
+      $unset.nurseId = 1;
+    }
+
+    const mongoUpdate: Record<string, unknown> = { $set: updateData };
+    if (Object.keys($unset).length) mongoUpdate.$unset = $unset;
+
+    const updated = await this.patientModel.findByIdAndUpdate(id, mongoUpdate, { new: true }).select('-password').exec();
     return updated;
   }
 
