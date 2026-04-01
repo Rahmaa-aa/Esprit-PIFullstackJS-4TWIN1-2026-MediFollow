@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { StaffNotification } from './schemas/notification.schema';
 import { Patient } from '../patient/schemas/patient.schema';
 import { Appointment } from '../appointment/schemas/appointment.schema';
+import { User } from '../auth/schemas/user.schema';
 import {
   appointmentDateTimeLocal,
   formatApptLineFr,
@@ -12,7 +13,7 @@ import {
   appointmentIdString,
 } from './notification-appointments.helper';
 
-type RecipientRole = 'doctor' | 'nurse' | 'patient';
+type RecipientRole = 'doctor' | 'nurse' | 'patient' | 'admin';
 
 @Injectable()
 export class NotificationService {
@@ -20,6 +21,7 @@ export class NotificationService {
     @InjectModel(StaffNotification.name) private notificationModel: Model<StaffNotification>,
     @InjectModel(Patient.name) private patientModel: Model<Patient>,
     @InjectModel(Appointment.name) private appointmentModel: Model<Appointment>,
+    @InjectModel(User.name) private userModel: Model<User>,
   ) {}
 
   async createRiskAlertsForPatient(params: {
@@ -114,6 +116,63 @@ export class NotificationService {
       appointmentId: appt._id,
       read: false,
     });
+  }
+
+  /** Demande de RDV patient (statut pending) — notifie tous les admins / super-admins actifs. */
+  async notifyAdminsAppointmentRequest(appt: {
+    _id: Types.ObjectId;
+    patientId: Types.ObjectId;
+    doctorId?: string;
+    doctorName?: string;
+    title?: string;
+    date?: string;
+    time?: string;
+    requestedDate?: string;
+    requestedTime?: string;
+  }) {
+    const admins = await this.userModel
+      .find({ role: { $in: ['admin', 'superadmin'] }, isActive: true })
+      .select('_id')
+      .lean()
+      .exec();
+    if (!admins.length) return;
+
+    const patient = await this.patientModel.findById(appt.patientId).select('firstName lastName email').lean().exec();
+    const patientName = patient
+      ? `${(patient as any).firstName || ''} ${(patient as any).lastName || ''}`.trim() || (patient as any).email || 'Patient'
+      : 'Patient';
+
+    const titleMed = appt.title || 'Demande de rendez-vous';
+    const line = formatApptLineFr(
+      String(appt.requestedDate || appt.date || ''),
+      String(appt.requestedTime || appt.time || ''),
+    );
+    const doctorLine = appt.doctorName ? ` · Dr. ${appt.doctorName}` : '';
+
+    for (const a of admins) {
+      const rid = String((a as { _id: Types.ObjectId })._id);
+      const dup = await this.notificationModel
+        .findOne({
+          recipientId: rid,
+          recipientRole: 'admin',
+          type: 'appointment_request',
+          appointmentId: appt._id,
+        })
+        .exec();
+      if (dup) continue;
+
+      await this.notificationModel.create({
+        recipientId: rid,
+        recipientRole: 'admin',
+        type: 'appointment_request',
+        title: `Nouvelle demande de RDV — ${patientName}`,
+        body: `${titleMed} · ${line}${doctorLine}`,
+        patientId: appt.patientId,
+        patientName,
+        appointmentId: appt._id,
+        read: false,
+      });
+    }
   }
 
   private localTodayYmd(): string {
@@ -244,9 +303,10 @@ export class NotificationService {
   }
 
   async getMergedNotifications(userId: string, role: RecipientRole) {
+    const withVirtuals = role === 'doctor' || role === 'patient';
     const [dbItems, virtuals, unreadDb] = await Promise.all([
       this.listForUser(userId, role),
-      role === 'nurse' ? Promise.resolve([]) : this.buildAppointment24hVirtuals(userId, role),
+      withVirtuals ? this.buildAppointment24hVirtuals(userId, role) : Promise.resolve([]),
       this.countUnread(userId, role),
     ]);
 

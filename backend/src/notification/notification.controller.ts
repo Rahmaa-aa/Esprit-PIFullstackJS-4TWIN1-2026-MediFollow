@@ -8,6 +8,14 @@ function staffId(req: { user?: { id?: unknown; role?: string } }) {
   return String(u.id);
 }
 
+/** JWT admin / superadmin → rôle stocké `admin` pour les notifications. */
+function notifRole(req: { user?: { role?: string } }): 'doctor' | 'nurse' | 'patient' | 'admin' | null {
+  const r = req.user?.role;
+  if (r === 'superadmin' || r === 'admin') return 'admin';
+  if (r === 'doctor' || r === 'nurse' || r === 'patient') return r;
+  return null;
+}
+
 @Controller('notifications')
 export class NotificationController {
   constructor(private notificationService: NotificationService) {}
@@ -15,8 +23,8 @@ export class NotificationController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async myNotifications(@Request() req: { user?: { id?: unknown; role?: string } }) {
-    const role = req.user?.role;
-    if (role !== 'doctor' && role !== 'nurse' && role !== 'patient') {
+    const role = notifRole(req);
+    if (!role) {
       throw new ForbiddenException('Non autorisé');
     }
     const id = staffId(req);
@@ -26,8 +34,8 @@ export class NotificationController {
   @UseGuards(JwtAuthGuard)
   @Patch('read-all')
   async markAll(@Request() req: { user?: { id?: unknown; role?: string } }) {
-    const role = req.user?.role;
-    if (role !== 'doctor' && role !== 'nurse' && role !== 'patient') {
+    const role = notifRole(req);
+    if (!role) {
       throw new ForbiddenException();
     }
     await this.notificationService.markAllRead(staffId(req), role);
@@ -40,8 +48,8 @@ export class NotificationController {
     @Request() req: { user?: { id?: unknown; role?: string } },
     @Param('id') id: string,
   ) {
-    const role = req.user?.role;
-    if (role !== 'doctor' && role !== 'nurse' && role !== 'patient') {
+    const role = notifRole(req);
+    if (!role) {
       throw new ForbiddenException();
     }
     if (String(id).startsWith('virt-')) {

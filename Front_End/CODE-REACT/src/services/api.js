@@ -126,6 +126,86 @@ export const api = {
     return res.json().catch(() => ({}));
   },
 
+  async patchWithAdminToken(endpoint, data = {}) {
+    const token = okToken(localStorage.getItem("adminToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json().catch(() => ({}));
+  },
+
+  async patchWithDoctorToken(endpoint, data = {}) {
+    const token = okToken(localStorage.getItem("doctorToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json().catch(() => ({}));
+  },
+
+  async patchWithNurseToken(endpoint, data = {}) {
+    const token = okToken(localStorage.getItem("nurseToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json().catch(() => ({}));
+  },
+
+  async patchWithPatientToken(endpoint, data = {}) {
+    const token = okToken(localStorage.getItem("patientToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json().catch(() => ({}));
+  },
+
   async putWithAdminToken(endpoint, data) {
     const token = okToken(localStorage.getItem("adminToken"));
     const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -339,7 +419,7 @@ export const superAdminApi = {
   updateCareCoordinator: (id, data) => api.put(`/auth/care-coordinators/${id}`, data),
   deleteCareCoordinator: (id) => api.delete(`/auth/care-coordinators/${id}`),
 };
-/** Notifications (JWT médecin, infirmier ou patient). */
+/** Notifications (JWT médecin, infirmier, patient ou admin). */
 export const notificationApi = {
   getMine: () => {
     if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
@@ -348,13 +428,45 @@ export const notificationApi = {
     if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
       return api.getWithNurseToken("/notifications/me");
     }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("adminUser")) {
+      return api.getWithAdminToken("/notifications/me");
+    }
     if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
       return api.getWithPatientToken("/notifications/me");
     }
     return api.get("/notifications/me");
   },
-  markRead: (id) => api.patch(`/notifications/${encodeURIComponent(String(id))}/read`, {}),
-  markAllRead: () => api.patch("/notifications/read-all", {}),
+  markRead: (id) => {
+    const path = `/notifications/${encodeURIComponent(String(id))}/read`;
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.patchWithDoctorToken(path, {});
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.patchWithNurseToken(path, {});
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("adminUser")) {
+      return api.patchWithAdminToken(path, {});
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.patchWithPatientToken(path, {});
+    }
+    return api.patch(path, {});
+  },
+  markAllRead: () => {
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.patchWithDoctorToken("/notifications/read-all", {});
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.patchWithNurseToken("/notifications/read-all", {});
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("adminUser")) {
+      return api.patchWithAdminToken("/notifications/read-all", {});
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.patchWithPatientToken("/notifications/read-all", {});
+    }
+    return api.patch("/notifications/read-all", {});
+  },
 };
 
 export const healthLogApi = {

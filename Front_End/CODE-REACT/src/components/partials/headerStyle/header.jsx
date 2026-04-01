@@ -104,6 +104,7 @@ const Header = () => {
    const isDoctor = !!doctorUser;
    const isPatient = !!patientUser;
    const isNurse = !!nurseUser;
+   const isAdmin = !!adminUser;
    const currentUser = doctorUser || adminUser || patientUser || nurseUser;
 
    useEffect(() => {
@@ -377,6 +378,8 @@ const Header = () => {
                         <StaffNotificationsBell role={isDoctor ? "doctor" : "nurse"} />
                      ) : isPatient ? (
                         <PatientMedicationNotificationsBell />
+                     ) : isAdmin ? (
+                        <StaffNotificationsBell role="admin" />
                      ) : (
                      <Dropdown as="li" className="nav-item">
                         <Dropdown.Toggle bsPrefix=' ' as="a" to="#" className="nav-link d-none d-xl-block"
@@ -852,6 +855,8 @@ const Header = () => {
                         />
                      ) : isPatient ? (
                         <PatientMedicationNotificationsBell toggleClassName="nav-link d-block d-xl-none position-relative" />
+                     ) : isAdmin ? (
+                        <StaffNotificationsBell role="admin" toggleClassName="nav-link d-block d-xl-none position-relative" />
                      ) : (
                      <Dropdown as="li" className="nav-item">
                         <Dropdown.Toggle as="a" bsPrefix=' ' to="#" className="nav-link d-block d-xl-none "

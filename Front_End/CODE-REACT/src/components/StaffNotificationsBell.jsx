@@ -28,6 +28,7 @@ function patientLink(role, patientIdRaw) {
   const pid = patientIdFromDoc(patientIdRaw);
   if (!pid) return "#";
   if (role === "doctor") return `/doctor/my-patients/${pid}`;
+  if (role === "admin") return "/admin/appointment-requests";
   return `/dashboard`;
 }
 
@@ -41,6 +42,7 @@ function isAppointmentNotifType(type) {
 
 /** Lien agenda / calendrier selon le rôle (RDV). */
 function appointmentListLink(role) {
+  if (role === "admin") return "/admin/appointment-requests";
   if (role === "doctor") return "/doctor/availability-calendar";
   return "/dashboard-pages/nurse-dashboard";
 }
@@ -48,6 +50,13 @@ function appointmentListLink(role) {
 function notifMeta(n, role) {
   const t = n.type || "";
   const id = n._id || n.id;
+  if (t === "appointment_request") {
+    return {
+      href: "/admin/appointment-requests",
+      icon: "ri-calendar-add-line",
+      iconWrapClass: "rounded-3 bg-primary-subtle text-primary border",
+    };
+  }
   if (isAppointmentNotifType(t) || isVirtualId(id)) {
     const isReminder = t === "appointment_reminder_24h";
     return {
@@ -171,11 +180,13 @@ export default function StaffNotificationsBell({
               const virt = isVirtualId(id);
               const time = formatNotifTime(n.createdAt);
               const defaultTitle =
-                n.type === "appointment_new"
-                  ? "Nouveau rendez-vous"
-                  : n.type === "appointment_reminder_24h"
-                    ? "Rappel rendez-vous"
-                    : "Alerte patient";
+                n.type === "appointment_request"
+                  ? "Demande de rendez-vous"
+                  : n.type === "appointment_new"
+                    ? "Nouveau rendez-vous"
+                    : n.type === "appointment_reminder_24h"
+                      ? "Rappel rendez-vous"
+                      : "Alerte patient";
               return (
                 <Link
                   key={String(id)}

@@ -90,6 +90,14 @@ export class AppointmentService {
       }
     }
 
+    if (status === 'pending') {
+      try {
+        await this.notificationService.notifyAdminsAppointmentRequest(doc.toObject());
+      } catch (e) {
+        console.error('[Appointment] notifyAdminsAppointmentRequest:', e);
+      }
+    }
+
     return doc;
   }
 

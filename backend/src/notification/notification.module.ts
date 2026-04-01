@@ -6,6 +6,7 @@ import { Appointment, AppointmentSchema } from '../appointment/schemas/appointme
 import { NotificationService } from './notification.service';
 import { NotificationController } from './notification.controller';
 import { AuthModule } from '../auth/auth.module';
+import { User, UserSchema } from '../auth/schemas/user.schema';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { AuthModule } from '../auth/auth.module';
       { name: StaffNotification.name, schema: StaffNotificationSchema },
       { name: Patient.name, schema: PatientSchema },
       { name: Appointment.name, schema: AppointmentSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     AuthModule,
   ],
