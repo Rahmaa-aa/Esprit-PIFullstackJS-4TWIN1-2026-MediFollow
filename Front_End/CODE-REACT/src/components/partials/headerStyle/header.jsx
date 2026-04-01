@@ -28,6 +28,7 @@ import user04 from "/assets/images/user/04.jpg"
 import user001 from "/assets/images/user/001.png"
 
 import StaffNotificationsBell from "../../StaffNotificationsBell"
+import PatientMedicationNotificationsBell from "../../PatientMedicationNotificationsBell"
 
 const generatePath = (path) => {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "") || "";
@@ -374,6 +375,8 @@ const Header = () => {
                      </Nav.Item>
                      {(isDoctor || isNurse) ? (
                         <StaffNotificationsBell role={isDoctor ? "doctor" : "nurse"} />
+                     ) : isPatient ? (
+                        <PatientMedicationNotificationsBell />
                      ) : (
                      <Dropdown as="li" className="nav-item">
                         <Dropdown.Toggle bsPrefix=' ' as="a" to="#" className="nav-link d-none d-xl-block"
@@ -847,6 +850,8 @@ const Header = () => {
                            role={isDoctor ? "doctor" : "nurse"}
                            toggleClassName="nav-link d-block d-xl-none position-relative"
                         />
+                     ) : isPatient ? (
+                        <PatientMedicationNotificationsBell toggleClassName="nav-link d-block d-xl-none position-relative" />
                      ) : (
                      <Dropdown as="li" className="nav-item">
                         <Dropdown.Toggle as="a" bsPrefix=' ' to="#" className="nav-link d-block d-xl-none "

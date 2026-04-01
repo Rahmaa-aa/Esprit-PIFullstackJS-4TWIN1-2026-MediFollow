@@ -101,6 +101,56 @@ export function remainingSlotsToday(med, dateStr) {
   return rem;
 }
 
+/** Minutes depuis minuit (heure locale). */
+export function minutesSinceMidnightLocal(d = new Date()) {
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+export function formatSlotClock(slot) {
+  if (!slot || typeof slot.h !== "number") return "";
+  return `${String(slot.h).padStart(2, "0")}:${String(slot.m ?? 0).padStart(2, "0")}`;
+}
+
+/**
+ * Créneaux du jour dont l'heure prévue est dépassée et la prise n'est pas cochée (rappel in-app).
+ * @param graceMinutes délai après l'heure théorique (évite les faux positifs à l'heure pile)
+ */
+export function getMissedMedicationSlotsToday(
+  medications,
+  now = new Date(),
+  dateStr = localDateStringYMD(),
+  graceMinutes = 1
+) {
+  const curMin = minutesSinceMidnightLocal(now);
+  const out = [];
+
+  for (const med of medications || []) {
+    if (!med?._id || !isMedicationActiveOnDate(med, dateStr)) continue;
+    if (!canMarkMedicationForDate(med, dateStr)) continue;
+
+    const freq = String(med.frequency || "").toLowerCase();
+    if (freq.includes("hebdomadaire") || freq.includes("weekly")) {
+      if (now.getDay() !== 1) continue;
+    }
+
+    const slots = getReminderSlotsForFrequency(med.frequency);
+    slots.forEach((slot, idx) => {
+      if (isSlotTaken(med, dateStr, idx)) return;
+      const slotMin = slot.h * 60 + slot.m;
+      if (curMin >= slotMin + graceMinutes) {
+        out.push({
+          med,
+          slotIndex: idx,
+          slot,
+          minutesPast: curMin - slotMin,
+        });
+      }
+    });
+  }
+  out.sort((a, b) => b.minutesPast - a.minutesPast);
+  return out;
+}
+
 /** Traitement encore affiché sur la carte : pas de date de fin, ou fin ≥ jour courant (YYYY-MM-DD). */
 export function isMedicationCurrentTreatment(med, todayYmd) {
   const end = med?.endDate ? String(med.endDate).slice(0, 10) : "";

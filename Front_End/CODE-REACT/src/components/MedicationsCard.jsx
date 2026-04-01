@@ -60,6 +60,9 @@ const MedicationsCard = ({ patientId, medications: initialMeds, onUpdate, allowA
     }
     try {
       await medicationApi.toggleTaken(id, dateStr, slotIndex, new Date().toISOString());
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("patient-medications-updated"));
+      }
       if (onUpdate) onUpdate();
     } catch (e) {
       setToggleError(e.message || "Action impossible");
@@ -86,6 +89,9 @@ const MedicationsCard = ({ patientId, medications: initialMeds, onUpdate, allowA
         endDate: "",
         notes: "",
       });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("patient-medications-updated"));
+      }
       if (onUpdate) onUpdate();
     } catch (err) {
       console.error(err);
@@ -102,7 +108,7 @@ const MedicationsCard = ({ patientId, medications: initialMeds, onUpdate, allowA
 
   return (
     <>
-      <div className="card border-0 shadow-sm" style={{ borderRadius: 14 }}>
+      <div id="patient-medications" className="card border-0 shadow-sm" style={{ borderRadius: 14 }}>
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <h6 className="text-primary fw-bold mb-0">

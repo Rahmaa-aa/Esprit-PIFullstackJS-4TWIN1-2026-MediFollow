@@ -158,6 +158,15 @@ const PatientDashboard = () => {
     }, [pid]);
 
     useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (window.location.hash !== "#patient-medications") return;
+        const t = window.setTimeout(() => {
+            document.getElementById("patient-medications")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 300);
+        return () => window.clearTimeout(t);
+    }, [pid]);
+
+    useEffect(() => {
         setActiveVital(DEFAULT_VITAL_TAB);
     }, [pid]);
 
