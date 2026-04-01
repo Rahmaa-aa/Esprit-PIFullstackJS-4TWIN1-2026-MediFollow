@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, Card, Col, Row, Spinner, Table } from "react-bootstrap";
-import { healthLogApi, medicationApi, appointmentApi } from "../../services/api";
+import { Alert, Button, Card, Col, Modal, Row, Spinner, Table } from "react-bootstrap";
+import { healthLogApi, medicationApi, appointmentApi, questionnaireApi } from "../../services/api";
 import VitalMetricTile, { hrStatus, bpStatus, o2Status, tempStatus, weightStatus } from "../../components/VitalMetricTile";
 import {
   localDateStringYMD,
@@ -54,6 +54,10 @@ function formatLogVitalsShort(log) {
   if (v.temperature != null && v.temperature !== "") parts.push(`T° ${v.temperature}`);
   if (v.weight != null && v.weight !== "") parts.push(`Poids ${v.weight} kg`);
   return parts.length ? parts.join(" · ") : "—";
+}
+
+function isQuestionnaireCompleted(status) {
+  return String(status || "").toLowerCase() === "completed";
 }
 
 function isRiskStatus(status) {
@@ -155,6 +159,20 @@ export default function DoctorPatientDossierView({ patient }) {
   const [medications, setMedications] = useState([]);
   const [healthHistory, setHealthHistory] = useState([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+  const [qsLoading, setQsLoading] = useState(false);
+  const [qsErr, setQsErr] = useState("");
+  const [qsSummary, setQsSummary] = useState(null);
+  const [qsProtocols, setQsProtocols] = useState([]);
+  const [qsTemplates, setQsTemplates] = useState([]);
+  const [dischargeInput, setDischargeInput] = useState("");
+  const [protocolPick, setProtocolPick] = useState("");
+  const [addonPick, setAddonPick] = useState("");
+  const [addonDue, setAddonDue] = useState("");
+  const [qsBusy, setQsBusy] = useState(false);
+  const [qsModalOpen, setQsModalOpen] = useState(false);
+  const [qsModalLoading, setQsModalLoading] = useState(false);
+  const [qsModalData, setQsModalData] = useState(null);
+  const [qsModalError, setQsModalError] = useState("");
 
   useEffect(() => {
     if (!patient) return;
@@ -192,6 +210,94 @@ export default function DoctorPatientDossierView({ patient }) {
       cancelled = true;
     };
   }, [patient]);
+
+  useEffect(() => {
+    if (!patient) return;
+    const pid = patient._id || patient.id;
+    if (!pid) return;
+    let cancelled = false;
+    (async () => {
+      setQsLoading(true);
+      setQsErr("");
+      try {
+        const [sum, prot, tmpl] = await Promise.all([
+          questionnaireApi.doctorPatientSummary(pid).catch(() => null),
+          questionnaireApi.doctorProtocolsForPatient(pid).catch(() => []),
+          questionnaireApi.doctorTemplatesForPatient(pid).catch(() => []),
+        ]);
+        if (cancelled) return;
+        setQsSummary(sum && typeof sum === "object" ? sum : null);
+        setQsProtocols(Array.isArray(prot) ? prot : []);
+        setQsTemplates(Array.isArray(tmpl) ? tmpl : []);
+        const dd = patient.dischargeDate ? String(patient.dischargeDate).slice(0, 10) : "";
+        setDischargeInput(dd);
+      } catch (e) {
+        if (!cancelled) setQsErr(e.message || "Questionnaires indisponibles");
+      } finally {
+        if (!cancelled) setQsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [patient]);
+
+  const assignProtocol = async () => {
+    const pid = patient?._id || patient?.id;
+    if (!pid || !protocolPick || !dischargeInput) return;
+    setQsBusy(true);
+    setQsErr("");
+    try {
+      await questionnaireApi.doctorAssignProtocol({
+        patientId: String(pid),
+        protocolTemplateId: protocolPick,
+        dischargeDate: dischargeInput,
+      });
+      const sum = await questionnaireApi.doctorPatientSummary(String(pid));
+      setQsSummary(sum);
+    } catch (e) {
+      setQsErr(e.message || "Assignation impossible");
+    } finally {
+      setQsBusy(false);
+    }
+  };
+
+  const addAddon = async () => {
+    const pid = patient?._id || patient?.id;
+    if (!pid || !addonPick) return;
+    setQsBusy(true);
+    setQsErr("");
+    try {
+      await questionnaireApi.doctorAddAddon({
+        patientId: String(pid),
+        questionnaireTemplateId: addonPick,
+        ...(addonDue ? { dueDate: addonDue } : {}),
+      });
+      const sum = await questionnaireApi.doctorPatientSummary(String(pid));
+      setQsSummary(sum);
+    } catch (e) {
+      setQsErr(e.message || "Ajout impossible");
+    } finally {
+      setQsBusy(false);
+    }
+  };
+
+  const openSubmissionAnswers = async (submissionId) => {
+    const pid = patient?._id || patient?.id;
+    if (!pid || !submissionId) return;
+    setQsModalOpen(true);
+    setQsModalLoading(true);
+    setQsModalError("");
+    setQsModalData(null);
+    try {
+      const d = await questionnaireApi.doctorGetSubmission(String(pid), submissionId);
+      setQsModalData(d && typeof d === "object" ? d : null);
+    } catch (e) {
+      setQsModalError(e.message || "Impossible de charger les réponses");
+    } finally {
+      setQsModalLoading(false);
+    }
+  };
 
   const vSummary = latestLog?.vitals || {};
   const hr = hrStatus(vSummary.heartRate);
@@ -522,6 +628,132 @@ export default function DoctorPatientDossierView({ patient }) {
             )}
           </SectionCard>
 
+          <SectionCard icon="ri-draft-line" title="Protocole & questionnaires (post-sortie)">
+            {qsLoading && (
+              <p className="text-muted small mb-0">
+                <Spinner animation="border" size="sm" className="me-2" />
+                Chargement…
+              </p>
+            )}
+            {qsErr && (
+              <Alert variant="warning" className="py-2 mb-3">
+                {qsErr}
+              </Alert>
+            )}
+            {!qsLoading && (
+              <>
+                <p className="text-muted small mb-3">
+                  Assignez le <strong>protocole standard</strong> du département (jalons J+3, J+7, …) à partir de la date de sortie. Ajoutez un{" "}
+                  <strong>questionnaire complémentaire</strong> si besoin (ex. comorbidité).
+                </p>
+                <Row className="g-3 mb-4">
+                  <Col md={4}>
+                    <label className="small text-muted d-block mb-1">Date de sortie (ancrage)</label>
+                    <input
+                      type="date"
+                      className="form-control form-control-sm"
+                      value={dischargeInput}
+                      onChange={(e) => setDischargeInput(e.target.value)}
+                    />
+                  </Col>
+                  <Col md={5}>
+                    <label className="small text-muted d-block mb-1">Protocole</label>
+                    <select className="form-select form-select-sm" value={protocolPick} onChange={(e) => setProtocolPick(e.target.value)}>
+                      <option value="">— Choisir —</option>
+                      {qsProtocols.map((p) => (
+                        <option key={p._id} value={p._id}>
+                          {p.name} ({(p.milestones || []).map((m) => `J+${m.dayOffset}`).join(", ")})
+                        </option>
+                      ))}
+                    </select>
+                  </Col>
+                  <Col md={3} className="d-flex align-items-end">
+                    <button type="button" className="btn btn-primary btn-sm w-100" disabled={qsBusy || !protocolPick || !dischargeInput} onClick={assignProtocol}>
+                      Assigner le protocole
+                    </button>
+                  </Col>
+                </Row>
+                <Row className="g-3 mb-4 pb-3 border-bottom border-light">
+                  <Col md={5}>
+                    <label className="small text-muted d-block mb-1">Questionnaire complémentaire</label>
+                    <select className="form-select form-select-sm" value={addonPick} onChange={(e) => setAddonPick(e.target.value)}>
+                      <option value="">— Optionnel —</option>
+                      {qsTemplates.map((t) => (
+                        <option key={t._id} value={t._id}>
+                          {t.title}
+                        </option>
+                      ))}
+                    </select>
+                  </Col>
+                  <Col md={4}>
+                    <label className="small text-muted d-block mb-1">Échéance</label>
+                    <input type="date" className="form-control form-control-sm" value={addonDue} onChange={(e) => setAddonDue(e.target.value)} />
+                  </Col>
+                  <Col md={3} className="d-flex align-items-end">
+                    <button type="button" className="btn btn-outline-primary btn-sm w-100" disabled={qsBusy || !addonPick} onClick={addAddon}>
+                      Ajouter
+                    </button>
+                  </Col>
+                </Row>
+                {qsSummary?.assignment && (
+                  <div className="small">
+                    <div className="fw-semibold mb-2">Protocole actif — sortie le {qsSummary.assignment.dischargeDate}</div>
+                    <ul className="list-unstyled mb-0">
+                      {(qsSummary.assignment.milestones || []).map((m, i) => (
+                        <li key={m.submissionId || `m-${i}`} className="mb-2 d-flex flex-wrap align-items-center gap-2">
+                          <span>
+                            <span className="badge bg-light text-dark border me-2">J+{m.dayOffset}</span>
+                            {m.questionnaireTitle || "Questionnaire"} — <span className="text-muted">échéance {m.dueDate}</span> —{" "}
+                            <span className="text-capitalize">{m.status}</span>
+                          </span>
+                          {isQuestionnaireCompleted(m.status) && m.submissionId && (
+                            <Button
+                              type="button"
+                              variant="outline-primary"
+                              size="sm"
+                              className="ms-auto"
+                              onClick={() => openSubmissionAnswers(m.submissionId)}
+                            >
+                              Voir réponse
+                            </Button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {qsSummary?.addons?.length > 0 && (
+                  <div className="small mt-3">
+                    <div className="fw-semibold mb-2">Compléments</div>
+                    <ul className="list-unstyled mb-0">
+                      {qsSummary.addons.map((a) => (
+                        <li key={a._id} className="mb-2 d-flex flex-wrap align-items-center gap-2">
+                          <span>
+                            {a.questionnaireTitle} — {a.dueDate} — <span className="text-capitalize">{a.status}</span>
+                          </span>
+                          {isQuestionnaireCompleted(a.status) && a.submissionId && (
+                            <Button
+                              type="button"
+                              variant="outline-primary"
+                              size="sm"
+                              className="ms-auto"
+                              onClick={() => openSubmissionAnswers(a.submissionId)}
+                            >
+                              Voir réponse
+                            </Button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {!qsSummary?.assignment && !qsLoading && (
+                  <p className="text-muted small mb-0">Aucun protocole assigné pour l’instant.</p>
+                )}
+              </>
+            )}
+          </SectionCard>
+
           <SectionCard icon="ri-calendar-check-line" title="Prochains rendez-vous">
             {upcomingAppointments.length === 0 ? (
               <p className="text-muted small mb-0">Aucun rendez-vous à venir enregistré.</p>
@@ -549,6 +781,49 @@ export default function DoctorPatientDossierView({ patient }) {
               </ul>
             )}
           </SectionCard>
+
+          <Modal show={qsModalOpen} onHide={() => setQsModalOpen(false)} size="lg" centered scrollable>
+            <Modal.Header closeButton>
+              <Modal.Title as="h5">Réponses du patient</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {qsModalLoading && (
+                <div className="text-center py-4">
+                  <Spinner animation="border" variant="primary" size="sm" />
+                </div>
+              )}
+              {qsModalError && (
+                <Alert variant="danger" className="mb-0 py-2">
+                  {qsModalError}
+                </Alert>
+              )}
+              {!qsModalLoading && qsModalData && (
+                <>
+                  <p className="fw-semibold text-dark mb-1">{qsModalData.questionnaireTitle || "Questionnaire"}</p>
+                  {qsModalData.submittedAt && (
+                    <p className="text-muted small mb-3">Envoyé le {formatDateTime(qsModalData.submittedAt)}</p>
+                  )}
+                  <Table bordered size="sm" className="mb-0 bg-white">
+                    <tbody>
+                      {(qsModalData.rows || []).map((r) => (
+                        <tr key={r.questionId}>
+                          <td className="text-muted" style={{ width: "42%" }}>
+                            {r.label}
+                          </td>
+                          <td className="fw-medium">{r.displayValue}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" size="sm" onClick={() => setQsModalOpen(false)}>
+                Fermer
+              </Button>
+            </Modal.Footer>
+          </Modal>
         </>
       )}
     </>

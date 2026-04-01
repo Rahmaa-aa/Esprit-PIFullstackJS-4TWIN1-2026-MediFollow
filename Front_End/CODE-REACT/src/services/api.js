@@ -341,6 +341,102 @@ export const api = {
     }
     return res.json();
   },
+
+  async postWithAdminToken(endpoint, data) {
+    const token = okToken(localStorage.getItem("adminToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data ?? {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json();
+  },
+
+  async putWithAdminToken(endpoint, data) {
+    const token = okToken(localStorage.getItem("adminToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data ?? {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json();
+  },
+
+  async deleteWithAdminToken(endpoint) {
+    const token = okToken(localStorage.getItem("adminToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "DELETE",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json().catch(() => ({}));
+  },
+
+  async postWithDoctorToken(endpoint, data) {
+    const token = okToken(localStorage.getItem("doctorToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data ?? {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json();
+  },
+
+  async postWithPatientToken(endpoint, data) {
+    const token = okToken(localStorage.getItem("patientToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data ?? {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json();
+  },
 };
 
 export const authApi = {
@@ -467,6 +563,33 @@ export const notificationApi = {
     }
     return api.patch("/notifications/read-all", {});
   },
+};
+
+/** Questionnaires & protocoles (JWT admin / médecin / patient). */
+export const questionnaireApi = {
+  adminListTemplates: () => api.getWithAdminToken("/questionnaires/admin/templates"),
+  adminCreateTemplate: (data) => api.postWithAdminToken("/questionnaires/admin/templates", data),
+  adminUpdateTemplate: (id, data) => api.putWithAdminToken(`/questionnaires/admin/templates/${encodeURIComponent(id)}`, data),
+  adminDeleteTemplate: (id) => api.deleteWithAdminToken(`/questionnaires/admin/templates/${encodeURIComponent(id)}`),
+  adminListProtocols: () => api.getWithAdminToken("/questionnaires/admin/protocols"),
+  adminCreateProtocol: (data) => api.postWithAdminToken("/questionnaires/admin/protocols", data),
+  adminUpdateProtocol: (id, data) => api.putWithAdminToken(`/questionnaires/admin/protocols/${encodeURIComponent(id)}`, data),
+  adminDeleteProtocol: (id) => api.deleteWithAdminToken(`/questionnaires/admin/protocols/${encodeURIComponent(id)}`),
+  doctorAssignProtocol: (data) => api.postWithDoctorToken("/questionnaires/doctor/assign-protocol", data),
+  doctorAddAddon: (data) => api.postWithDoctorToken("/questionnaires/doctor/add-addon", data),
+  doctorPatientSummary: (patientId) =>
+    api.getWithDoctorToken(`/questionnaires/doctor/patient/${encodeURIComponent(patientId)}/summary`),
+  doctorGetSubmission: (patientId, submissionId) =>
+    api.getWithDoctorToken(
+      `/questionnaires/doctor/patient/${encodeURIComponent(patientId)}/submission/${encodeURIComponent(submissionId)}`
+    ),
+  doctorProtocolsForPatient: (patientId) =>
+    api.getWithDoctorToken(`/questionnaires/doctor/patient/${encodeURIComponent(patientId)}/protocols`),
+  doctorTemplatesForPatient: (patientId) =>
+    api.getWithDoctorToken(`/questionnaires/doctor/patient/${encodeURIComponent(patientId)}/templates`),
+  patientPending: () => api.getWithPatientToken("/questionnaires/me/pending"),
+  patientSchedule: () => api.getWithPatientToken("/questionnaires/me/schedule"),
+  patientSubmit: (data) => api.postWithPatientToken("/questionnaires/me/submit", data),
 };
 
 export const healthLogApi = {

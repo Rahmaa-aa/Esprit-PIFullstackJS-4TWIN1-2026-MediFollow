@@ -9,6 +9,7 @@ import PatientDashboard from "../views/dashboard-pages/patient-dashboard"
 import PatientMedicationHistory from "../views/dashboard-pages/patient-medication-history"
 import PatientVitalsHistory from "../views/dashboard-pages/patient-vitals-history"
 import PatientAppointmentRequest from "../views/dashboard-pages/patient-appointment-request"
+import PatientQuestionnairesPage from "../views/dashboard-pages/patient-questionnaires"
 import NurseDashboard from "../views/dashboard-pages/nurse-dashboard"
 import Covid19Dashboard from "../views/dashboard-pages/covid-19-dashboard"
 
@@ -108,6 +109,7 @@ import AdminEditProfile from "../views/admin/admin-edit-profile"
 import AdminDepartments from "../views/admin/admin-departments"
 import AdminDepartmentDetail from "../views/admin/admin-department-detail"
 import AdminAppointmentRequests from "../views/admin/admin-appointment-requests"
+import AdminQuestionnaireBank from "../views/admin/admin-questionnaire-bank"
 import SuperAdminDashboard from "../views/super-admin/super-admin-dashboard"
 import UserList from "../views/super-admin/user-list"
 import AuditorList from "../views/super-admin/auditor-list"
@@ -172,6 +174,10 @@ export const DefaultRoute = [
       {
         path: '/dashboard-pages/patient-appointment-request',
         element: <PatientAppointmentRequest />
+      },
+      {
+        path: '/dashboard-pages/patient-questionnaires',
+        element: <PatientQuestionnairesPage />
       },
       {
         path: '/dashboard-pages/nurse-dashboard',
@@ -508,6 +514,10 @@ export const DefaultRoute = [
       {
         path: '/admin/appointment-requests',
         element: <AdminAppointmentRequests />
+      },
+      {
+        path: '/admin/questionnaire-bank',
+        element: <AdminQuestionnaireBank />
       },
 
       //  ------ Super Admin Routes ------

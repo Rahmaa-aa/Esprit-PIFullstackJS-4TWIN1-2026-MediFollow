@@ -197,6 +197,15 @@ const VerticalNav = () => {
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
+                    <Link
+                        to="/dashboard-pages/patient-questionnaires"
+                        className={`nav-link ${location.pathname === "/dashboard-pages/patient-questionnaires" ? "active" : ""}`}
+                    >
+                        <i className="ri-draft-line"></i>
+                        <span className="item-name">Questionnaires suivi</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
                     <Link to={`/patient/patient-profile/${patientUser?.id}`} className={`nav-link ${location.pathname === `/patient/patient-profile/${patientUser?.id}` ? "active" : ""}`}>
                         <i className="ri-user-heart-fill"></i>
                         <span className="item-name">Mon profil</span>
@@ -364,6 +373,15 @@ const VerticalNav = () => {
                             >
                                 <i className="ri-calendar-check-line"></i>
                                 <span className="item-name">Demandes RDV</span>
+                            </Link>
+                        </Nav.Item>
+                        <Nav.Item as="li">
+                            <Link
+                                to="/admin/questionnaire-bank"
+                                className={`nav-link ${location.pathname === "/admin/questionnaire-bank" ? "active" : ""}`}
+                            >
+                                <i className="ri-draft-line"></i>
+                                <span className="item-name">Banque questionnaires</span>
                             </Link>
                         </Nav.Item>
                     </>
