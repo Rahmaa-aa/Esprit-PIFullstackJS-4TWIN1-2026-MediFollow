@@ -29,6 +29,11 @@ export const tempStatus = (temp) => {
   return { label: "Normale", color: "#28a745" };
 };
 
+export const weightStatus = (w) => {
+  if (w === undefined || w === null || w === "") return { label: "Non mesuré", color: "#6c757d" };
+  return { label: "Mesuré", color: "#28a745" };
+};
+
 /** Tuile constante — style dashboard médical */
 const VitalMetricTile = ({ icon, accent, title, value, unit, status, noDataMsg }) => {
   const hasValue = value !== undefined && value !== null && value !== "";
