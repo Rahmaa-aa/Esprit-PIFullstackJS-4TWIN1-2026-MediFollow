@@ -12,6 +12,18 @@ const FREQUENCIES = [
   "Si besoin",
 ];
 
+const newLineId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+const emptyMedicationLine = () => ({
+  id: newLineId(),
+  name: "",
+  dosage: "",
+  frequency: FREQUENCIES[0],
+  startDate: "",
+  endDate: "",
+  notes: "",
+});
+
 const DoctorPrescriptions = () => {
   const [doctorUser, setDoctorUser] = useState(() => {
     try {
@@ -30,14 +42,8 @@ const DoctorPrescriptions = () => {
   const [loadingMeds, setLoadingMeds] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({
-    name: "",
-    dosage: "",
-    frequency: FREQUENCIES[0],
-    startDate: "",
-    endDate: "",
-    notes: "",
-  });
+  /** Plusieurs lignes de médicaments pour une seule ordonnance */
+  const [lines, setLines] = useState(() => [emptyMedicationLine()]);
 
   useEffect(() => {
     if (!doctorId) return;
@@ -88,6 +94,22 @@ const DoctorPrescriptions = () => {
     };
   }, [selectedPatientId]);
 
+  useEffect(() => {
+    setLines([emptyMedicationLine()]);
+  }, [selectedPatientId]);
+
+  const updateLine = (id, patch) => {
+    setLines((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  };
+
+  const addMedicationRow = () => {
+    setLines((prev) => [...prev, emptyMedicationLine()]);
+  };
+
+  const removeMedicationRow = (id) => {
+    setLines((prev) => (prev.length <= 1 ? prev : prev.filter((row) => row.id !== id)));
+  };
+
   const selectedPatient = useMemo(
     () => patients.find((p) => String(p._id || p.id) === String(selectedPatientId)),
     [patients, selectedPatientId],
@@ -95,29 +117,29 @@ const DoctorPrescriptions = () => {
 
   const handleAddMedication = async (e) => {
     e.preventDefault();
-    if (!selectedPatientId || !form.name?.trim()) return;
+    if (!selectedPatientId) return;
+    const toSave = lines.filter((row) => row.name?.trim());
+    if (toSave.length === 0) {
+      setError("Saisissez au moins un nom de médicament.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
-      await medicationApi.create({
-        patientId: selectedPatientId,
-        name: form.name.trim(),
-        dosage: form.dosage || "",
-        frequency: form.frequency,
-        startDate: form.startDate || "",
-        endDate: form.endDate || "",
-        notes: form.notes || "",
-      });
+      for (const row of toSave) {
+        await medicationApi.create({
+          patientId: selectedPatientId,
+          name: row.name.trim(),
+          dosage: row.dosage || "",
+          frequency: row.frequency,
+          startDate: row.startDate || "",
+          endDate: row.endDate || "",
+          notes: row.notes || "",
+        });
+      }
       const meds = await medicationApi.getByPatient(selectedPatientId);
       setMedications(Array.isArray(meds) ? meds : []);
-      setForm({
-        name: "",
-        dosage: "",
-        frequency: FREQUENCIES[0],
-        startDate: "",
-        endDate: "",
-        notes: "",
-      });
+      setLines([emptyMedicationLine()]);
     } catch (err) {
       setError(err.message || "Enregistrement impossible");
     } finally {
@@ -200,7 +222,7 @@ const DoctorPrescriptions = () => {
             <Card.Header className="bg-white border-bottom py-3">
               <Card.Title className="h6 mb-0">
                 <i className="ri-capsule-line text-primary me-2" />
-                Ajouter un médicament à l&apos;ordonnance
+                Nouvelle ordonnance (plusieurs médicaments)
               </Card.Title>
             </Card.Header>
             <Card.Body>
@@ -208,76 +230,114 @@ const DoctorPrescriptions = () => {
                 <p className="text-muted small mb-0">Choisissez d&apos;abord un patient à gauche.</p>
               ) : (
                 <Form onSubmit={handleAddMedication}>
-                  <Row className="g-2">
-                    <Col md={12}>
-                      <Form.Label className="small fw-semibold">Nom du médicament *</Form.Label>
-                      <Form.Control
-                        size="sm"
-                        required
-                        placeholder="ex. Metoprolol"
-                        value={form.name}
-                        onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                      />
-                    </Col>
-                    <Col md={6}>
-                      <Form.Label className="small fw-semibold">Dosage</Form.Label>
-                      <Form.Control
-                        size="sm"
-                        placeholder="ex. 50 mg"
-                        value={form.dosage}
-                        onChange={(e) => setForm((f) => ({ ...f, dosage: e.target.value }))}
-                      />
-                    </Col>
-                    <Col md={6}>
-                      <Form.Label className="small fw-semibold">Fréquence</Form.Label>
-                      <Form.Select
-                        size="sm"
-                        value={form.frequency}
-                        onChange={(e) => setForm((f) => ({ ...f, frequency: e.target.value }))}
-                      >
-                        {FREQUENCIES.map((fr) => (
-                          <option key={fr} value={fr}>
-                            {fr}
-                          </option>
-                        ))}
-                      </Form.Select>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Label className="small fw-semibold">Date de début</Form.Label>
-                      <Form.Control
-                        type="date"
-                        size="sm"
-                        value={form.startDate}
-                        onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
-                      />
-                    </Col>
-                    <Col md={6}>
-                      <Form.Label className="small fw-semibold">Date de fin</Form.Label>
-                      <Form.Control
-                        type="date"
-                        size="sm"
-                        value={form.endDate}
-                        onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
-                      />
-                    </Col>
-                    <Col md={12}>
-                      <Form.Label className="small fw-semibold">Notes</Form.Label>
-                      <Form.Control
-                        as="textarea"
-                        rows={2}
-                        size="sm"
-                        placeholder="ex. À prendre pendant les repas"
-                        value={form.notes}
-                        onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                      />
-                    </Col>
-                  </Row>
-                  <div className="d-flex justify-content-between align-items-center mt-3">
+                  {lines.map((row, index) => (
+                    <div
+                      key={row.id}
+                      className="rounded-3 border p-3 mb-3"
+                      style={{ backgroundColor: index % 2 === 0 ? "#fafbfc" : "#fff" }}
+                    >
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <span className="small fw-bold text-primary">Médicament {index + 1}</span>
+                        {lines.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline-danger"
+                            size="sm"
+                            className="py-0 px-2"
+                            onClick={() => removeMedicationRow(row.id)}
+                            aria-label={`Retirer le médicament ${index + 1}`}
+                          >
+                            <i className="ri-delete-bin-line" />
+                          </Button>
+                        )}
+                      </div>
+                      <Row className="g-2">
+                        <Col md={12}>
+                          <Form.Label className="small fw-semibold">Nom du médicament *</Form.Label>
+                          <Form.Control
+                            size="sm"
+                            placeholder="ex. Metoprolol"
+                            value={row.name}
+                            onChange={(e) => updateLine(row.id, { name: e.target.value })}
+                          />
+                        </Col>
+                        <Col md={6}>
+                          <Form.Label className="small fw-semibold">Dosage</Form.Label>
+                          <Form.Control
+                            size="sm"
+                            placeholder="ex. 50 mg"
+                            value={row.dosage}
+                            onChange={(e) => updateLine(row.id, { dosage: e.target.value })}
+                          />
+                        </Col>
+                        <Col md={6}>
+                          <Form.Label className="small fw-semibold">Fréquence</Form.Label>
+                          <Form.Select
+                            size="sm"
+                            value={row.frequency}
+                            onChange={(e) => updateLine(row.id, { frequency: e.target.value })}
+                          >
+                            {FREQUENCIES.map((fr) => (
+                              <option key={fr} value={fr}>
+                                {fr}
+                              </option>
+                            ))}
+                          </Form.Select>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Label className="small fw-semibold">Date de début</Form.Label>
+                          <Form.Control
+                            type="date"
+                            size="sm"
+                            value={row.startDate}
+                            onChange={(e) => updateLine(row.id, { startDate: e.target.value })}
+                          />
+                        </Col>
+                        <Col md={6}>
+                          <Form.Label className="small fw-semibold">Date de fin</Form.Label>
+                          <Form.Control
+                            type="date"
+                            size="sm"
+                            value={row.endDate}
+                            onChange={(e) => updateLine(row.id, { endDate: e.target.value })}
+                          />
+                        </Col>
+                        <Col md={12}>
+                          <Form.Label className="small fw-semibold">Notes</Form.Label>
+                          <Form.Control
+                            as="textarea"
+                            rows={2}
+                            size="sm"
+                            placeholder="ex. À prendre pendant les repas"
+                            value={row.notes}
+                            onChange={(e) => updateLine(row.id, { notes: e.target.value })}
+                          />
+                        </Col>
+                      </Row>
+                    </div>
+                  ))}
+
+                  <p className="text-muted small mb-2">
+                    Les lignes sans nom de médicament sont ignorées à l&apos;enregistrement.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline-primary"
+                    size="sm"
+                    className="w-100 mb-3"
+                    onClick={addMedicationRow}
+                    disabled={saving}
+                  >
+                    <i className="ri-add-line me-1" />
+                    Ajouter un autre médicament
+                  </Button>
+
+                  <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-1 border-top">
                     <span className="text-muted small">
                       Prescrit par : Dr. {doctorUser?.firstName} {doctorUser?.lastName}
                     </span>
                     <Button type="submit" size="sm" disabled={saving}>
-                      {saving ? "Enregistrement…" : "Ajouter à l'ordonnance"}
+                      {saving ? "Enregistrement…" : "Enregistrer l'ordonnance"}
                     </Button>
                   </div>
                 </Form>
