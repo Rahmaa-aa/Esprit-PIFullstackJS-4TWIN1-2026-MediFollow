@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 const generatePath = (path) => {
   if (!path) return null;
@@ -9,6 +10,8 @@ const generatePath = (path) => {
 };
 
 const CareTeamCard = ({ doctor, nurse }) => {
+  const { t } = useTranslation();
+
   const MemberCard = ({ person, role, icon, color }) => (
     <div className="d-flex align-items-center gap-3 p-3 rounded-3" style={{ backgroundColor: "#f8f9fa", border: "1px solid #e9ecef" }}>
       <div className="position-relative">
@@ -22,7 +25,7 @@ const CareTeamCard = ({ doctor, nurse }) => {
       </div>
       <div className="flex-grow-1 min-width-0">
         <div className="fw-bold small text-truncate">
-          {person ? `${person.firstName || ""} ${person.lastName || ""}`.trim() || person.email : "Not assigned"}
+          {person ? `${person.firstName || ""} ${person.lastName || ""}`.trim() || person.email : t("patientCards.careTeam.notAssigned")}
         </div>
         <div className="text-muted" style={{ fontSize: "0.72rem" }}>
           <i className={`${icon} me-1`} style={{ color }}></i>{role}
@@ -40,13 +43,13 @@ const CareTeamCard = ({ doctor, nurse }) => {
   return (
     <div className="card border-0 shadow-sm" style={{ borderRadius: 14 }}>
       <div className="card-body">
-        <h6 className="text-primary fw-bold mb-3"><i className="ri-team-line me-2"></i>My Care Team</h6>
+        <h6 className="text-primary fw-bold mb-3"><i className="ri-team-line me-2"></i>{t("patientCards.careTeam.title")}</h6>
         <div className="d-flex flex-column gap-2">
-          <MemberCard person={doctor} role="Attending Physician" icon="ri-stethoscope-line" color="#089bab" />
-          <MemberCard person={nurse} role="Assigned Nurse" icon="ri-nurse-line" color="#6f42c1" />
+          <MemberCard person={doctor} role={t("patientCards.careTeam.physician")} icon="ri-stethoscope-line" color="#089bab" />
+          <MemberCard person={nurse} role={t("patientCards.careTeam.nurse")} icon="ri-nurse-line" color="#6f42c1" />
         </div>
         {!doctor && !nurse && (
-          <p className="text-muted small text-center mt-2 mb-0">No care team assigned yet.</p>
+          <p className="text-muted small text-center mt-2 mb-0">{t("patientCards.careTeam.empty")}</p>
         )}
       </div>
     </div>

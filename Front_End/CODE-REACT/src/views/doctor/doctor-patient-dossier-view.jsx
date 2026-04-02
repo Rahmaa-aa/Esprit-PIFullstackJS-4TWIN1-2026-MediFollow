@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Alert, Badge, Button, Card, Col, Form, Modal, Row, Spinner, Table } from "react-bootstrap";
 import { healthLogApi, medicationApi, appointmentApi, questionnaireApi } from "../../services/api";
 import VitalMetricTile, { hrStatus, bpStatus, o2Status, tempStatus, weightStatus } from "../../components/VitalMetricTile";
@@ -10,6 +11,7 @@ import {
   formatSlotTimeLocal,
 } from "../../utils/medicationReminders";
 import { broadcastDoctorHealthLogResolved, subscribeDoctorHealthLogResolved } from "../../utils/healthLogResolveBroadcast";
+import { translateSymptom } from "../../utils/symptomLabels";
 import "./doctor-patient-dossier.css";
 
 const VITALS_TZ = "Africa/Tunis";
@@ -159,6 +161,7 @@ function isHealthLogResolved(log) {
 }
 
 export default function DoctorPatientDossierView({ patient }) {
+  const { t } = useTranslation();
   const location = useLocation();
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
@@ -734,7 +737,7 @@ export default function DoctorPatientDossierView({ patient }) {
                       <i className="ri-file-list-line me-1" />
                       Symptômes déclarés (dernier relevé)
                     </div>
-                    <div className="small text-dark">{latestLog.symptoms.join(", ")}</div>
+                    <div className="small text-dark">{latestLog.symptoms.map((s) => translateSymptom(s, t)).join(", ")}</div>
                   </div>
                 )}
               </>

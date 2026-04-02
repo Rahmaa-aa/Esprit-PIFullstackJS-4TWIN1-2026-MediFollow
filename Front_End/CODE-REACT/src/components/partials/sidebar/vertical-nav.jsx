@@ -1,11 +1,12 @@
 import React, { useContext, useState } from "react"
 import { Accordion, AccordionContext, Collapse, Nav, OverlayTrigger, Tooltip, useAccordionButton } from "react-bootstrap"
 import { Link, useLocation } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 
 
 
 const VerticalNav = () => {
-
+    const { t } = useTranslation()
     const location = useLocation()
     const [activeMenu, setActiveMenu] = useState(false)
     const [active, setActive] = useState('')
@@ -166,13 +167,13 @@ const VerticalNav = () => {
                 <Nav.Item as="li">
                     <Link to="/dashboard-pages/patient-dashboard" className={`nav-link ${location.pathname === "/dashboard-pages/patient-dashboard" ? "active" : ""}`}>
                         <i className="ri-hospital-fill"></i>
-                        <span className="item-name">Mon tableau de bord</span>
+                        <span className="item-name">{t("sidebar.myDashboard")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
                     <Link to="/chat" className={`nav-link ${location.pathname === "/chat" ? "active" : ""}`}>
                         <i className="ri-chat-3-line"></i>
-                        <span className="item-name">Messagerie sécurisée</span>
+                        <span className="item-name">{t("sidebar.secureMessaging")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -181,7 +182,7 @@ const VerticalNav = () => {
                         className={`nav-link ${location.pathname === "/dashboard-pages/patient-medication-history" ? "active" : ""}`}
                     >
                         <i className="ri-history-line"></i>
-                        <span className="item-name">Historique médicaments</span>
+                        <span className="item-name">{t("sidebar.medicationHistory")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -190,7 +191,7 @@ const VerticalNav = () => {
                         className={`nav-link ${location.pathname === "/dashboard-pages/patient-vitals-history" ? "active" : ""}`}
                     >
                         <i className="ri-heart-pulse-line"></i>
-                        <span className="item-name">Historique constantes</span>
+                        <span className="item-name">{t("sidebar.vitalsHistory")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -199,7 +200,7 @@ const VerticalNav = () => {
                         className={`nav-link ${location.pathname === "/dashboard-pages/patient-appointment-request" ? "active" : ""}`}
                     >
                         <i className="ri-calendar-schedule-line"></i>
-                        <span className="item-name">Demande de rendez-vous</span>
+                        <span className="item-name">{t("sidebar.appointmentRequest")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -208,13 +209,13 @@ const VerticalNav = () => {
                         className={`nav-link ${location.pathname === "/dashboard-pages/patient-questionnaires" ? "active" : ""}`}
                     >
                         <i className="ri-draft-line"></i>
-                        <span className="item-name">Questionnaires suivi</span>
+                        <span className="item-name">{t("sidebar.questionnairesFollowUp")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
                     <Link to={`/patient/patient-profile/${patientUser?.id}`} className={`nav-link ${location.pathname === `/patient/patient-profile/${patientUser?.id}` ? "active" : ""}`}>
                         <i className="ri-user-heart-fill"></i>
-                        <span className="item-name">Mon profil</span>
+                        <span className="item-name">{t("sidebar.myProfile")}</span>
                     </Link>
                 </Nav.Item>
             </ul>
@@ -227,19 +228,19 @@ const VerticalNav = () => {
                 <Nav.Item as="li">
                     <Link to="/dashboard-pages/nurse-dashboard" className={`nav-link ${location.pathname === "/dashboard-pages/nurse-dashboard" ? "active" : ""}`}>
                         <i className="ri-hospital-fill"></i>
-                        <span className="item-name">Mon tableau de bord</span>
+                        <span className="item-name">{t("sidebar.myDashboard")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
                     <Link to="/chat" className={`nav-link ${location.pathname === "/chat" ? "active" : ""}`}>
                         <i className="ri-chat-3-line"></i>
-                        <span className="item-name">Messagerie sécurisée</span>
+                        <span className="item-name">{t("sidebar.secureMessaging")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
                     <Link to={`/nurse/nurse-profile/${nurseUser?.id}`} className={`nav-link ${location.pathname === `/nurse/nurse-profile/${nurseUser?.id}` ? "active" : ""}`}>
                         <i className="ri-nurse-fill"></i>
-                        <span className="item-name">Mon profil</span>
+                        <span className="item-name">{t("sidebar.myProfile")}</span>
                     </Link>
                 </Nav.Item>
             </ul>
@@ -252,19 +253,19 @@ const VerticalNav = () => {
             <ul className="navbar-nav iq-main-menu" id="sidebar-menu">
                 <Nav.Item as="li" className="static-item ms-2">
                     <Link className="nav-link static-item disabled text-start" tabIndex="-1" to="#">
-                        <span className="default-icon">Espace médecin</span>
+                        <span className="default-icon">{t("sidebar.doctorSpace")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
                     <Link to="/dashboard" className={`nav-link ${location.pathname === "/dashboard" ? "active" : ""}`}>
                         <i className="ri-dashboard-2-fill"></i>
-                        <span className="item-name">Tableau de bord</span>
+                        <span className="item-name">{t("sidebar.dashboard")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
                     <Link to="/chat" className={`nav-link ${location.pathname === "/chat" ? "active" : ""}`}>
                         <i className="ri-chat-3-line"></i>
-                        <span className="item-name">Messagerie sécurisée</span>
+                        <span className="item-name">{t("sidebar.secureMessaging")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -278,7 +279,7 @@ const VerticalNav = () => {
                         }`}
                     >
                         <i className="ri-user-heart-line"></i>
-                        <span className="item-name">Mes patients</span>
+                        <span className="item-name">{t("sidebar.myPatients")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -287,7 +288,7 @@ const VerticalNav = () => {
                         className={`nav-link ${location.pathname === "/doctor/urgent-nurse-escalations" ? "active" : ""}`}
                     >
                         <i className="ri-alarm-warning-fill"></i>
-                        <span className="item-name">Urgences (infirmier)</span>
+                        <span className="item-name">{t("sidebar.nurseEscalations")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -296,7 +297,7 @@ const VerticalNav = () => {
                         className={`nav-link ${location.pathname === "/doctor/department-nurses" ? "active" : ""}`}
                     >
                         <i className="ri-nurse-line"></i>
-                        <span className="item-name">Infirmiers du département</span>
+                        <span className="item-name">{t("sidebar.departmentNurses")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -305,7 +306,7 @@ const VerticalNav = () => {
                         className={`nav-link ${location.pathname === "/doctor/department-doctors" ? "active" : ""}`}
                     >
                         <i className="ri-stethoscope-line"></i>
-                        <span className="item-name">Médecins du département</span>
+                        <span className="item-name">{t("sidebar.departmentDoctors")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -314,7 +315,7 @@ const VerticalNav = () => {
                         className={`nav-link ${location.pathname === "/doctor/prescriptions" ? "active" : ""}`}
                     >
                         <i className="ri-capsule-line"></i>
-                        <span className="item-name">Ordonnances</span>
+                        <span className="item-name">{t("sidebar.prescriptions")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -323,7 +324,7 @@ const VerticalNav = () => {
                         className={`nav-link ${location.pathname === "/doctor/availability-calendar" ? "active" : ""}`}
                     >
                         <i className="ri-calendar-2-line"></i>
-                        <span className="item-name">Calendrier RDV</span>
+                        <span className="item-name">{t("sidebar.appointmentCalendar")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -332,7 +333,7 @@ const VerticalNav = () => {
                         className={`nav-link ${location.pathname === `/doctor/doctor-profile/${docId}` ? "active" : ""}`}
                     >
                         <i className="ri-profile-fill"></i>
-                        <span className="item-name">Mon profil</span>
+                        <span className="item-name">{t("sidebar.myProfile")}</span>
                     </Link>
                 </Nav.Item>
             </ul>

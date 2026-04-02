@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const TYPE_COLORS = { checkup: "#089bab", lab: "#6f42c1", specialist: "#fd7e14", imaging: "#dc3545", physiotherapy: "#28a745" };
 
@@ -15,8 +16,16 @@ const daysUntil = (dateStr) => {
 };
 
 const AppointmentsCard = ({ appointments: initialAppts }) => {
+  const { t, i18n } = useTranslation();
   const [appts, setAppts] = useState(initialAppts || []);
   const [showAll, setShowAll] = useState(false);
+
+  const monthLocale = useMemo(() => {
+    const l = (i18n.language || "en").split("-")[0];
+    if (l === "ar") return "ar";
+    if (l === "fr") return "fr";
+    return "en";
+  }, [i18n.language]);
 
   useEffect(() => {
     setAppts(initialAppts || []);
@@ -37,17 +46,17 @@ const AppointmentsCard = ({ appointments: initialAppts }) => {
     <div id="patient-appointments" className="card border-0 shadow-sm" style={{ borderRadius: 14 }}>
       <div className="card-body">
         <h6 className="text-primary fw-bold mb-2">
-          <i className="ri-calendar-event-line me-2"></i>Appointments
+          <i className="ri-calendar-event-line me-2"></i>{t("patientCards.appointments.title")}
         </h6>
         <div className="mb-3">
           <Link to="/dashboard-pages/patient-appointment-request" className="small text-decoration-none">
             <i className="ri-calendar-schedule-line me-1"></i>
-            Demande de RDV (validation admin)
+            {t("patientCards.appointments.requestLink")}
           </Link>
         </div>
 
         {upcoming.length === 0 ? (
-          <p className="text-muted small text-center mb-0 py-2">No upcoming appointments.</p>
+          <p className="text-muted small text-center mb-0 py-2">{t("patientCards.appointments.empty")}</p>
         ) : (
           <>
             <div className="d-flex flex-column gap-2">
@@ -65,7 +74,7 @@ const AppointmentsCard = ({ appointments: initialAppts }) => {
                         {new Date(a.date).getDate()}
                       </div>
                       <div className="text-white" style={{ fontSize: "0.65rem", opacity: 0.9 }}>
-                        {new Date(a.date).toLocaleString("en", { month: "short" }).toUpperCase()}
+                        {new Date(a.date).toLocaleString(monthLocale, { month: "short" }).toUpperCase()}
                       </div>
                     </div>
                     <div className="flex-grow-1 min-width-0">
@@ -95,7 +104,7 @@ const AppointmentsCard = ({ appointments: initialAppts }) => {
                         {a.type}
                       </span>
                       <div className="text-muted mt-1" style={{ fontSize: "0.65rem" }}>
-                        {days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days}d`}
+                        {days === 0 ? t("patientCards.appointments.today") : days === 1 ? t("patientCards.appointments.tomorrow") : t("patientCards.appointments.inDays", { count: days })}
                       </div>
                     </div>
                   </div>
@@ -104,7 +113,7 @@ const AppointmentsCard = ({ appointments: initialAppts }) => {
             </div>
             {upcoming.length > 3 && (
               <button type="button" className="btn btn-sm btn-link text-primary p-0 mt-2" onClick={() => setShowAll(!showAll)}>
-                {showAll ? "Show less" : `Show all ${upcoming.length}`}
+                {showAll ? t("patientCards.appointments.showLess") : t("patientCards.appointments.showAll", { count: upcoming.length })}
               </button>
             )}
           </>

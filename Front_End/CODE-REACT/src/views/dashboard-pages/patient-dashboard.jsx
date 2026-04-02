@@ -1,6 +1,7 @@
-import React, { useEffect, useLayoutEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Row, Col } from "react-bootstrap";
+import { useTranslation } from "react-i18next";
 import ApexCharts from 'apexcharts';
 import Card from "../../components/Card";
 import DailyCheckIn from "../../components/DailyCheckIn";
@@ -11,6 +12,7 @@ import SecureMessagingHubCard from "../../components/SecureMessagingHubCard";
 import DischargeSummaryCard from "../../components/DischargeSummaryCard";
 import { healthLogApi, medicationApi, appointmentApi, patientApi, doctorApi, nurseApi } from "../../services/api";
 import { isMedicationCurrentTreatment } from "../../utils/medicationReminders";
+import { translateSymptom } from "../../utils/symptomLabels";
 
 // Local date string — avoids UTC timezone bug
 const localDateString = () => {
@@ -25,43 +27,57 @@ const VITALS_CHART_TIMEZONE = "Africa/Tunis";
 const DEFAULT_VITAL_TAB = "heartRate";
 const VITAL_CHART_KEYS = ["heartRate", "bloodPressureSystolic", "oxygenSaturation", "temperature"];
 
-function formatVitalChartAxisLabel(ms) {
-    return new Intl.DateTimeFormat("fr-FR", {
-        timeZone: VITALS_CHART_TIMEZONE,
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(new Date(ms));
-}
-
-function formatVitalChartTooltip(ms) {
-    return new Intl.DateTimeFormat("fr-FR", {
-        timeZone: VITALS_CHART_TIMEZONE,
-        weekday: "short",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        timeZoneName: "short",
-    }).format(new Date(ms));
-}
-
 const generatePath = (path) => {
     return window.origin + import.meta.env.BASE_URL + path;
 };
 
-// Helper: mood — libellés + icônes métier (aligné sur DailyCheckIn, pas de visages)
-const moodDisplay = (mood) => {
-    if (mood === "good") return { icon: "ri-shield-check-line", label: "Satisfactory", color: "#28a745" };
-    if (mood === "fair") return { icon: "ri-scales-3-line", label: "Moderate", color: "#fd7e14" };
-    if (mood === "poor") return { icon: "ri-first-aid-kit-line", label: "Poor", color: "#dc3545" };
-    return { icon: null, label: "—", color: "#6c757d" };
-};
-
 const PatientDashboard = () => {
+    const { t, i18n } = useTranslation();
+
+    const chartLocale = useMemo(() => {
+        const l = (i18n.language || "en").split("-")[0];
+        if (l === "ar") return "ar";
+        if (l === "fr") return "fr-FR";
+        return "en-US";
+    }, [i18n.language]);
+
+    const formatVitalChartAxisLabel = useCallback(
+        (ms) =>
+            new Intl.DateTimeFormat(chartLocale, {
+                timeZone: VITALS_CHART_TIMEZONE,
+                day: "2-digit",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+            }).format(new Date(ms)),
+        [chartLocale],
+    );
+
+    const formatVitalChartTooltip = useCallback(
+        (ms) =>
+            new Intl.DateTimeFormat(chartLocale, {
+                timeZone: VITALS_CHART_TIMEZONE,
+                weekday: "short",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                timeZoneName: "short",
+            }).format(new Date(ms)),
+        [chartLocale],
+    );
+
+    const moodDisplay = useCallback(
+        (mood) => {
+            if (mood === "good") return { icon: "ri-shield-check-line", label: t("patientDashboard.moodGood"), color: "#28a745" };
+            if (mood === "fair") return { icon: "ri-scales-3-line", label: t("patientDashboard.moodFair"), color: "#fd7e14" };
+            if (mood === "poor") return { icon: "ri-first-aid-kit-line", label: t("patientDashboard.moodPoor"), color: "#dc3545" };
+            return { icon: null, label: t("patientDashboard.moodDash"), color: "#6c757d" };
+        },
+        [t],
+    );
     const [patientUser, setPatientUser] = useState(() => {
         try {
             const stored = localStorage.getItem("patientUser");
@@ -194,12 +210,15 @@ const PatientDashboard = () => {
         setActiveVital(DEFAULT_VITAL_TAB);
     }, [pid]);
 
-    const vitalOptions = {
-        heartRate: { label: "Heart Rate (bpm)", key: "heartRate", color: "#dc3545", unit: "bpm" },
-        bloodPressureSystolic: { label: "Blood Pressure Systolic (mmHg)", key: "bloodPressureSystolic", color: "#089bab", unit: "mmHg" },
-        oxygenSaturation: { label: "O₂ Saturation (%)", key: "oxygenSaturation", color: "#6f42c1", unit: "%" },
-        temperature: { label: "Temperature (°C)", key: "temperature", color: "#fd7e14", unit: "°C" },
-    };
+    const vitalOptions = useMemo(
+        () => ({
+            heartRate: { label: t("patientDashboard.vitalsHeartRate"), key: "heartRate", color: "#dc3545", unit: "bpm" },
+            bloodPressureSystolic: { label: t("patientDashboard.vitalsBP"), key: "bloodPressureSystolic", color: "#089bab", unit: "mmHg" },
+            oxygenSaturation: { label: t("patientDashboard.vitalsOxygen"), key: "oxygenSaturation", color: "#6f42c1", unit: "%" },
+            temperature: { label: t("patientDashboard.vitalsTemperature"), key: "temperature", color: "#fd7e14", unit: "°C" },
+        }),
+        [t],
+    );
 
     const selectedVital = vitalOptions[activeVital] ?? vitalOptions[DEFAULT_VITAL_TAB];
 
@@ -264,9 +283,9 @@ const PatientDashboard = () => {
                 x: {
                     formatter: (val) => formatVitalChartTooltip(val),
                 },
-                y: { formatter: (val) => (val != null ? `${val} ${selectedVital.unit}` : "No data") },
+                y: { formatter: (val) => (val != null ? `${val} ${selectedVital.unit}` : t("patientDashboard.chartTooltipNoData")) },
             },
-            noData: { text: "No data yet — complete a check-in!", style: { color: "#6c757d" } },
+            noData: { text: t("patientDashboard.chartNoData"), style: { color: "#6c757d" } },
             grid: { borderColor: '#f1f1f1' },
         };
         const chart = new ApexCharts(chartRef.current, opts);
@@ -276,21 +295,36 @@ const PatientDashboard = () => {
             chart.destroy();
             chartInstanceRef.current = null;
         };
-    }, [chartSeriesPoints, activeVital, selectedVital.label, selectedVital.color, selectedVital.unit, vitalChartXAxisRange]);
+    }, [chartSeriesPoints, activeVital, selectedVital.label, selectedVital.color, selectedVital.unit, vitalChartXAxisRange, t, formatVitalChartTooltip, formatVitalChartAxisLabel]);
 
     const computeAge = (dob) => {
         if (!dob) return null;
-        const b = new Date(dob), t = new Date();
-        let age = t.getFullYear() - b.getFullYear();
-        if (t.getMonth() - b.getMonth() < 0 || (t.getMonth() === b.getMonth() && t.getDate() < b.getDate())) age--;
+        const b = new Date(dob);
+        const now = new Date();
+        if (Number.isNaN(b.getTime())) return null;
+        let age = now.getFullYear() - b.getFullYear();
+        if (now.getMonth() - b.getMonth() < 0 || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate())) age--;
+        if (age < 0 || age > 130) return null;
         return age;
     };
+
+    const displayGender = useCallback(
+        (g) => {
+            if (g == null || String(g).trim() === "") return null;
+            const s = String(g).trim().toLowerCase();
+            if (["homme", "male", "m", "man"].includes(s)) return t("patientDashboard.genderMale");
+            if (["femme", "female", "f", "woman"].includes(s)) return t("patientDashboard.genderFemale");
+            if (["other", "autre", "o"].includes(s)) return t("patientDashboard.genderOther");
+            return String(g).trim();
+        },
+        [t],
+    );
 
     const todayYmd = localDateString();
     const todayLogIsToday = !!(todayLog && todayLog.date === todayYmd);
 
     const userData = {
-        name: patientUser ? `${patientUser.firstName || ''} ${patientUser.lastName || ''}`.trim() || patientUser.email : "Patient",
+        name: patientUser ? `${patientUser.firstName || ''} ${patientUser.lastName || ''}`.trim() || patientUser.email : t("patientDashboard.patientFallbackName"),
         age: computeAge(patientUser?.dateOfBirth),
         gender: patientUser?.gender || null,
         bloodType: patientUser?.bloodType || null,
@@ -336,7 +370,9 @@ const PatientDashboard = () => {
             {todayLogIsToday && todayLog?.flagged && (
                 <div className="alert alert-danger d-flex align-items-center mb-3" role="alert">
                     <i className="ri-alert-line me-2 fs-5"></i>
-                    <span><b>Attention:</b> Your vitals require follow-up — your care team has been notified.</span>
+                    <span>
+                        <b>{t("patientDashboard.alertFlaggedTitle")}</b> {t("patientDashboard.alertFlaggedBody")}
+                    </span>
                 </div>
             )}
 
@@ -352,31 +388,31 @@ const PatientDashboard = () => {
                     {/* Profile Card */}
                     <Card className="border-0 shadow-sm">
                         <Card.Body className="text-center pt-4">
-                            <img src={userData.profileImage} alt="profile" className="avatar-130 img-fluid rounded-circle mb-3" style={{ border: "3px solid #089bab" }} />
+                            <img src={userData.profileImage} alt={t("patientDashboard.profilePhotoAlt")} className="avatar-130 img-fluid rounded-circle mb-3" style={{ border: "3px solid #089bab" }} />
                             <h5 className="fw-bold mb-0">{userData.name}</h5>
                             <p className="text-muted small mb-1">
-                                {userData.age ? `${userData.age} yrs` : ''}
-                                {userData.age && userData.location !== '—' ? ' • ' : ''}
+                                {userData.age != null ? `${userData.age} ${t("patientDashboard.yearsShort")}` : ""}
+                                {userData.age != null && userData.location !== "—" ? " • " : ""}
                                 {userData.location}
                             </p>
                             {(userData.bloodType || userData.gender) && (
                                 <p className="text-muted small mb-0">
                                     {userData.bloodType && <span className="me-2"><i className="ri-heart-pulse-line text-danger me-1"></i>{userData.bloodType}</span>}
-                                    {userData.gender && <span><i className="ri-user-line text-primary me-1"></i>{userData.gender}</span>}
+                                    {userData.gender && <span><i className="ri-user-line text-primary me-1"></i>{displayGender(userData.gender)}</span>}
                                 </p>
                             )}
                             <div className="d-flex justify-content-around mt-3 pt-3 border-top">
                                 <div className="text-center">
                                     <h6 className="text-primary mb-0">{userData.weight}<small className="text-muted ms-1">kg</small></h6>
-                                    <small className="text-muted">Weight</small>
+                                    <small className="text-muted">{t("patientDashboard.weight")}</small>
                                 </div>
                                 <div className="text-center">
                                     <h6 className="text-primary mb-0">{userData.height}<small className="text-muted ms-1">cm</small></h6>
-                                    <small className="text-muted">Height</small>
+                                    <small className="text-muted">{t("patientDashboard.height")}</small>
                                 </div>
                                 <div className="text-center">
                                     <h6 className="text-primary mb-0">{userData.bloodType || "—"}</h6>
-                                    <small className="text-muted">Blood Type</small>
+                                    <small className="text-muted">{t("patientDashboard.bloodType")}</small>
                                 </div>
                             </div>
                         </Card.Body>
@@ -394,11 +430,11 @@ const PatientDashboard = () => {
                     {/* Today's Wellbeing */}
                     <Card className="mt-3 border-0 shadow-sm">
                         <Card.Body>
-                            <h6 className="text-primary fw-bold mb-3"><i className="ri-mental-health-line me-2"></i>Today's Wellbeing</h6>
+                            <h6 className="text-primary fw-bold mb-3"><i className="ri-mental-health-line me-2"></i>{t("patientDashboard.todayWellbeing")}</h6>
                             {todayLogIsToday && todayLog ? (
                                 <>
                                     <div className="d-flex justify-content-between align-items-center mb-3">
-                                        <span className="text-muted small">Mood</span>
+                                        <span className="text-muted small">{t("patientDashboard.mood")}</span>
                                         <span className="fw-bold d-inline-flex align-items-center gap-1" style={{ color: mood.color }}>
                                             {mood.icon ? <i className={mood.icon} aria-hidden /> : null}
                                             {mood.label}
@@ -406,7 +442,7 @@ const PatientDashboard = () => {
                                     </div>
                                     <div className="mb-2">
                                         <div className="d-flex justify-content-between mb-1">
-                                            <span className="text-muted small">Pain Level</span>
+                                            <span className="text-muted small">{t("patientDashboard.painLevel")}</span>
                                             <span className="fw-bold small">{painLevel}/10</span>
                                         </div>
                                         <div className="progress" style={{ height: 8, borderRadius: 8 }}>
@@ -418,17 +454,17 @@ const PatientDashboard = () => {
                                     </div>
                                     {todayLog.symptoms?.length > 0 && (
                                         <div className="mt-2">
-                                            <span className="text-muted small d-block mb-1">Symptoms</span>
+                                            <span className="text-muted small d-block mb-1">{t("patientDashboard.symptoms")}</span>
                                             <div className="d-flex flex-wrap gap-1">
                                                 {todayLog.symptoms.map(s => (
-                                                    <span key={s} className="badge bg-warning text-dark" style={{ fontSize: "0.7rem" }}>{s}</span>
+                                                    <span key={s} className="badge bg-warning text-dark" style={{ fontSize: "0.7rem" }}>{translateSymptom(s, t)}</span>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
                                 </>
                             ) : (
-                                <p className="text-muted small mb-0">Complete today's check-in to see your wellbeing summary.</p>
+                                <p className="text-muted small mb-0">{t("patientDashboard.wellbeingEmpty")}</p>
                             )}
                         </Card.Body>
                     </Card>
@@ -441,7 +477,7 @@ const PatientDashboard = () => {
                         <Card.Body>
                             <div className="d-flex justify-content-between align-items-center mb-3">
                                 <h6 className="text-primary fw-bold mb-0">
-                                    <i className="ri-line-chart-line me-2"></i>30-Day Vitals History
+                                    <i className="ri-line-chart-line me-2"></i>{t("patientDashboard.vitalsHistory30")}
                                 </h6>
                                 <div className="d-flex gap-1 flex-wrap">
                                     {VITAL_CHART_KEYS.map((key) => (
@@ -457,14 +493,14 @@ const PatientDashboard = () => {
                             </div>
                             {!hasChartData && (
                                 <p className="text-muted small text-center mb-0" style={{ paddingBottom: 32 }}>
-                                    No data yet — log your vitals (you can add several times per day) to see trends here.
+                                    {t("patientDashboard.chartEmptyHint")}
                                 </p>
                             )}
                             <div ref={chartRef}></div>
                             <div className="mt-2 pt-1">
                                 <Link to="/dashboard-pages/patient-vitals-history" className="small text-decoration-none d-inline-flex align-items-center gap-1">
                                     <i className="ri-history-line"></i>
-                                    Historique complet des relevés (constantes)
+                                    {t("patientDashboard.vitalsHistoryLink")}
                                 </Link>
                             </div>
                         </Card.Body>
@@ -476,7 +512,7 @@ const PatientDashboard = () => {
                             <Card className="border-0 shadow-sm h-100">
                                 <Card.Body>
                                     <h6 className="text-primary fw-bold mb-3">
-                                        <i className="ri-shield-check-line me-2"></i>Recovery Risk Score
+                                        <i className="ri-shield-check-line me-2"></i>{t("patientDashboard.recoveryRisk")}
                                     </h6>
                                     {todayLogIsToday && todayLog ? (
                                         <>
@@ -495,17 +531,17 @@ const PatientDashboard = () => {
                                                 {todayLog.riskScore < 25 ? (
                                                     <>
                                                         <i className="ri-shield-check-line text-success flex-shrink-0 mt-1" aria-hidden />
-                                                        <span>Low risk — keep it up!</span>
+                                                        <span>{t("patientDashboard.riskLow")}</span>
                                                     </>
                                                 ) : todayLog.riskScore < 50 ? (
                                                     <>
                                                         <i className="ri-alert-line text-warning flex-shrink-0 mt-1" aria-hidden />
-                                                        <span>Moderate — monitor closely.</span>
+                                                        <span>{t("patientDashboard.riskModerate")}</span>
                                                     </>
                                                 ) : (
                                                     <>
                                                         <i className="ri-error-warning-line text-danger flex-shrink-0 mt-1" aria-hidden />
-                                                        <span>High risk — please contact your care team.</span>
+                                                        <span>{t("patientDashboard.riskHigh")}</span>
                                                     </>
                                                 )}
                                             </p>
@@ -520,14 +556,14 @@ const PatientDashboard = () => {
                             <Card className="border-0 shadow-sm h-100">
                                 <Card.Body>
                                     <h6 className="text-primary fw-bold mb-3">
-                                        <i className="ri-history-line me-2"></i>Recent Check-ins
+                                        <i className="ri-history-line me-2"></i>{t("patientDashboard.recentCheckIns")}
                                     </h6>
                                     {history.length > 0 ? (
                                         <div className="d-flex flex-column gap-2">
                                             {history.slice(-4).reverse().map((log) => (
                                                 <div key={log._id} className="d-flex justify-content-between align-items-center py-1 border-bottom">
                                                     <span className="small text-muted">
-                                                        {new Date(log.recordedAt || log.createdAt || log.date).toLocaleString("fr-FR", {
+                                                        {new Date(log.recordedAt || log.createdAt || log.date).toLocaleString(chartLocale, {
                                                             timeZone: VITALS_CHART_TIMEZONE,
                                                             day: "2-digit",
                                                             month: "short",
@@ -546,13 +582,13 @@ const PatientDashboard = () => {
                                                         )}
                                                     </span>
                                                     <span className="badge" style={{ backgroundColor: log.riskScore >= 50 ? "#dc3545" : log.riskScore >= 25 ? "#fd7e14" : "#28a745", fontSize: "0.68rem" }}>
-                                                        Risk: {log.riskScore}
+                                                        {t("patientDashboard.riskBadge", { score: log.riskScore })}
                                                     </span>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-muted small mb-0">No history yet. Logs will appear here after your first check-in.</p>
+                                        <p className="text-muted small mb-0">{t("patientDashboard.historyEmpty")}</p>
                                     )}
                                 </Card.Body>
                             </Card>

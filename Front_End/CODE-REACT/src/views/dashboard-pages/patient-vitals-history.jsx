@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Container, Row, Col, Spinner, Alert } from "react-bootstrap";
 import Card from "../../components/Card";
 import VitalMetricTile, { hrStatus, bpStatus, o2Status, tempStatus, weightStatus } from "../../components/VitalMetricTile";
 import { healthLogApi } from "../../services/api";
+import { translateSymptom } from "../../utils/symptomLabels";
 
 const VITALS_TZ = "Africa/Tunis";
 
@@ -53,6 +55,7 @@ function riskBadgeClass(score) {
 }
 
 const PatientVitalsHistory = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [patientUser, setPatientUser] = useState(() => {
     try {
@@ -469,12 +472,12 @@ const PatientVitalsHistory = () => {
                         {Array.isArray(log.symptoms) && log.symptoms.length > 0 && (
                           <div className="mt-3">
                             <span className="text-muted small text-uppercase fw-semibold d-block mb-2" style={{ letterSpacing: "0.04em" }}>
-                              Symptômes
+                              {t("patientDashboard.symptoms")}
                             </span>
                             <div className="d-flex flex-wrap gap-1">
                               {log.symptoms.map((s) => (
                                 <span key={s} className="badge bg-warning text-dark" style={{ fontSize: "0.7rem" }}>
-                                  {s}
+                                  {translateSymptom(s, t)}
                                 </span>
                               ))}
                             </div>

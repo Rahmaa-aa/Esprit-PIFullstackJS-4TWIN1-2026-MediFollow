@@ -29,6 +29,8 @@ import user001 from "/assets/images/user/001.png"
 
 import StaffNotificationsBell from "../../StaffNotificationsBell"
 import PatientMedicationNotificationsBell from "../../PatientMedicationNotificationsBell"
+import LanguageSwitcher from "../../LanguageSwitcher"
+import { useTranslation } from "react-i18next"
 
 const generatePath = (path) => {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "") || "";
@@ -75,6 +77,7 @@ const getNursePhoto = (nurseUser) => {
 };
 
 const Header = () => {
+   const { t } = useTranslation();
    const navigate = useNavigate();
    const pageLayout = useSelector(SettingSelector.page_layout)
    const [adminUser, setAdminUser] = useState(() => {
@@ -279,7 +282,7 @@ const Header = () => {
                      <Nav.Item as="li" className="nav-item dropdown search-width pt-2 pt-lg-0">
                         <div className="form-group input-group mb-0 search-input">
                            <input type="text" className="form-control"
-                              placeholder="Type here to search..." />{" "}
+                              placeholder={t("nav.searchPlaceholder")} />{" "}
                            <span className="input-group-text">
                               <svg className="icon-20 text-primary" width="20" height="20"
                                  viewBox="0 0 24 24" fill="none"
@@ -299,74 +302,7 @@ const Header = () => {
                   </Col>
                   <Col lg={8} md={6}
                      className="d-flex justify-content-end align-items-center">
-                     <Dropdown as="li" className="nav-item">
-                        <Dropdown.Toggle
-                           as="a" bsPrefix=' ' to="#" className="nav-link d-none d-xl-block"
-                           id="notification-drop" data-bs-toggle="dropdown">
-                           <img src={flag01}
-                              alt="img-flaf" className="img-fluid me-1"
-                              style={{ height: "16px", width: "16px" }} /> English <i
-                                 className="ri-arrow-down-s-line"></i>
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu as="div" drop={'end'} className="p-0 sub-drop dropdown-menu dropdown-menu-end"
-                           aria-labelledby="notification-drop">
-                           <div className="m-0 -none card">
-
-                              <div className="p-0 card-body">
-                                 <a href="#" className="iq-sub-card">
-                                    <div className="d-flex align-items-center">
-                                       <img
-                                          src={flag02}
-                                          alt loading="lazy" />
-                                       <div className="ms-3 flex-grow-1 text-start">
-                                          <p className="mb-0 ">French</p>
-                                       </div>
-                                    </div>
-                                 </a>
-                                 <a href="#" className="iq-sub-card">
-                                    <div className="d-flex align-items-center">
-                                       <img
-                                          src={flag03}
-                                          alt loading="lazy" />
-                                       <div className="ms-3 flex-grow-1 text-start">
-                                          <p className="mb-0 ">Spanish</p>
-                                       </div>
-                                    </div>
-                                 </a>
-                                 <a href="#" className="iq-sub-card">
-                                    <div className="d-flex align-items-center">
-                                       <img
-                                          src={flag04}
-                                          alt loading="lazy" />
-                                       <div className="ms-3 flex-grow-1 text-start">
-                                          <p className="mb-0 ">Italian</p>
-                                       </div>
-                                    </div>
-                                 </a>
-                                 <a href="#" className="iq-sub-card">
-                                    <div className="d-flex align-items-center">
-                                       <img
-                                          src={flag05}
-                                          alt loading="lazy" />
-                                       <div className="ms-3 flex-grow-1 text-start">
-                                          <p className="mb-0 ">German</p>
-                                       </div>
-                                    </div>
-                                 </a>
-                                 <a href="#" className="iq-sub-card">
-                                    <div className="d-flex align-items-center">
-                                       <img
-                                          src={flag06}
-                                          alt loading="lazy" />
-                                       <div className="ms-3 flex-grow-1 text-start">
-                                          <p className="mb-0 ">Japanese</p>
-                                       </div>
-                                    </div>
-                                 </a>
-                              </div>
-                           </div>
-                        </Dropdown.Menu>
-                     </Dropdown>
+                     <LanguageSwitcher toggleClassName="nav-link d-none d-xl-block" />
                      <Nav.Item as="li" className="nav-item iq-full-screen d-none d-xl-block"
                         id="fullscreen-item">
                         <a href="#" className="nav-link" id="btnFullscreen" onClick={toggleFullScreen}>
@@ -773,72 +709,7 @@ const Header = () => {
                <Row className="flex-grow-1 pt-4 pb-4 px-2">
 
                   <Col md={12} className="d-flex justify-content-end align-items-center">
-                     <Dropdown as="li" className="nav-item">
-                        <Dropdown.Toggle as="a" bsPrefix=' ' to="#" className="nav-link d-block d-xl-none"
-                           id="notification-drop">
-                           <img src={flag01}
-                              alt="img-flaf" className="img-fluid me-1"
-                              style={{ height: "16px", width: "16px" }} /> English <i
-                                 className="ri-arrow-down-s-line"></i>
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu as="div" className="p-0 sub-drop dropdown-menu-end"
-                           aria-labelledby="notification-drop">
-                           <div className="m-0 -none card">
-                              <div className="p-0 card-body">
-                                 <Link to="#" className="iq-sub-card">
-                                    <div className="d-flex align-items-center">
-                                       <img
-                                          src={flag02}
-                                          alt loading="lazy" />
-                                       <div className="ms-3 flex-grow-1 text-start">
-                                          <p className="mb-0 ">French</p>
-                                       </div>
-                                    </div>
-                                 </Link>
-                                 <Link to="#" className="iq-sub-card">
-                                    <div className="d-flex align-items-center">
-                                       <img
-                                          src={flag03}
-                                          alt loading="lazy" />
-                                       <div className="ms-3 flex-grow-1 text-start">
-                                          <p className="mb-0 ">Spanish</p>
-                                       </div>
-                                    </div>
-                                 </Link>
-                                 <Link to="#" className="iq-sub-card">
-                                    <div className="d-flex align-items-center">
-                                       <img
-                                          src={flag04}
-                                          alt loading="lazy" />
-                                       <div className="ms-3 flex-grow-1 text-start">
-                                          <p className="mb-0 ">Italian</p>
-                                       </div>
-                                    </div>
-                                 </Link>
-                                 <Link to="#" className="iq-sub-card">
-                                    <div className="d-flex align-items-center">
-                                       <img
-                                          src={flag05}
-                                          alt loading="lazy" />
-                                       <div className="ms-3 flex-grow-1 text-start">
-                                          <p className="mb-0 ">German</p>
-                                       </div>
-                                    </div>
-                                 </Link>
-                                 <Link to="#" className="iq-sub-card">
-                                    <div className="d-flex align-items-center">
-                                       <img
-                                          src={flag06}
-                                          alt loading="lazy" />
-                                       <div className="ms-3 flex-grow-1 text-start">
-                                          <p className="mb-0 ">Japanese</p>
-                                       </div>
-                                    </div>
-                                 </Link>
-                              </div>
-                           </div>
-                        </Dropdown.Menu>
-                     </Dropdown>{" "}
+                     <LanguageSwitcher toggleClassName="nav-link d-block d-xl-none" />{" "}
                      <li className="nav-item dropdown">
                      </li>
                      <Nav.Item className="iq-full-screen iq-full-screen2 d-block d-xl-none"

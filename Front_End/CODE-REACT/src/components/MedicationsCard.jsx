@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Modal, Form, Alert, Button } from "react-bootstrap";
 import { medicationApi } from "../services/api";
 import { useMedicationReminders } from "../hooks/useMedicationReminders";
@@ -16,6 +17,7 @@ import {
 const FREQUENCIES = ["Once daily", "Twice daily", "Three times daily", "Every 8 hours", "Weekly", "As needed"];
 
 const MedicationsCard = ({ patientId, medications: initialMeds, onUpdate, allowAdd = true, showHistoryLink = true }) => {
+  const { t } = useTranslation();
   const [meds, setMeds] = useState(initialMeds || []);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({
@@ -112,11 +114,11 @@ const MedicationsCard = ({ patientId, medications: initialMeds, onUpdate, allowA
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <h6 className="text-primary fw-bold mb-0">
-              <i className="ri-capsule-line me-2"></i>Medications
+              <i className="ri-capsule-line me-2"></i>{t("patientCards.medications.title")}
             </h6>
             <div className="d-flex align-items-center gap-2">
               {pendingCount > 0 && (
-                <span className="badge bg-warning text-dark">{pendingCount} to take</span>
+                <span className="badge bg-warning text-dark">{t("patientCards.medications.toTake", { count: pendingCount })}</span>
               )}
               {allowAdd && (
                 <button
@@ -134,7 +136,7 @@ const MedicationsCard = ({ patientId, medications: initialMeds, onUpdate, allowA
             <div className="mb-3">
               <Link to="/dashboard-pages/patient-medication-history" className="small text-decoration-none">
                 <i className="ri-history-line me-1"></i>
-                Historique des traitements terminés
+                {t("patientCards.medications.historyFinished")}
               </Link>
             </div>
           )}

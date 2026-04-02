@@ -1,8 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 /** patient = dossier admin ; doctorConsigne = dernière consigne « Envoyer et clôturer » (alerte constantes). */
 const DischargeSummaryCard = ({ patient, doctorConsigne }) => {
+  const { t, i18n } = useTranslation();
   const [expanded, setExpanded] = useState(false);
+
+  const dateLocale = useMemo(() => {
+    const l = (i18n.language || "en").split("-")[0];
+    if (l === "ar") return "ar";
+    if (l === "fr") return "fr-FR";
+    return "en-GB";
+  }, [i18n.language]);
 
   const admissionDate = patient?.admissionDate;
   const dischargeDate = patient?.dischargeDate;
@@ -34,18 +43,18 @@ const DischargeSummaryCard = ({ patient, doctorConsigne }) => {
         </div>
 
         {!hasAnything ? (
-          <p className="text-muted small text-center mb-0 py-2">No discharge information on record yet.</p>
+          <p className="text-muted small text-center mb-0 py-2">{t("patientCards.discharge.empty")}</p>
         ) : (
           <div className="d-flex flex-column gap-2">
             {/* Consigne du médecin (clôture alerte constantes) */}
             {consigneText && (
               <div className="p-2 rounded-3" style={{ backgroundColor: "#ecfdf5", border: "1px solid #a7f3d0" }}>
                 <div className="text-muted mb-1" style={{ fontSize: "0.72rem" }}>
-                  Consigne de votre médecin
+                  {t("patientCards.discharge.doctorInstruction")}
                   {doctorConsigne?.resolvedAt ? (
                     <span className="ms-1">
                       ·{" "}
-                      {new Date(doctorConsigne.resolvedAt).toLocaleString("fr-FR", {
+                      {new Date(doctorConsigne.resolvedAt).toLocaleString(dateLocale, {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",
@@ -65,8 +74,8 @@ const DischargeSummaryCard = ({ patient, doctorConsigne }) => {
               <div className="d-flex gap-2 align-items-center">
                 {admissionDate && (
                   <div className="flex-fill text-center p-2 rounded-3" style={{ backgroundColor: "#fff3cd", border: "1px solid #fde68a" }}>
-                    <div className="small text-muted">Admitted</div>
-                    <div className="fw-bold small">{new Date(admissionDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                    <div className="small text-muted">{t("patientCards.discharge.admitted")}</div>
+                    <div className="fw-bold small">{new Date(admissionDate).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' })}</div>
                   </div>
                 )}
                 {admissionDate && dischargeDate && (
@@ -84,7 +93,7 @@ const DischargeSummaryCard = ({ patient, doctorConsigne }) => {
             {/* Diagnosis */}
             {diagnosis && (
               <div className="p-2 rounded-3" style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
-                <div className="text-muted" style={{ fontSize: "0.72rem" }}>Diagnosis</div>
+                <div className="text-muted" style={{ fontSize: "0.72rem" }}>{t("patientCards.discharge.diagnosis")}</div>
                 <div className="fw-bold small">{diagnosis}</div>
               </div>
             )}
@@ -93,7 +102,7 @@ const DischargeSummaryCard = ({ patient, doctorConsigne }) => {
             {notes && (
               <div className="p-2 rounded-3" style={{ backgroundColor: "#f8f9fa", border: "1px solid #e9ecef" }}>
                 <div className="d-flex justify-content-between align-items-center" onClick={() => setExpanded(!expanded)} style={{ cursor: "pointer" }}>
-                  <span className="text-muted" style={{ fontSize: "0.72rem" }}>Discharge Instructions</span>
+                  <span className="text-muted" style={{ fontSize: "0.72rem" }}>{t("patientCards.discharge.dischargeInstructions")}</span>
                   <i className={`ri-arrow-${expanded ? "up" : "down"}-s-line text-muted`}></i>
                 </div>
                 {expanded && (
