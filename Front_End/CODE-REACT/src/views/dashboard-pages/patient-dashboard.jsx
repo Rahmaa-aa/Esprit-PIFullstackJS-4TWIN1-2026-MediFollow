@@ -88,6 +88,8 @@ const PatientDashboard = () => {
     const [appointments, setAppointments] = useState([]);
     const [careDoctor, setCareDoctor] = useState(null);
     const [careNurse, setCareNurse] = useState(null);
+    /** Dernière consigne médecin (clôture alerte) — même texte qu’envoyé au patient */
+    const [doctorConsigne, setDoctorConsigne] = useState(null);
     const chartRef = useRef(null);
     const chartInstanceRef = useRef(null);
 
@@ -150,12 +152,31 @@ const PatientDashboard = () => {
         } catch (e) { console.error('[Dashboard] Failed to load care team:', e); }
     };
 
+    const loadDoctorConsigne = async () => {
+        if (!pid) return;
+        try {
+            const data = await healthLogApi.getLatestDoctorConsigne(pid);
+            if (data && data.note && String(data.note).trim()) {
+                setDoctorConsigne({
+                    note: String(data.note).trim(),
+                    resolvedAt: data.resolvedAt ?? null,
+                });
+            } else {
+                setDoctorConsigne(null);
+            }
+        } catch (e) {
+            console.error("[Dashboard] Failed to load doctor consigne:", e);
+            setDoctorConsigne(null);
+        }
+    };
+
     useEffect(() => {
         loadTodayLog();
         loadHistory();
         loadMedications();
         loadAppointments();
         loadCareTeam();
+        loadDoctorConsigne();
     }, [pid]);
 
     useEffect(() => {
@@ -286,6 +307,28 @@ const PatientDashboard = () => {
     const painLevel = todayLogIsToday ? todayLog?.painLevel ?? null : null;
 
     const activeMedications = medications.filter((m) => isMedicationCurrentTreatment(m, todayYmd));
+
+    /** Repli si l’API dédiée échoue : dernier relevé avec doctorResolutionNote dans l’historique (30 j). */
+    const doctorConsigneFromHistory = useMemo(() => {
+        const logs = Array.isArray(history) ? history : [];
+        const withNote = logs.filter((l) => {
+            const n = l?.doctorResolutionNote;
+            return n != null && String(n).trim() !== "";
+        });
+        if (!withNote.length) return null;
+        withNote.sort((a, b) => {
+            const ta = new Date(a.resolvedAt || a.createdAt || 0).getTime();
+            const tb = new Date(b.resolvedAt || b.createdAt || 0).getTime();
+            return tb - ta;
+        });
+        const top = withNote[0];
+        return {
+            note: String(top.doctorResolutionNote).trim(),
+            resolvedAt: top.resolvedAt ?? null,
+        };
+    }, [history]);
+
+    const effectiveDoctorConsigne = doctorConsigne ?? doctorConsigneFromHistory;
 
     return (
         <>
@@ -538,7 +581,7 @@ const PatientDashboard = () => {
                     />
                 </Col>
                 <Col lg={3} md={6}>
-                    <DischargeSummaryCard patient={patientUser} />
+                    <DischargeSummaryCard patient={patientUser} doctorConsigne={effectiveDoctorConsigne} />
                 </Col>
             </Row>
         </>

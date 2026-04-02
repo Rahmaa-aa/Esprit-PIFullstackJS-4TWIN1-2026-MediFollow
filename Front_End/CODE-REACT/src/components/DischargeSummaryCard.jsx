@@ -1,22 +1,31 @@
 import React, { useState } from "react";
 
-const DischargeSummaryCard = ({ patient }) => {
+/** patient = dossier admin ; doctorConsigne = dernière consigne « Envoyer et clôturer » (alerte constantes). */
+const DischargeSummaryCard = ({ patient, doctorConsigne }) => {
   const [expanded, setExpanded] = useState(false);
 
   const admissionDate = patient?.admissionDate;
   const dischargeDate = patient?.dischargeDate;
   const diagnosis = patient?.diagnosis;
   const notes = patient?.dischargeNotes;
+  const consigneText =
+    doctorConsigne && typeof doctorConsigne.note === "string" ? doctorConsigne.note.trim() : "";
 
   const daysSinceDischarge = dischargeDate
     ? Math.floor((new Date() - new Date(dischargeDate)) / (1000 * 60 * 60 * 24))
     : null;
 
+  const hasAnything =
+    !!diagnosis ||
+    !!dischargeDate ||
+    !!(notes && String(notes).trim()) ||
+    !!consigneText;
+
   return (
     <div className="card border-0 shadow-sm" style={{ borderRadius: 14 }}>
       <div className="card-body">
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h6 className="text-primary fw-bold mb-0"><i className="ri-file-medical-line me-2"></i>Discharge Summary</h6>
+          <h6 className="text-primary fw-bold mb-0"><i className="ri-file-medical-line me-2"></i>Consignes de sortie</h6>
           {daysSinceDischarge !== null && (
             <span className="badge bg-primary-subtle text-primary" style={{ fontSize: "0.7rem" }}>
               Day {daysSinceDischarge + 1} of recovery
@@ -24,10 +33,33 @@ const DischargeSummaryCard = ({ patient }) => {
           )}
         </div>
 
-        {!diagnosis && !dischargeDate && !notes ? (
+        {!hasAnything ? (
           <p className="text-muted small text-center mb-0 py-2">No discharge information on record yet.</p>
         ) : (
           <div className="d-flex flex-column gap-2">
+            {/* Consigne du médecin (clôture alerte constantes) */}
+            {consigneText && (
+              <div className="p-2 rounded-3" style={{ backgroundColor: "#ecfdf5", border: "1px solid #a7f3d0" }}>
+                <div className="text-muted mb-1" style={{ fontSize: "0.72rem" }}>
+                  Consigne de votre médecin
+                  {doctorConsigne?.resolvedAt ? (
+                    <span className="ms-1">
+                      ·{" "}
+                      {new Date(doctorConsigne.resolvedAt).toLocaleString("fr-FR", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="small" style={{ whiteSpace: "pre-wrap" }}>
+                  {consigneText}
+                </div>
+              </div>
+            )}
             {/* Timeline row */}
             {(admissionDate || dischargeDate) && (
               <div className="d-flex gap-2 align-items-center">

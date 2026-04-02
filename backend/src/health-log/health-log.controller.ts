@@ -58,9 +58,10 @@ export class HealthLogController {
   }
 
   // GET endpoints do NOT require auth — patientId is in the URL
-  @Get('patient/:id')
-  async getHistory(@Param('id') id: string) {
-    return this.healthLogService.getHistory(id);
+  // Routes les plus spécifiques en premier (évite tout conflit de matching).
+  @Get('patient/:id/latest-doctor-consigne')
+  async getLatestDoctorConsigne(@Param('id') id: string) {
+    return this.healthLogService.getLatestDoctorResolutionNote(id);
   }
 
   @Get('patient/:id/latest')
@@ -68,6 +69,11 @@ export class HealthLogController {
     // Returns most recent log (not strictly UTC today)
     const log = await this.healthLogService.getLatest(id);
     return log ?? null;
+  }
+
+  @Get('patient/:id')
+  async getHistory(@Param('id') id: string) {
+    return this.healthLogService.getHistory(id);
   }
 
   @UseGuards(JwtAuthGuard)

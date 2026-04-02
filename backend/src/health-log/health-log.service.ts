@@ -434,19 +434,56 @@ export class HealthLogService {
     const sinceYmd = `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, '0')}-${String(since.getDate()).padStart(2, '0')}`;
 
     const patientPart = this.patientIdFilter(patientId);
+    /** Inclure aussi les relevés plus anciens s’ils portent une consigne médecin (dashboard patient). */
     return this.healthLogModel
       .find({
         $and: [
           patientPart,
-          { $or: [{ createdAt: { $gte: since } }, { date: { $gte: sinceYmd } }] },
+          {
+            $or: [
+              { createdAt: { $gte: since } },
+              { date: { $gte: sinceYmd } },
+              {
+                doctorResolutionNote: { $exists: true, $nin: [null, ''] },
+              },
+            ],
+          },
         ],
       })
       .sort({ createdAt: 1, _id: 1 })
       .limit(2000)
+      .lean()
       .exec();
   }
 
   async getLatest(patientId: string) {
     return this.healthLogModel.findOne(this.patientIdFilter(patientId)).sort({ createdAt: -1 }).exec();
+  }
+
+  /** Dernière consigne écrite par le médecin lors de la clôture d’une alerte (affichage dashboard patient). */
+  async getLatestDoctorResolutionNote(patientId: string) {
+    const patientPart = this.patientIdFilter(patientId);
+    const docs = await this.healthLogModel
+      .find({
+        $and: [
+          patientPart,
+          {
+            doctorResolutionNote: { $exists: true, $nin: [null, ''] },
+          },
+        ],
+      })
+      .sort({ resolvedAt: -1, createdAt: -1 })
+      .limit(5)
+      .lean()
+      .exec();
+    const doc = docs.find((d: any) => String(d?.doctorResolutionNote || '').trim());
+    if (!doc) return null;
+    const note = String((doc as any).doctorResolutionNote || '').trim();
+    if (!note) return null;
+    return {
+      note,
+      resolvedAt: (doc as any).resolvedAt ?? null,
+      healthLogId: String((doc as any)._id),
+    };
   }
 }

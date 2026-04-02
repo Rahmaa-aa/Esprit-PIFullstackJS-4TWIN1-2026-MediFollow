@@ -812,6 +812,27 @@ export const healthLogApi = {
     api.get(`/health-logs/patient/${encodeURIComponent(String(patientId))}`),
   getLatest: (patientId) =>
     api.get(`/health-logs/patient/${encodeURIComponent(String(patientId))}/latest`),
+  /**
+   * Dernière consigne du médecin après clôture d’une alerte (dashboard patient).
+   * GET explicite + parse tolérant (corps vide / null) + jeton patient pour éviter un mauvais rôle dans getValidToken.
+   */
+  getLatestDoctorConsigne: async (patientId) => {
+    const token = okToken(localStorage.getItem("patientToken"));
+    const url = `${API_BASE}/health-logs/patient/${encodeURIComponent(String(patientId))}/latest-doctor-consigne`;
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (!text || !String(text).trim()) return null;
+    try {
+      const data = JSON.parse(text);
+      if (data == null) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  },
   /** JWT infirmier — relevés urgents encore ouverts (suivi ou escaladés au médecin). */
   nursePendingAlerts: () => api.getWithNurseToken('/health-logs/nurse/pending-alerts'),
   escalateToDoctor: (healthLogId, note) =>
