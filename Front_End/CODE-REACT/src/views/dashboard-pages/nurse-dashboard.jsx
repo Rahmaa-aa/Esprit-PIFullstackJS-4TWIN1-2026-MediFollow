@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Row, Col, Badge, ListGroup } from "react-bootstrap";
 import Card from "../../components/Card";
 import { nurseApi } from "../../services/api";
+import SecureMessagingHubCard from "../../components/SecureMessagingHubCard";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 
@@ -65,6 +66,12 @@ const NurseDashboard = () => {
               </Card>
             </Card.Body>
           </Card>
+        </Col>
+      </Row>
+
+      <Row className="mt-4">
+        <Col sm={12}>
+          <SecureMessagingHubCard variant="nurse" />
         </Col>
       </Row>
 

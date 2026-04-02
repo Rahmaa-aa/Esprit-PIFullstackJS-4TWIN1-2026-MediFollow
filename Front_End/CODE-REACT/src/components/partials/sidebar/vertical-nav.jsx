@@ -170,6 +170,12 @@ const VerticalNav = () => {
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
+                    <Link to="/chat" className={`nav-link ${location.pathname === "/chat" ? "active" : ""}`}>
+                        <i className="ri-chat-3-line"></i>
+                        <span className="item-name">Messagerie sécurisée</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
                     <Link
                         to="/dashboard-pages/patient-medication-history"
                         className={`nav-link ${location.pathname === "/dashboard-pages/patient-medication-history" ? "active" : ""}`}
@@ -225,6 +231,12 @@ const VerticalNav = () => {
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
+                    <Link to="/chat" className={`nav-link ${location.pathname === "/chat" ? "active" : ""}`}>
+                        <i className="ri-chat-3-line"></i>
+                        <span className="item-name">Messagerie sécurisée</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
                     <Link to={`/nurse/nurse-profile/${nurseUser?.id}`} className={`nav-link ${location.pathname === `/nurse/nurse-profile/${nurseUser?.id}` ? "active" : ""}`}>
                         <i className="ri-nurse-fill"></i>
                         <span className="item-name">Mon profil</span>
@@ -247,6 +259,12 @@ const VerticalNav = () => {
                     <Link to="/dashboard" className={`nav-link ${location.pathname === "/dashboard" ? "active" : ""}`}>
                         <i className="ri-dashboard-2-fill"></i>
                         <span className="item-name">Tableau de bord</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link to="/chat" className={`nav-link ${location.pathname === "/chat" ? "active" : ""}`}>
+                        <i className="ri-chat-3-line"></i>
+                        <span className="item-name">Messagerie sécurisée</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">

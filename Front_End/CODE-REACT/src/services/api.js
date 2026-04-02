@@ -86,6 +86,26 @@ export const api = {
     return res.json();
   },
 
+  /** POST multipart (sans Content-Type : le navigateur définit la boundary). */
+  async postMultipart(endpoint, formData) {
+    const token = getValidToken();
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "POST",
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json();
+  },
+
   async put(endpoint, data) {
     const token = getValidToken();
     const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -437,6 +457,26 @@ export const api = {
     }
     return res.json();
   },
+
+  async postWithNurseToken(endpoint, data) {
+    const token = okToken(localStorage.getItem("nurseToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data ?? {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json();
+  },
 };
 
 export const authApi = {
@@ -515,6 +555,134 @@ export const superAdminApi = {
   updateCareCoordinator: (id, data) => api.put(`/auth/care-coordinators/${id}`, data),
   deleteCareCoordinator: (id) => api.delete(`/auth/care-coordinators/${id}`),
 };
+/** Messagerie équipe soignante (JWT patient / médecin / infirmier). */
+export const chatApi = {
+  getDepartmentContacts: () => {
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.getWithDoctorToken("/chat/department-contacts");
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.getWithNurseToken("/chat/department-contacts");
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.getWithPatientToken("/chat/department-contacts");
+    }
+    return api.get("/chat/department-contacts");
+  },
+  getConversations: () => {
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.getWithDoctorToken("/chat/conversations");
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.getWithNurseToken("/chat/conversations");
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.getWithPatientToken("/chat/conversations");
+    }
+    return api.get("/chat/conversations");
+  },
+  /** Fil patient : (patientId, params) — fil pair : ({ peerRole, peerId, before?, limit? }) */
+  getMessages: (arg1, params = {}) => {
+    const isPeer =
+      arg1 &&
+      typeof arg1 === "object" &&
+      !Array.isArray(arg1) &&
+      (arg1.peerRole === "doctor" || arg1.peerRole === "nurse") &&
+      arg1.peerId;
+    const q = new URLSearchParams();
+    if (isPeer) {
+      q.set("peerRole", String(arg1.peerRole));
+      q.set("peerId", String(arg1.peerId));
+      if (arg1.before) q.set("before", String(arg1.before));
+      if (arg1.limit != null) q.set("limit", String(arg1.limit));
+    } else {
+      const patientId = arg1;
+      if (params.before) q.set("before", String(params.before));
+      if (params.limit != null) q.set("limit", String(params.limit));
+      const qs = q.toString();
+      const path = `/chat/messages/${encodeURIComponent(patientId)}${qs ? `?${qs}` : ""}`;
+      if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+        return api.getWithDoctorToken(path);
+      }
+      if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+        return api.getWithNurseToken(path);
+      }
+      if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+        return api.getWithPatientToken(path);
+      }
+      return api.get(path);
+    }
+    const path = `/chat/messages?${q.toString()}`;
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.getWithDoctorToken(path);
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.getWithNurseToken(path);
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.getWithPatientToken(path);
+    }
+    return api.get(path);
+  },
+  /** body = texte ; cible patient OU pair (pas les deux). */
+  sendMessage: (payload) => {
+    const data = { body: payload.body };
+    if (payload.patientId) data.patientId = payload.patientId;
+    if (payload.peerRole && payload.peerId) {
+      data.peerRole = payload.peerRole;
+      data.peerId = payload.peerId;
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.postWithDoctorToken("/chat/messages", data);
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.postWithNurseToken("/chat/messages", data);
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.postWithPatientToken("/chat/messages", data);
+    }
+    return api.post("/chat/messages", data);
+  },
+  /** FormData avec champ file (Blob) + patientId ou peerRole + peerId */
+  sendVoiceMessage: (formData) => api.postMultipart("/chat/messages/voice", formData),
+  /** FormData : file, category (image|video|document), caption optionnel, + routage */
+  sendMediaMessage: (formData) => api.postMultipart("/chat/messages/media", formData),
+  markRead: (patientId) => {
+    const path = `/chat/read/${encodeURIComponent(patientId)}`;
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.patchWithDoctorToken(path, {});
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.patchWithNurseToken(path, {});
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.patchWithPatientToken(path, {});
+    }
+    return api.patch(path, {});
+  },
+  markReadPeer: (peerRole, peerId) => {
+    const path = `/chat/read-peer?peerRole=${encodeURIComponent(peerRole)}&peerId=${encodeURIComponent(peerId)}`;
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.patchWithDoctorToken(path, {});
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.patchWithNurseToken(path, {});
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.patchWithPatientToken(path, {});
+    }
+    return api.patch(path, {});
+  },
+  /** Patient : marquer lu le fil avec un médecin ou un infirmier (distinct du fil staff–staff). */
+  markReadPatientStaff: (peerRole, peerId) => {
+    const path = `/chat/read-patient-staff?peerRole=${encodeURIComponent(peerRole)}&peerId=${encodeURIComponent(peerId)}`;
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.patchWithPatientToken(path, {});
+    }
+    return api.patch(path, {});
+  },
+};
+
 /** Notifications (JWT médecin, infirmier, patient ou admin). */
 export const notificationApi = {
   getMine: () => {

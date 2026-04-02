@@ -7,6 +7,7 @@ import DailyCheckIn from "../../components/DailyCheckIn";
 import MedicationsCard from "../../components/MedicationsCard";
 import AppointmentsCard from "../../components/AppointmentsCard";
 import CareTeamCard from "../../components/CareTeamCard";
+import SecureMessagingHubCard from "../../components/SecureMessagingHubCard";
 import DischargeSummaryCard from "../../components/DischargeSummaryCard";
 import { healthLogApi, medicationApi, appointmentApi, patientApi, doctorApi, nurseApi } from "../../services/api";
 import { isMedicationCurrentTreatment } from "../../utils/medicationReminders";
@@ -295,6 +296,12 @@ const PatientDashboard = () => {
                     <span><b>Attention:</b> Your vitals require follow-up — your care team has been notified.</span>
                 </div>
             )}
+
+            <Row className="g-3 mb-3">
+                <Col xs={12}>
+                    <SecureMessagingHubCard variant="patient" />
+                </Col>
+            </Row>
 
             <Row className="g-3">
                 {/* LEFT COLUMN */}

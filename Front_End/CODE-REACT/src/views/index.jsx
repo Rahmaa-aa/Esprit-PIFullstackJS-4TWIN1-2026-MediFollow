@@ -11,6 +11,7 @@ import Scrollbar from "smooth-scrollbar";
 import { Link } from "react-router-dom";
 import { doctorApi, appointmentApi } from "../services/api";
 import Chart from 'react-apexcharts';
+import SecureMessagingHubCard from "../components/SecureMessagingHubCard";
 
 const generatePath = (path) => {
     const base = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "") || "";
@@ -497,6 +498,11 @@ const Index = () => {
 
     return (
         <>
+            <Row className="mb-3">
+                <Col sm={12}>
+                    <SecureMessagingHubCard variant="doctor" />
+                </Col>
+            </Row>
             <Row>
                 <Col sm={12}>
                     <Row>
