@@ -34,6 +34,7 @@ export function buildVoiceCallContext(session, def) {
             routing: { peerRole: def.peerRole, peerId: String(def.peerId) },
         };
     }
+    if (def.thread === "group") return null;
     return null;
 }
 

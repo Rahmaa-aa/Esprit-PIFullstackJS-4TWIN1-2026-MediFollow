@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Col, Nav, Row, Tab, Spinner } from "react-bootstrap";
+import { Button, Col, Form, Modal, Nav, Row, Tab, Spinner } from "react-bootstrap";
 import user05 from "/assets/images/user/05.jpg";
 import user06 from "/assets/images/user/06.jpg";
 import user07 from "/assets/images/user/07.jpg";
@@ -54,8 +54,42 @@ function getSession() {
     return { id: "", role: "" };
 }
 
+/** Options médecins / infirmiers (dédupliquées) pour création de groupe. */
+function collectStaffMemberOptions(dc) {
+    const seen = new Map();
+    const add = (arr, role) => {
+        for (const x of arr || []) {
+            if (!x?.id) continue;
+            const k = `${role}:${x.id}`;
+            if (!seen.has(k)) {
+                seen.set(k, {
+                    role,
+                    id: x.id,
+                    label: x.displayName || `${x.firstName || ""} ${x.lastName || ""}`.trim() || x.id,
+                });
+            }
+        }
+    };
+    add(dc.doctors, "doctor");
+    add(dc.nurses, "nurse");
+    add(dc.doctorsAll, "doctor");
+    add(dc.nursesAll, "nurse");
+    for (const p of dc.assignedPatients || []) {
+        if (!p?.id) continue;
+        const k = `patient:${p.id}`;
+        if (!seen.has(k)) {
+            seen.set(k, {
+                role: "patient",
+                id: p.id,
+                label: p.displayName || `${p.firstName || ""} ${p.lastName || ""}`.trim() || p.id,
+            });
+        }
+    }
+    return [...seen.values()];
+}
+
 /** Construit les onglets + sections (même département / patients) pour le template */
-function buildSidebarRows(dc, session) {
+function buildSidebarRows(dc, session, groups = []) {
     const rows = [];
     let box = 1;
     const departmentLabel = dc.department || "—";
@@ -137,6 +171,30 @@ function buildSidebarRows(dc, session) {
             });
         }
 
+        const groupsPatient = Array.isArray(groups) ? groups : [];
+        if (groupsPatient.length) {
+            pushSection("Groupes");
+            for (const g of groupsPatient) {
+                pushItem({
+                    thread: "group",
+                    groupId: g.id,
+                    title: g.name,
+                    subtitle: "Groupe",
+                    data: {
+                        title: g.name,
+                        userimg: user07,
+                        userdetailname: g.name,
+                        useraddress: departmentLabel,
+                        usersortname: (g.name || "").slice(0, 2) || "Gr",
+                        usertelnumber: "—",
+                        userdob: "—",
+                        usergender: "—",
+                        userlanguage: "—",
+                    },
+                });
+            }
+        }
+
         return { rows, departmentLabel };
     }
 
@@ -156,6 +214,29 @@ function buildSidebarRows(dc, session) {
                         userdetailname: p.displayName,
                         useraddress: departmentLabel,
                         usersortname: p.displayName.split(" ")[0] || "",
+                        usertelnumber: "—",
+                        userdob: "—",
+                        usergender: "—",
+                        userlanguage: "—",
+                    },
+                });
+            }
+        }
+        const groupsList = Array.isArray(groups) ? groups : [];
+        if (groupsList.length) {
+            pushSection("Groupes");
+            for (const g of groupsList) {
+                pushItem({
+                    thread: "group",
+                    groupId: g.id,
+                    title: g.name,
+                    subtitle: "Groupe",
+                    data: {
+                        title: g.name,
+                        userimg: user07,
+                        userdetailname: g.name,
+                        useraddress: departmentLabel,
+                        usersortname: (g.name || "").slice(0, 2) || "Gr",
                         usertelnumber: "—",
                         userdob: "—",
                         usergender: "—",
@@ -444,6 +525,12 @@ const Chat = () => {
     const [loading, setLoading] = useState(false);
     const [unreadByPatientId, setUnreadByPatientId] = useState({});
     const [sidebarSearchQuery, setSidebarSearchQuery] = useState("");
+    const [departmentContactsCache, setDepartmentContactsCache] = useState(null);
+    const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+    const [newGroupName, setNewGroupName] = useState("");
+    const [selectedMemberKeys, setSelectedMemberKeys] = useState(() => new Set());
+    const [createGroupError, setCreateGroupError] = useState("");
+    const [creatingGroup, setCreatingGroup] = useState(false);
     const voiceCallRef = useRef(null);
 
     const SidebarToggle = () => {
@@ -515,6 +602,11 @@ const Chat = () => {
                         if (c.patientId) u[c.patientId] = c.unreadCount || 0;
                     });
                     setUnreadByPatientId(u);
+                } else if (def.thread === "group") {
+                    const rows = await chatApi.getMessages({ groupId: def.groupId, limit: 80 });
+                    const list = Array.isArray(rows) ? rows : [];
+                    setMessagesByKey((prev) => ({ ...prev, [eventKey]: list }));
+                    await chatApi.markReadGroup(def.groupId).catch(() => {});
                 } else if (def.thread === "patientStaff") {
                     const rows = await chatApi.getMessages({
                         peerRole: def.peerRole,
@@ -552,7 +644,12 @@ const Chat = () => {
             try {
                 const dc = await chatApi.getDepartmentContacts();
                 if (cancelled) return;
-                const { rows, departmentLabel: dl } = buildSidebarRows(dc, session);
+                setDepartmentContactsCache(dc);
+                let groups = [];
+                if (session.role === "doctor" || session.role === "nurse" || session.role === "patient") {
+                    groups = await chatApi.getGroups().catch(() => []);
+                }
+                const { rows, departmentLabel: dl } = buildSidebarRows(dc, session, groups);
                 setDepartmentLabel(dl);
                 setSidebarRows(rows);
                 const p = loadPinned(session.id);
@@ -587,6 +684,8 @@ const Chat = () => {
         try {
             if (def.thread === "patientLegacy" || def.thread === "patient") {
                 await chatApi.sendMessage({ patientId: def.patientId, body: text });
+            } else if (def.thread === "group") {
+                await chatApi.sendMessage({ groupId: def.groupId, body: text });
             } else {
                 await chatApi.sendMessage({
                     peerRole: def.peerRole,
@@ -613,6 +712,8 @@ const Chat = () => {
             fd.append("file", blob, "voice.webm");
             if (def.thread === "patientLegacy" || def.thread === "patient") {
                 fd.append("patientId", def.patientId);
+            } else if (def.thread === "group") {
+                fd.append("groupId", def.groupId);
             } else {
                 fd.append("peerRole", def.peerRole);
                 fd.append("peerId", def.peerId);
@@ -639,6 +740,8 @@ const Chat = () => {
             if (caption) fd.append("caption", caption);
             if (def.thread === "patientLegacy" || def.thread === "patient") {
                 fd.append("patientId", def.patientId);
+            } else if (def.thread === "group") {
+                fd.append("groupId", def.groupId);
             } else {
                 fd.append("peerRole", def.peerRole);
                 fd.append("peerId", def.peerId);
@@ -720,6 +823,71 @@ const Chat = () => {
         saveHidden(session.id, []);
         setHiddenKeys(new Set());
     }, [session.id]);
+
+    const memberOptions = useMemo(() => {
+        if (!departmentContactsCache) return [];
+        return collectStaffMemberOptions(departmentContactsCache).filter(
+            (m) => !(String(m.id) === String(session.id) && m.role === session.role),
+        );
+    }, [departmentContactsCache, session.id, session.role]);
+
+    const handleOpenCreateGroupModal = () => {
+        setNewGroupName("");
+        setSelectedMemberKeys(new Set());
+        setCreateGroupError("");
+        setShowCreateGroupModal(true);
+    };
+
+    const handleToggleMemberKey = (k) => {
+        setSelectedMemberKeys((prev) => {
+            const next = new Set(prev);
+            if (next.has(k)) next.delete(k);
+            else next.add(k);
+            return next;
+        });
+    };
+
+    const handleSubmitCreateGroup = async () => {
+        setCreateGroupError("");
+        const name = newGroupName.trim();
+        if (!name) {
+            setCreateGroupError("Indiquez un nom de groupe.");
+            return;
+        }
+        if (selectedMemberKeys.size < 1) {
+            setCreateGroupError("Ajoutez au moins un autre membre (collègue ou patient suivi).");
+            return;
+        }
+        const members = [{ role: session.role, id: session.id }];
+        for (const k of selectedMemberKeys) {
+            const i = k.indexOf(":");
+            if (i < 1) continue;
+            const roleStr = k.slice(0, i);
+            const id = k.slice(i + 1);
+            if (roleStr === "patient") members.push({ role: "patient", id });
+            else if (roleStr === "nurse") members.push({ role: "nurse", id });
+            else members.push({ role: "doctor", id });
+        }
+        if (members.length < 2) {
+            setCreateGroupError("Au moins 2 membres (vous inclus).");
+            return;
+        }
+        setCreatingGroup(true);
+        try {
+            await chatApi.createGroup({ name, members });
+            setShowCreateGroupModal(false);
+            const dc = await chatApi.getDepartmentContacts();
+            setDepartmentContactsCache(dc);
+            const groups = await chatApi.getGroups().catch(() => []);
+            const { rows, departmentLabel: dl } = buildSidebarRows(dc, session, groups);
+            setDepartmentLabel(dl);
+            setSidebarRows(rows);
+        } catch (e) {
+            setCreateGroupError(e?.message || "Création impossible");
+        } finally {
+            setCreatingGroup(false);
+        }
+    };
 
     useEffect(() => {
         const items =
@@ -1049,6 +1217,20 @@ const Chat = () => {
                                     </span>
                                 </div>
                             )}
+                            {(session.role === "doctor" || session.role === "nurse") && (
+                                <div className="px-3 pb-3">
+                                    <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        className="w-100"
+                                        type="button"
+                                        onClick={handleOpenCreateGroupModal}
+                                    >
+                                        <i className="ri-group-line me-1" aria-hidden />
+                                        Créer un groupe
+                                    </Button>
+                                </div>
+                            )}
                             {loading ? (
                                 <div className="p-4 text-center">
                                     <Spinner animation="border" size="sm" />
@@ -1211,6 +1393,70 @@ const Chat = () => {
                     </div>
                 </Tab.Container>
             </Row>
+            <Modal
+                show={showCreateGroupModal}
+                onHide={() => {
+                    if (!creatingGroup) setShowCreateGroupModal(false);
+                }}
+                centered
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>Nouveau groupe</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {createGroupError ? (
+                        <div className="alert alert-danger py-2 small" role="alert">
+                            {createGroupError}
+                        </div>
+                    ) : null}
+                    <Form.Group className="mb-3">
+                        <Form.Label>Nom du groupe</Form.Label>
+                        <Form.Control
+                            value={newGroupName}
+                            onChange={(e) => setNewGroupName(e.target.value)}
+                            placeholder="ex. Réunion équipe"
+                            maxLength={120}
+                        />
+                    </Form.Group>
+                    <Form.Label>
+                        Membres supplémentaires (collègues ou patients que vous suivez — vous êtes inclus
+                        automatiquement)
+                    </Form.Label>
+                    <div className="border rounded p-2" style={{ maxHeight: 220, overflowY: "auto" }}>
+                        {memberOptions.length === 0 ? (
+                            <span className="text-muted small">Chargement des contacts…</span>
+                        ) : (
+                            memberOptions.map((m) => {
+                                const k = `${m.role}:${m.id}`;
+                                return (
+                                    <Form.Check
+                                        key={k}
+                                        type="checkbox"
+                                        id={`mg-${k.replace(/[^a-zA-Z0-9_-]/g, "_")}`}
+                                        label={`${m.label} (${m.role === "doctor" ? "Médecin" : m.role === "nurse" ? "IDE" : "Patient"})`}
+                                        checked={selectedMemberKeys.has(k)}
+                                        onChange={() => handleToggleMemberKey(k)}
+                                        className="mb-1"
+                                    />
+                                );
+                            })
+                        )}
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button
+                        variant="secondary"
+                        type="button"
+                        onClick={() => setShowCreateGroupModal(false)}
+                        disabled={creatingGroup}
+                    >
+                        Annuler
+                    </Button>
+                    <Button variant="primary" type="button" onClick={handleSubmitCreateGroup} disabled={creatingGroup}>
+                        {creatingGroup ? "Création…" : "Créer le groupe"}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </>
     );
 };

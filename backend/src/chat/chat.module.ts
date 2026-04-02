@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CareMessage, CareMessageSchema } from './schemas/care-message.schema';
+import { StaffGroup, StaffGroupSchema } from './schemas/staff-group.schema';
 import { ChatReadState, ChatReadStateSchema } from './schemas/chat-read-state.schema';
 import { Patient, PatientSchema } from '../patient/schemas/patient.schema';
 import { Doctor, DoctorSchema } from '../doctor/schemas/doctor.schema';
@@ -15,6 +16,7 @@ import { NotificationModule } from '../notification/notification.module';
     NotificationModule,
     MongooseModule.forFeature([
       { name: CareMessage.name, schema: CareMessageSchema },
+      { name: StaffGroup.name, schema: StaffGroupSchema },
       { name: ChatReadState.name, schema: ChatReadStateSchema },
       { name: Patient.name, schema: PatientSchema },
       { name: Doctor.name, schema: DoctorSchema },

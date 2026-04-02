@@ -55,6 +55,29 @@ export class ChatController {
     return this.chatService.getDepartmentContacts({ id: u.id, role: String(u.role || '') });
   }
 
+  /** Groupes staff : médecin / infirmier uniquement. */
+  @UseGuards(JwtAuthGuard)
+  @Get('groups')
+  async listGroups(@Req() req: { user?: { id?: unknown; role?: string } }) {
+    const u = req.user;
+    if (!u?.id) throw new ForbiddenException();
+    return this.chatService.listStaffGroups({ id: u.id, role: String(u.role || '') });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('groups')
+  async createGroup(
+    @Req() req: { user?: { id?: unknown; role?: string } },
+    @Body() body: { name?: string; members?: { role: 'doctor' | 'nurse' | 'patient'; id: string }[] },
+  ) {
+    const u = req.user;
+    if (!u?.id) throw new ForbiddenException();
+    return this.chatService.createStaffGroup(
+      { id: u.id, role: String(u.role || '') },
+      { name: String(body?.name || ''), members: body?.members || [] },
+    );
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('conversations')
   async conversations(@Req() req: { user?: { id?: unknown; role?: string } }) {
@@ -71,12 +94,16 @@ export class ChatController {
     @Query('patientId') patientId?: string,
     @Query('peerRole') peerRole?: string,
     @Query('peerId') peerId?: string,
+    @Query('groupId') groupId?: string,
     @Query('before') before?: string,
     @Query('limit') limit?: string,
   ) {
     const u = req.user;
     if (!u?.id) throw new ForbiddenException();
     const lim = limit ? parseInt(limit, 10) : 50;
+    if (groupId) {
+      return this.chatService.getMessagesGroup({ id: u.id, role: String(u.role || '') }, groupId, before, lim);
+    }
     if (peerRole && peerId) {
       if (peerRole !== 'doctor' && peerRole !== 'nurse') {
         throw new BadRequestException('peerRole invalide');
@@ -127,6 +154,7 @@ export class ChatController {
       kind?: 'text' | 'call';
       peerRole?: 'doctor' | 'nurse';
       peerId?: string;
+      groupId?: string;
     },
   ) {
     const u = req.user;
@@ -140,6 +168,7 @@ export class ChatController {
         patientId: body.patientId,
         peerRole: body.peerRole,
         peerId: body.peerId,
+        groupId: body.groupId,
       },
     );
   }
@@ -239,5 +268,16 @@ export class ChatController {
       throw new BadRequestException('peerRole et peerId requis');
     }
     return this.chatService.markReadPeer({ id: u.id, role: String(u.role || '') }, peerRole, peerId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('read-group/:groupId')
+  async readGroup(
+    @Req() req: { user?: { id?: unknown; role?: string } },
+    @Param('groupId') groupId: string,
+  ) {
+    const u = req.user;
+    if (!u?.id) throw new ForbiddenException();
+    return this.chatService.markReadGroup({ id: u.id, role: String(u.role || '') }, groupId);
   }
 }

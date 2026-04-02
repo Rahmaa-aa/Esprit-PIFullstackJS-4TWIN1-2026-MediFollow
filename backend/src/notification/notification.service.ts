@@ -625,6 +625,45 @@ export class NotificationService {
     }
   }
 
+  /** Messages dans un groupe (personnel + patients membres). */
+  async notifyGroupChatMessage(params: {
+    senderRole: 'doctor' | 'nurse' | 'patient';
+    senderId: string;
+    senderName: string;
+    groupName: string;
+    members: { role: 'doctor' | 'nurse' | 'patient'; id: string }[];
+    kind: 'text' | 'voice' | 'image' | 'video' | 'document' | 'call';
+    bodyText: string;
+  }) {
+    const { senderRole, senderId, senderName, groupName, members, kind, bodyText } = params;
+    const base = this.buildChatNotificationContent(kind, bodyText, senderName);
+    const titleIn = `${groupName} — ${base.title}`;
+    const tasks: Promise<unknown>[] = [];
+    for (const m of members) {
+      if (m.id === senderId && m.role === senderRole) continue;
+      tasks.push(
+        this.notificationModel.create({
+          recipientId: m.id,
+          recipientRole: m.role,
+          type: base.type,
+          title: titleIn,
+          body: base.body,
+          read: false,
+        }),
+      );
+    }
+    await Promise.all(tasks);
+    const out = this.buildSenderOutboxContent(kind, bodyText, groupName);
+    await this.notificationModel.create({
+      recipientId: senderId,
+      recipientRole: senderRole,
+      type: out.type,
+      title: out.title,
+      body: out.body,
+      read: false,
+    });
+  }
+
   /** Appel WebRTC entrant (socket voice:invite). */
   async notifyVoiceInvite(params: {
     calleeUserId: string;

@@ -569,6 +569,29 @@ export const chatApi = {
     }
     return api.get("/chat/department-contacts");
   },
+  /** Médecin, infirmier ou patient : groupes dont le connecté est membre. */
+  getGroups: () => {
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.getWithDoctorToken("/chat/groups");
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.getWithNurseToken("/chat/groups");
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.getWithPatientToken("/chat/groups");
+    }
+    return api.get("/chat/groups");
+  },
+  /** Création de groupe (médecin / infirmier uniquement). */
+  createGroup: (payload) => {
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.postWithDoctorToken("/chat/groups", payload);
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.postWithNurseToken("/chat/groups", payload);
+    }
+    return api.post("/chat/groups", payload);
+  },
   getConversations: () => {
     if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
       return api.getWithDoctorToken("/chat/conversations");
@@ -583,6 +606,7 @@ export const chatApi = {
   },
   /** Fil patient : (patientId, params) — fil pair : ({ peerRole, peerId, before?, limit? }) */
   getMessages: (arg1, params = {}) => {
+    const isGroup = arg1 && typeof arg1 === "object" && !Array.isArray(arg1) && arg1.groupId;
     const isPeer =
       arg1 &&
       typeof arg1 === "object" &&
@@ -590,7 +614,11 @@ export const chatApi = {
       (arg1.peerRole === "doctor" || arg1.peerRole === "nurse") &&
       arg1.peerId;
     const q = new URLSearchParams();
-    if (isPeer) {
+    if (isGroup) {
+      q.set("groupId", String(arg1.groupId));
+      if (arg1.before) q.set("before", String(arg1.before));
+      if (arg1.limit != null) q.set("limit", String(arg1.limit));
+    } else if (isPeer) {
       q.set("peerRole", String(arg1.peerRole));
       q.set("peerId", String(arg1.peerId));
       if (arg1.before) q.set("before", String(arg1.before));
@@ -613,23 +641,27 @@ export const chatApi = {
       return api.get(path);
     }
     const path = `/chat/messages?${q.toString()}`;
-    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
-      return api.getWithDoctorToken(path);
+    if (isGroup || isPeer) {
+      if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+        return api.getWithDoctorToken(path);
+      }
+      if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+        return api.getWithNurseToken(path);
+      }
+      if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+        return api.getWithPatientToken(path);
+      }
+      return api.get(path);
     }
-    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
-      return api.getWithNurseToken(path);
-    }
-    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
-      return api.getWithPatientToken(path);
-    }
-    return api.get(path);
   },
   /** body = texte ; cible patient OU pair (pas les deux). */
   sendMessage: (payload) => {
     const data = { body: payload.body };
     if (payload.kind) data.kind = payload.kind;
     if (payload.patientId) data.patientId = payload.patientId;
-    if (payload.peerRole && payload.peerId) {
+    if (payload.groupId) {
+      data.groupId = payload.groupId;
+    } else if (payload.peerRole && payload.peerId) {
       data.peerRole = payload.peerRole;
       data.peerId = payload.peerId;
     }
@@ -677,6 +709,19 @@ export const chatApi = {
   /** Patient : marquer lu le fil avec un médecin ou un infirmier (distinct du fil staff–staff). */
   markReadPatientStaff: (peerRole, peerId) => {
     const path = `/chat/read-patient-staff?peerRole=${encodeURIComponent(peerRole)}&peerId=${encodeURIComponent(peerId)}`;
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.patchWithPatientToken(path, {});
+    }
+    return api.patch(path, {});
+  },
+  markReadGroup: (groupId) => {
+    const path = `/chat/read-group/${encodeURIComponent(groupId)}`;
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.patchWithDoctorToken(path, {});
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.patchWithNurseToken(path, {});
+    }
     if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
       return api.patchWithPatientToken(path, {});
     }

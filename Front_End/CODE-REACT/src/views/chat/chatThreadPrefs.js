@@ -14,8 +14,9 @@ export function getThreadKey(def) {
   if (def.thread === "patientLegacy") return `legacy:${def.patientId}`;
   if (def.thread === "patientStaff") return `ps:${def.patientId}:${def.peerRole}:${def.peerId}`;
   if (def.thread === "patient") return `pat:${def.patientId}`;
-  if (def.thread === "peer") return `peer:${def.peerRole}:${def.peerId}`;
-  return "";
+    if (def.thread === "peer") return `peer:${def.peerRole}:${def.peerId}`;
+    if (def.thread === "group") return `grp:${def.groupId}`;
+    return "";
 }
 
 export function loadPinned(sessionId) {

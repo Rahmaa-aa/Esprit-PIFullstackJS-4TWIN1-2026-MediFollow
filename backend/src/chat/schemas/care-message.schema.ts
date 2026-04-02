@@ -11,6 +11,10 @@ export class CareMessage extends Document {
   @Prop({ required: false, index: true })
   peerThreadKey?: string;
 
+  /** Fil groupe staff (exclusif avec patientId ; peerThreadKey = group:<id>) */
+  @Prop({ type: Types.ObjectId, ref: 'StaffGroup', required: false, index: true })
+  groupId?: Types.ObjectId;
+
   @Prop({ required: true, enum: ['patient', 'doctor', 'nurse'] })
   senderRole: 'patient' | 'doctor' | 'nurse';
 
@@ -44,3 +48,4 @@ export class CareMessage extends Document {
 export const CareMessageSchema = SchemaFactory.createForClass(CareMessage);
 CareMessageSchema.index({ patientId: 1, createdAt: -1 }, { sparse: true });
 CareMessageSchema.index({ peerThreadKey: 1, createdAt: -1 }, { sparse: true });
+CareMessageSchema.index({ groupId: 1, createdAt: -1 }, { sparse: true });

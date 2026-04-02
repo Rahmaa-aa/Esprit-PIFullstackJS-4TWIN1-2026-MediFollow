@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ChatMessageCryptoService } from './chat-message-crypto.service';
 import { CareMessage } from './schemas/care-message.schema';
+import { StaffGroup } from './schemas/staff-group.schema';
 import { ChatReadState } from './schemas/chat-read-state.schema';
 import { Patient } from '../patient/schemas/patient.schema';
 import { Doctor } from '../doctor/schemas/doctor.schema';
@@ -32,6 +33,7 @@ function patientStaffThreadKey(patientId: string, staffRole: 'doctor' | 'nurse',
 export class ChatService {
   constructor(
     @InjectModel(CareMessage.name) private messageModel: Model<CareMessage>,
+    @InjectModel(StaffGroup.name) private staffGroupModel: Model<StaffGroup>,
     @InjectModel(ChatReadState.name) private readStateModel: Model<ChatReadState>,
     @InjectModel(Patient.name) private patientModel: Model<Patient>,
     @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
@@ -129,6 +131,114 @@ export class ChatService {
       if (dept && String((n as any).department || '').trim() === dept) return;
       throw new ForbiddenException('Infirmier non autorisé pour ce patient');
     }
+  }
+
+  private groupThreadKey(groupId: string): string {
+    return `group:${String(groupId).trim()}`;
+  }
+
+  private async assertGroupMember(user: JwtUser, groupId: string): Promise<void> {
+    const ur = user.role as string;
+    if (ur !== 'doctor' && ur !== 'nurse' && ur !== 'patient') throw new ForbiddenException();
+    const uid = this.uid(user);
+    const g = await this.staffGroupModel.findById(groupId).lean().exec();
+    if (!g) throw new NotFoundException('Groupe introuvable');
+    const ok = (g as any).members.some(
+      (m: { id: string; role: string }) => m.id === uid && m.role === ur,
+    );
+    if (!ok) throw new ForbiddenException('Vous n’êtes pas membre de ce groupe');
+  }
+
+  /** Création de groupe : réservée aux médecins et infirmiers. */
+  async createStaffGroup(
+    user: JwtUser,
+    body: { name: string; members: { role: 'doctor' | 'nurse' | 'patient'; id: string }[] },
+  ) {
+    const ur = user.role as string;
+    if (ur !== 'doctor' && ur !== 'nurse') throw new ForbiddenException();
+    const uid = this.uid(user);
+    const name = String(body.name || '').trim().slice(0, 120);
+    if (!name) throw new BadRequestException('Nom du groupe requis');
+    const raw = Array.isArray(body.members) ? body.members : [];
+    if (raw.length < 2) throw new BadRequestException('Au moins 2 membres (vous inclus)');
+    const norm = raw.map((m) => {
+      const r = String(m.role || '').toLowerCase();
+      const id = String(m.id || '').trim();
+      if (r === 'patient') return { role: 'patient' as const, id };
+      if (r === 'nurse') return { role: 'nurse' as const, id };
+      return { role: 'doctor' as const, id };
+    });
+    if (norm.some((m) => !m.id)) throw new BadRequestException('Membre invalide');
+    const uniq = new Set(norm.map((m) => `${m.role}:${m.id}`));
+    if (uniq.size !== norm.length) throw new BadRequestException('Membres en double');
+    const hasSelf = norm.some((m) => m.id === uid && m.role === ur);
+    if (!hasSelf) throw new BadRequestException('Vous devez être membre du groupe');
+    for (const m of norm) {
+      if (m.role === 'doctor') {
+        const d = await this.doctorModel.findById(m.id).select('_id').lean().exec();
+        if (!d) throw new BadRequestException('Médecin introuvable');
+      } else if (m.role === 'nurse') {
+        const n = await this.nurseModel.findById(m.id).select('_id').lean().exec();
+        if (!n) throw new BadRequestException('Infirmier introuvable');
+      } else {
+        const p = await this.patientModel.findById(m.id).select('doctorId nurseId').lean().exec();
+        if (!p) throw new BadRequestException('Patient introuvable');
+        if (ur === 'doctor' && String((p as any).doctorId || '') !== uid) {
+          throw new ForbiddenException('Vous ne pouvez ajouter que vos patients assignés');
+        }
+        if (ur === 'nurse' && String((p as any).nurseId || '') !== uid) {
+          throw new ForbiddenException('Vous ne pouvez ajouter que vos patients assignés');
+        }
+      }
+    }
+    const doc = await this.staffGroupModel.create({
+      name,
+      members: norm,
+      createdByRole: ur as 'doctor' | 'nurse',
+      createdById: uid,
+    });
+    return {
+      id: String(doc._id),
+      name: doc.name,
+      members: doc.members,
+      createdAt: (doc as any).createdAt,
+    };
+  }
+
+  async listStaffGroups(user: JwtUser) {
+    const ur = user.role as string;
+    if (ur !== 'doctor' && ur !== 'nurse' && ur !== 'patient') throw new ForbiddenException();
+    const uid = this.uid(user);
+    const rows = await this.staffGroupModel
+      .find({ members: { $elemMatch: { id: uid, role: ur } } })
+      .sort({ updatedAt: -1 })
+      .lean()
+      .exec();
+    return rows.map((x: any) => ({
+      id: String(x._id),
+      name: x.name,
+      members: x.members,
+      updatedAt: x.updatedAt,
+    }));
+  }
+
+  async getMessagesGroup(user: JwtUser, groupId: string, beforeIso?: string, limit = 50) {
+    await this.assertGroupMember(user, groupId);
+    return this.fetchMessagesQuery({ peerThreadKey: this.groupThreadKey(groupId) }, beforeIso, limit);
+  }
+
+  async markReadGroup(user: JwtUser, groupId: string) {
+    await this.assertGroupMember(user, groupId);
+    const ur = user.role as 'doctor' | 'nurse' | 'patient';
+    if (ur !== 'doctor' && ur !== 'nurse' && ur !== 'patient') throw new ForbiddenException();
+    const key = this.groupThreadKey(groupId);
+    const now = new Date();
+    await this.readStateModel.findOneAndUpdate(
+      { peerThreadKey: key, readerId: this.uid(user), readerRole: ur },
+      { $set: { lastReadAt: now } },
+      { upsert: true, new: true },
+    );
+    return { ok: true, lastReadAt: now };
   }
 
   /** Fil « Mon fil patient » : messages sans peerThreadKey (ancien fil équipe partagé). */
@@ -473,6 +583,7 @@ export class ChatService {
     return {
       id: String(m._id),
       patientId: m.patientId ? String(m.patientId) : undefined,
+      groupId: m.groupId ? String(m.groupId) : undefined,
       peerThreadKey: m.peerThreadKey,
       senderRole: m.senderRole,
       senderId: m.senderId,
@@ -503,7 +614,7 @@ export class ChatService {
       mimeType?: string;
       fileName?: string;
     },
-    routing: { patientId?: string; peerRole?: 'doctor' | 'nurse'; peerId?: string },
+    routing: { patientId?: string; peerRole?: 'doctor' | 'nurse'; peerId?: string; groupId?: string },
   ) {
     const kind = content.kind;
     const text = String(content.text ?? '').trim();
@@ -552,6 +663,39 @@ export class ChatService {
           }
         : {}),
     });
+
+    if (routing.groupId && (role === 'doctor' || role === 'nurse' || role === 'patient')) {
+      const gid = String(routing.groupId).trim();
+      if (!Types.ObjectId.isValid(gid)) throw new BadRequestException('groupId invalide');
+      await this.assertGroupMember(user, gid);
+      const key = this.groupThreadKey(gid);
+      const oid = new Types.ObjectId(gid);
+      const doc = await this.messageModel.create({
+        ...base,
+        peerThreadKey: key,
+        groupId: oid,
+        senderRole: role,
+        senderId: uid,
+      });
+      const mapped = this.mapCreatedMessage(doc.toObject());
+      const g = await this.staffGroupModel.findById(oid).lean().exec();
+      if (g) {
+        const senderName = await this.notificationService.resolveChatSenderName(role, uid);
+        const bodyForNotify = isVoice ? '' : text;
+        await this.notificationService
+          .notifyGroupChatMessage({
+            senderRole: role,
+            senderId: uid,
+            senderName,
+            groupName: String((g as any).name || 'Groupe'),
+            members: (g as any).members as { role: 'doctor' | 'nurse' | 'patient'; id: string }[],
+            kind,
+            bodyText: bodyForNotify,
+          })
+          .catch(() => {});
+      }
+      return mapped;
+    }
 
     if (role === 'patient' && routing.peerRole && routing.peerId) {
       await this.assertPatientCanMessageStaff(uid, routing.peerRole, routing.peerId);
@@ -618,7 +762,7 @@ export class ChatService {
 
   private async notifyRecipientsAfterMessage(
     user: JwtUser,
-    routing: { patientId?: string; peerRole?: 'doctor' | 'nurse'; peerId?: string },
+    routing: { patientId?: string; peerRole?: 'doctor' | 'nurse'; peerId?: string; groupId?: string },
     payload: { kind: string; text: string },
     mapped: { patientId?: string },
   ) {
@@ -713,6 +857,7 @@ export class ChatService {
       patientId?: string;
       peerRole?: 'doctor' | 'nurse';
       peerId?: string;
+      groupId?: string;
     },
   ) {
     const kind = body.kind === 'call' ? 'call' : 'text';
@@ -720,14 +865,19 @@ export class ChatService {
     return this.routePostMessage(
       user,
       { kind, text },
-      { patientId: body.patientId, peerRole: body.peerRole, peerId: body.peerId },
+      {
+        patientId: body.patientId,
+        peerRole: body.peerRole,
+        peerId: body.peerId,
+        groupId: body.groupId,
+      },
     );
   }
 
   async postVoiceMessage(
     user: JwtUser,
     file: { filename: string; mimetype?: string },
-    fields: { patientId?: string; peerRole?: string; peerId?: string },
+    fields: { patientId?: string; peerRole?: string; peerId?: string; groupId?: string },
   ) {
     if (!file?.filename) throw new BadRequestException('Fichier audio requis');
     const mt = String(file.mimetype || '').toLowerCase();
@@ -744,7 +894,12 @@ export class ChatService {
     return this.routePostMessage(
       user,
       { kind: 'voice', text: '', audioUrl },
-      { patientId: fields.patientId, peerRole, peerId: fields.peerId },
+      {
+        patientId: fields.patientId,
+        peerRole,
+        peerId: fields.peerId,
+        groupId: fields.groupId,
+      },
     );
   }
 
@@ -757,6 +912,7 @@ export class ChatService {
       patientId?: string;
       peerRole?: string;
       peerId?: string;
+      groupId?: string;
     },
   ) {
     if (!file?.filename) throw new BadRequestException('Fichier requis');
@@ -804,7 +960,12 @@ export class ChatService {
         mimeType: file.mimetype || '',
         fileName: orig,
       },
-      { patientId: fields.patientId, peerRole, peerId: fields.peerId },
+      {
+        patientId: fields.patientId,
+        peerRole,
+        peerId: fields.peerId,
+        groupId: fields.groupId,
+      },
     );
   }
 
