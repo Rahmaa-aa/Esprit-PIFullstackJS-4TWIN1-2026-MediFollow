@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import { Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { useNavigate, useParams } from "react-router-dom";
@@ -18,9 +19,31 @@ const COUNTRIES = [
 ];
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const GENDERS = ["Homme", "Femme", "Autre"];
+const GENDER_VALUES = ["Homme", "Femme", "Autre"];
+
+/** Stable slug for i18n keys (matches editPatient.departments.*) */
+function departmentSlug(name) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/-/g, "_")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "");
+}
+
+function normalizeGenderForForm(g) {
+  if (g == null || String(g).trim() === "") return "";
+  const s = String(g).trim().toLowerCase();
+  if (["homme", "male", "m", "man"].includes(s)) return "Homme";
+  if (["femme", "female", "f", "woman"].includes(s)) return "Femme";
+  if (["other", "autre", "o"].includes(s)) return "Autre";
+  return String(g).trim();
+}
 
 const EditPatient = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -30,6 +53,20 @@ const EditPatient = () => {
   const [originalProfileImage, setOriginalProfileImage] = useState("");
   const [formData, setFormData] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
+
+  const genderOptions = useMemo(
+    () =>
+      GENDER_VALUES.map((value) => ({
+        value,
+        label:
+          value === "Homme"
+            ? t("patientDashboard.genderMale")
+            : value === "Femme"
+              ? t("patientDashboard.genderFemale")
+              : t("patientDashboard.genderOther"),
+      })),
+    [t],
+  );
 
   useEffect(() => {
     const fetchPatient = async () => {
@@ -44,7 +81,7 @@ const EditPatient = () => {
           lname: data.lastName || "",
           email: data.email || "",
           dob: data.dateOfBirth || "",
-          gender: data.gender || "",
+          gender: normalizeGenderForForm(data.gender),
           bloodType: data.bloodType || "",
           mobno: data.phone || "",
           add1: data.address || "",
@@ -54,24 +91,23 @@ const EditPatient = () => {
           altconno: data.alternateContact || "",
           service: data.service || "",
           department: data.department || data.service || "",
-          // Discharge
           admissionDate: data.admissionDate || "",
           dischargeDate: data.dischargeDate || "",
           diagnosis: data.diagnosis || "",
           dischargeNotes: data.dischargeNotes || "",
-          // Physical
           weight: data.weight || "",
           height: data.height || "",
         });
         const country = COUNTRIES.find((c) => c.name === data.country);
         setSelectedCountry(country || null);
       } catch (err) {
-        setError(err.message || "Patient non trouvé");
+        setError(err.message || t("editPatient.notFound"));
       } finally {
         setLoadingData(false);
       }
     };
     if (id) fetchPatient();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch only when id changes
   }, [id]);
 
   const handleFileChange = (e) => {
@@ -94,12 +130,12 @@ const EditPatient = () => {
 
     if (password || rpass) {
       if (password !== rpass) {
-        setError("Les mots de passe ne correspondent pas");
+        setError(t("editPatient.passwordMismatch"));
         setLoading(false);
         return;
       }
       if (password?.length < 6) {
-        setError("Le mot de passe doit contenir au moins 6 caractères");
+        setError(t("editPatient.passwordMinLength"));
         setLoading(false);
         return;
       }
@@ -128,21 +164,18 @@ const EditPatient = () => {
       department: form.department?.value,
       service: form.department?.value || form.service?.value,
       profileImage,
-      // Discharge info
       admissionDate: form.admissionDate?.value || "",
       dischargeDate: form.dischargeDate?.value || "",
       diagnosis: form.diagnosis?.value || "",
       dischargeNotes: form.dischargeNotes?.value || "",
-      // Physical stats
       weight: form.weight?.value ? Number(form.weight.value) : undefined,
       height: form.height?.value ? Number(form.height.value) : undefined,
     };
     if (password) payload.password = password;
 
     try {
-      const updated = await patientApi.update(id, payload);
+      await patientApi.update(id, payload);
 
-      // If the edited patient is the logged-in patient, sync localStorage
       const stored = localStorage.getItem("patientUser");
       if (stored) {
         const currentUser = JSON.parse(stored);
@@ -166,7 +199,6 @@ const EditPatient = () => {
             profileImage: payload.profileImage,
           };
           localStorage.setItem("patientUser", JSON.stringify(refreshed));
-          // Notify other components (dashboard, header) that localStorage changed
           window.dispatchEvent(new Event("patientUserUpdated"));
         }
       }
@@ -177,7 +209,7 @@ const EditPatient = () => {
         navigate("/auth/lock-screen");
         return;
       }
-      setError(err.message || "Erreur lors de la mise à jour");
+      setError(err.message || t("editPatient.updateError"));
     } finally {
       setLoading(false);
     }
@@ -189,8 +221,10 @@ const EditPatient = () => {
         <Col sm={12}>
           <Card>
             <Card.Body className="text-center py-5">
-              <div className="spinner-border text-primary" role="status" />
-              <p className="mt-3 mb-0">Chargement...</p>
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">{t("editPatient.loadingHidden")}</span>
+              </div>
+              <p className="mt-3 mb-0">{t("editPatient.loading")}</p>
             </Card.Body>
           </Card>
         </Col>
@@ -204,8 +238,8 @@ const EditPatient = () => {
         <Col sm={12}>
           <Card>
             <Card.Body className="text-center py-5">
-              <p className="text-danger mb-3">{error || "ID manquant"}</p>
-              <Button variant="primary" onClick={() => navigate("/patient/patient-list")}>Retour à la liste</Button>
+              <p className="text-danger mb-3">{error || t("editPatient.missingId")}</p>
+              <Button variant="primary" onClick={() => navigate("/patient/patient-list")}>{t("editPatient.backToList")}</Button>
             </Card.Body>
           </Card>
         </Col>
@@ -220,48 +254,48 @@ const EditPatient = () => {
           <Col lg={3}>
             <Card>
               <Card.Header>
-                <Card.Header.Title><h4 className="card-title">Modifier le patient</h4></Card.Header.Title>
+                <Card.Header.Title><h4 className="card-title">{t("editPatient.titleEdit")}</h4></Card.Header.Title>
               </Card.Header>
               <Card.Body>
                 <Form.Group>
                   <Container className="d-flex flex-column align-items-center py-5">
                     <div className="text-center">
-                      <img className="profile-pic img-fluid rounded-circle mb-3" src={profilePreview} alt="profile-pic" style={{ width: "150px", height: "150px", objectFit: "cover" }} />
+                      <img className="profile-pic img-fluid rounded-circle mb-3" src={profilePreview} alt={t("editPatient.profileAlt")} style={{ width: "150px", height: "150px", objectFit: "cover" }} />
                       <div>
-                        <Button type="button" className="btn btn-primary rounded-1" onClick={() => document.getElementById("file-upload").click()}>Photo de profil</Button>
+                        <Button type="button" className="btn btn-primary rounded-1" onClick={() => document.getElementById("file-upload").click()}>{t("editPatient.profilePhotoBtn")}</Button>
                         <input id="file-upload" className="d-none" type="file" accept="image/*" onChange={handleFileChange} />
                       </div>
                     </div>
                     <div className="mt-3 text-center">
-                      <span>Formats acceptés : </span>
-                      <span className="text-primary">.jpg .png .jpeg</span>
+                      <span>{t("editPatient.acceptedFormats")} </span>
+                      <span className="text-primary">{t("editPatient.formatsList")}</span>
                     </div>
                   </Container>
                 </Form.Group>
                 <Form.Group className="cust-form-input">
-                  <Form.Label className="mb-0">Groupe sanguin :</Form.Label>
+                  <Form.Label className="mb-0">{t("editPatient.bloodType")}</Form.Label>
                   <Form.Control as="select" className="my-2" name="bloodType" defaultValue={formData.bloodType}>
-                    <option value="">Sélectionner</option>
+                    <option value="">{t("editPatient.select")}</option>
                     {BLOOD_TYPES.map((b) => (
                       <option key={b} value={b}>{b}</option>
                     ))}
                   </Form.Control>
                 </Form.Group>
                 <Form.Group className="cust-form-input">
-                  <Form.Label className="mb-0">Genre :</Form.Label>
+                  <Form.Label className="mb-0">{t("editPatient.gender")}</Form.Label>
                   <Form.Control as="select" className="my-2" name="gender" defaultValue={formData.gender}>
-                    <option value="">Sélectionner</option>
-                    {GENDERS.map((g) => (
-                      <option key={g} value={g}>{g}</option>
+                    <option value="">{t("editPatient.select")}</option>
+                    {genderOptions.map(({ value, label }) => (
+                      <option key={value} value={value}>{label}</option>
                     ))}
                   </Form.Control>
                 </Form.Group>
                 <Form.Group className="cust-form-input">
-                  <Form.Label className="mb-0">Département hospitalier :</Form.Label>
+                  <Form.Label className="mb-0">{t("editPatient.hospitalDepartment")}</Form.Label>
                   <Form.Control as="select" className="my-2" name="department" defaultValue={formData.department}>
-                    <option value="">Sélectionner un département</option>
-                    {HOSPITAL_DEPARTMENTS.map((s) => (
-                      <option key={s} value={s}>{s}</option>
+                    <option value="">{t("editPatient.selectDepartment")}</option>
+                    {HOSPITAL_DEPARTMENTS.map((d) => (
+                      <option key={d} value={d}>{t(`editPatient.departments.${departmentSlug(d)}`)}</option>
                     ))}
                   </Form.Control>
                 </Form.Group>
@@ -271,38 +305,38 @@ const EditPatient = () => {
           <Col lg={9}>
             <Card>
               <Card.Header>
-                <Card.Header.Title><h4 className="card-title">Informations du patient</h4></Card.Header.Title>
+                <Card.Header.Title><h4 className="card-title">{t("editPatient.titleInfo")}</h4></Card.Header.Title>
               </Card.Header>
               <Card.Body>
                 <div className="new-user-info">
                   {error && <div className="alert alert-danger">{error}</div>}
                   <Row className="cust-form-input">
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Prénom :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="fname" placeholder="Prénom" required defaultValue={formData.fname} />
+                      <Form.Label className="mb-0">{t("editPatient.firstName")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="fname" placeholder={t("editPatient.placeholderFirstName")} required defaultValue={formData.fname} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Nom :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="lname" placeholder="Nom" required defaultValue={formData.lname} />
+                      <Form.Label className="mb-0">{t("editPatient.lastName")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="lname" placeholder={t("editPatient.placeholderLastName")} required defaultValue={formData.lname} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Email :</Form.Label>
-                      <Form.Control type="email" className="my-2" name="email" placeholder="Email" required defaultValue={formData.email} />
+                      <Form.Label className="mb-0">{t("editPatient.email")}</Form.Label>
+                      <Form.Control type="email" className="my-2" name="email" placeholder={t("editPatient.placeholderEmail")} required defaultValue={formData.email} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Date de naissance :</Form.Label>
-                      <Form.Control type="date" className="my-2" name="dob" placeholder="Date de naissance" defaultValue={formData.dob} />
+                      <Form.Label className="mb-0">{t("editPatient.dateOfBirth")}</Form.Label>
+                      <Form.Control type="date" className="my-2" name="dob" defaultValue={formData.dob} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Adresse :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="add1" placeholder="Adresse" defaultValue={formData.add1} />
+                      <Form.Label className="mb-0">{t("editPatient.address")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="add1" placeholder={t("editPatient.placeholderAddress")} defaultValue={formData.add1} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Ville :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="city" placeholder="Ville" defaultValue={formData.city} />
+                      <Form.Label className="mb-0">{t("editPatient.city")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="city" placeholder={t("editPatient.placeholderCity")} defaultValue={formData.city} />
                     </Col>
                     <Col sm={12} className="form-group">
-                      <Form.Label className="mb-0">Pays :</Form.Label>
+                      <Form.Label className="mb-0">{t("editPatient.country")}</Form.Label>
                       <Form.Control
                         as="select"
                         className="my-2"
@@ -313,22 +347,22 @@ const EditPatient = () => {
                           setSelectedCountry(country || null);
                         }}
                       >
-                        <option value="">Sélectionner</option>
+                        <option value="">{t("editPatient.select")}</option>
                         {COUNTRIES.map((c) => (
                           <option key={c.code} value={c.name}>
-                            {c.name}
+                            {t(`editPatient.countries.${c.name}`)}
                           </option>
                         ))}
                       </Form.Control>
                       {selectedCountry && (
                         <div className="d-flex align-items-center gap-2 mt-1">
                           <img src={selectedCountry.flagUrl} alt="" style={{ width: 24, height: 18, objectFit: "cover" }} />
-                          <span>{selectedCountry.name}</span>
+                          <span>{t(`editPatient.countries.${selectedCountry.name}`)}</span>
                         </div>
                       )}
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Téléphone :</Form.Label>
+                      <Form.Label className="mb-0">{t("editPatient.phone")}</Form.Label>
                       <InputGroup className="my-2">
                         <InputGroup.Text className="bg-white d-flex align-items-center gap-1">
                           {selectedCountry ? (
@@ -343,64 +377,64 @@ const EditPatient = () => {
                         <Form.Control
                           type="tel"
                           name="mobno"
-                          placeholder="Téléphone"
+                          placeholder={t("editPatient.placeholderPhone")}
                           defaultValue={formData.mobno}
                         />
                       </InputGroup>
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Contact alternatif :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="altconno" placeholder="Contact alternatif" defaultValue={formData.altconno} />
+                      <Form.Label className="mb-0">{t("editPatient.alternateContact")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="altconno" placeholder={t("editPatient.placeholderAlternate")} defaultValue={formData.altconno} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Code postal :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="pno" placeholder="Code postal" defaultValue={formData.pno} />
+                      <Form.Label className="mb-0">{t("editPatient.postalCode")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="pno" placeholder={t("editPatient.placeholderPostal")} defaultValue={formData.pno} />
                     </Col>
                   </Row>
                   <hr />
-                  <h5 className="mb-3">Informations d'hospitalisation</h5>
+                  <h5 className="mb-3">{t("editPatient.sectionHospitalization")}</h5>
                   <Row className="cust-form-input">
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Date d'admission :</Form.Label>
+                      <Form.Label className="mb-0">{t("editPatient.admissionDate")}</Form.Label>
                       <Form.Control type="date" className="my-2" name="admissionDate" defaultValue={formData.admissionDate} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Date de sortie :</Form.Label>
+                      <Form.Label className="mb-0">{t("editPatient.dischargeDate")}</Form.Label>
                       <Form.Control type="date" className="my-2" name="dischargeDate" defaultValue={formData.dischargeDate} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Poids (kg) :</Form.Label>
-                      <Form.Control type="number" className="my-2" name="weight" placeholder="ex: 72" defaultValue={formData.weight} />
+                      <Form.Label className="mb-0">{t("editPatient.weightKg")}</Form.Label>
+                      <Form.Control type="number" className="my-2" name="weight" placeholder={t("editPatient.placeholderWeight")} defaultValue={formData.weight} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Taille (cm) :</Form.Label>
-                      <Form.Control type="number" className="my-2" name="height" placeholder="ex: 175" defaultValue={formData.height} />
+                      <Form.Label className="mb-0">{t("editPatient.heightCm")}</Form.Label>
+                      <Form.Control type="number" className="my-2" name="height" placeholder={t("editPatient.placeholderHeight")} defaultValue={formData.height} />
                     </Col>
                     <Col sm={12} className="form-group">
-                      <Form.Label className="mb-0">Diagnostic :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="diagnosis" placeholder="ex: Insuffisance cardiaque" defaultValue={formData.diagnosis} />
+                      <Form.Label className="mb-0">{t("editPatient.diagnosis")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="diagnosis" placeholder={t("editPatient.placeholderDiagnosis")} defaultValue={formData.diagnosis} />
                     </Col>
                     <Col sm={12} className="form-group">
-                      <Form.Label className="mb-0">Instructions post-sortie :</Form.Label>
-                      <Form.Control as="textarea" rows={3} className="my-2" name="dischargeNotes" placeholder="Instructions pour le patient après sa sortie..." defaultValue={formData.dischargeNotes} />
+                      <Form.Label className="mb-0">{t("editPatient.dischargeInstructions")}</Form.Label>
+                      <Form.Control as="textarea" rows={3} className="my-2" name="dischargeNotes" placeholder={t("editPatient.placeholderDischargeNotes")} defaultValue={formData.dischargeNotes} />
                     </Col>
                   </Row>
                   <hr />
-                  <h5 className="mb-3">Changer le mot de passe (optionnel)</h5>
+                  <h5 className="mb-3">{t("editPatient.sectionPassword")}</h5>
                   <Row className="cust-form-input">
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Nouveau mot de passe :</Form.Label>
-                      <Form.Control type="password" className="my-2" name="pass" placeholder="Laisser vide pour conserver" minLength={6} />
+                      <Form.Label className="mb-0">{t("editPatient.newPassword")}</Form.Label>
+                      <Form.Control type="password" className="my-2" name="pass" placeholder={t("editPatient.placeholderKeepPassword")} minLength={6} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Confirmer :</Form.Label>
-                      <Form.Control type="password" className="my-2" name="rpass" placeholder="Confirmer" minLength={6} />
+                      <Form.Label className="mb-0">{t("editPatient.confirmPassword")}</Form.Label>
+                      <Form.Control type="password" className="my-2" name="rpass" placeholder={t("editPatient.placeholderConfirm")} minLength={6} />
                     </Col>
                   </Row>
                   <div className="d-flex gap-2 mt-3">
-                    <Button type="button" variant="outline-danger" onClick={() => navigate("/patient/patient-list")}>Annuler</Button>
+                    <Button type="button" variant="outline-danger" onClick={() => navigate("/patient/patient-list")}>{t("editPatient.cancel")}</Button>
                     <Button type="submit" className="btn btn-primary-subtle" disabled={loading}>
-                      {loading ? "Enregistrement..." : "Enregistrer"}
+                      {loading ? t("editPatient.saving") : t("editPatient.save")}
                     </Button>
                   </div>
                 </div>
