@@ -13,6 +13,7 @@ import { DoctorAvailabilityModule } from './doctor-availability/doctor-availabil
 import { NotificationModule } from './notification/notification.module';
 import { QuestionnaireModule } from './questionnaire/questionnaire.module';
 import { ChatModule } from './chat/chat.module';
+import { VoiceCallModule } from './voice-call/voice-call.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ChatModule } from './chat/chat.module';
     NotificationModule,
     QuestionnaireModule,
     ChatModule,
+    VoiceCallModule,
   ],
 })
 export class AppModule {}

@@ -28,6 +28,26 @@ function formatMsgTime(iso) {
     }
 }
 
+/** Métadonnées d’appel enregistrées en JSON dans body (kind peut manquer côté API / anciennes lignes). */
+function parseCallLogBody(body) {
+    if (body == null || typeof body !== "string") return null;
+    const t = body.trim();
+    if (!t.startsWith("{")) return null;
+    try {
+        const j = JSON.parse(t);
+        if (
+            j &&
+            typeof j === "object" &&
+            ["ended", "declined", "missed", "cancelled"].includes(String(j.outcome || ""))
+        ) {
+            return j;
+        }
+    } catch {
+        /* ignore */
+    }
+    return null;
+}
+
 const ChatData = (props) => {
 
     const { SidebarToggle } = props
@@ -39,6 +59,8 @@ const ChatData = (props) => {
     const onSendMedia = props.onSendMedia;
     const sending = props.sending;
     const session = props.session || { id: "", role: "" };
+    const voiceCallEnabled = props.voiceCallEnabled;
+    const onVoiceCall = props.onVoiceCall;
 
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [show, setShow] = useState(false)
@@ -312,9 +334,24 @@ const ChatData = (props) => {
                         </div>
                     </div>
                     <div className="chat-header-icons d-flex">
-                        <Link to="#" className="chat-icon-phone bg-primary-subtle ms-3">
-                            <i className="ri-phone-line"></i>
-                        </Link>
+                        <button
+                            type="button"
+                            className="chat-icon-phone bg-primary-subtle ms-3"
+                            onClick={() => {
+                                if (isLive && voiceCallEnabled && onVoiceCall && !sending && !recording) {
+                                    onVoiceCall();
+                                }
+                            }}
+                            disabled={!isLive || !voiceCallEnabled || !onVoiceCall || sending || recording}
+                            title={
+                                isLive && voiceCallEnabled
+                                    ? "Appel vocal"
+                                    : "Appel vocal indisponible pour ce fil"
+                            }
+                            aria-label="Appel vocal"
+                        >
+                            <i className="ri-phone-line" aria-hidden />
+                        </button>
                         <Link to="#" className="chat-icon-video bg-primary-subtle">
                             <i className="ri-vidicon-line"></i>
                         </Link>
@@ -378,7 +415,9 @@ const ChatData = (props) => {
                                                 }}
                                             >
                                                 {(() => {
-                                                    const k = m.kind || "text";
+                                                    const callMeta = parseCallLogBody(m.body);
+                                                    const k =
+                                                        m.kind === "call" || callMeta ? "call" : m.kind || "text";
                                                     const capCls = mine ? "text-white" : "";
                                                     if (k === "image" && m.mediaUrl) {
                                                         return (
@@ -448,6 +487,30 @@ const ChatData = (props) => {
                                                                     style={{ maxWidth: 260, minHeight: 36, verticalAlign: "middle" }}
                                                                 />
                                                             </div>
+                                                        );
+                                                    }
+                                                    if (k === "call") {
+                                                        let callLabel = "Appel vocal";
+                                                        try {
+                                                            const j = callMeta || JSON.parse(m.body || "{}");
+                                                            if (j.outcome === "ended" && j.durationSec != null) {
+                                                                const min = Math.floor(j.durationSec / 60);
+                                                                const sec = j.durationSec % 60;
+                                                                callLabel =
+                                                                    min > 0
+                                                                        ? `Appel · ${min} min ${sec} s`
+                                                                        : `Appel · ${sec} s`;
+                                                            } else if (j.outcome === "declined") callLabel = "Appel refusé";
+                                                            else if (j.outcome === "missed") callLabel = "Appel manqué";
+                                                            else if (j.outcome === "cancelled") callLabel = "Appel annulé";
+                                                        } catch {
+                                                            /* ignore */
+                                                        }
+                                                        return (
+                                                            <p className="d-flex align-items-center gap-2 mb-0">
+                                                                <i className="ri-phone-fill flex-shrink-0" aria-hidden />
+                                                                <span>{callLabel}</span>
+                                                            </p>
                                                         );
                                                     }
                                                     return (
@@ -726,9 +789,11 @@ const ChatData = (props) => {
                         placeholder="Votre message…"
                         aria-label="Message"
                         aria-describedby="basic-addon2-1"
-                        value={isLive ? draft : undefined}
-                        onChange={isLive ? (e) => setDraft(e.target.value) : undefined}
-                        disabled={isLive && (!onSendMessage || sending || recording)}
+                        value={isLive ? draft : ""}
+                        onChange={(e) => {
+                            if (isLive) setDraft(e.target.value);
+                        }}
+                        disabled={!isLive || (isLive && (!onSendMessage || sending || recording))}
                     />
                     <button
                         type="submit"

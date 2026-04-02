@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Col, Nav, Row, Tab, Spinner } from "react-bootstrap";
 import user05 from "/assets/images/user/05.jpg";
 import user06 from "/assets/images/user/06.jpg";
@@ -8,6 +8,8 @@ import user09 from "/assets/images/user/09.jpg";
 import user10 from "/assets/images/user/10.jpg";
 import ChatData from "../../components/chat-data";
 import { chatApi } from "../../services/api";
+import VoiceCallLayer from "./VoiceCallLayer";
+import { buildVoiceCallContext } from "./voiceCallUtils";
 
 const generatePath = (path) => {
     const base = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "") || "";
@@ -366,6 +368,7 @@ const Chat = () => {
     const [loadError, setLoadError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [unreadByPatientId, setUnreadByPatientId] = useState({});
+    const voiceCallRef = useRef(null);
 
     const SidebarToggle = () => {
         if (window.innerWidth < 990) {
@@ -380,6 +383,11 @@ const Chat = () => {
         }
         return m;
     }, [sidebarRows]);
+
+    const voicePeerContext = useMemo(
+        () => buildVoiceCallContext(session, tabDefByKey[activeKey]),
+        [session, activeKey, tabDefByKey],
+    );
 
     const loadThread = useCallback(
         async (eventKey, defOverride) => {
@@ -779,6 +787,12 @@ const Chat = () => {
 
     return (
         <>
+            <VoiceCallLayer
+                ref={voiceCallRef}
+                session={session}
+                peerContext={voicePeerContext}
+                onAfterCallLogged={() => loadThread(activeKey)}
+            />
             {loadError && (
                 <div className="alert alert-warning py-2 small mb-2" role="alert">
                     {loadError}
@@ -896,6 +910,12 @@ const Chat = () => {
                                             onSendMedia={activeKey === r.eventKey ? onSendMedia : undefined}
                                             sending={activeKey === r.eventKey ? sending : false}
                                             session={session}
+                                            voiceCallEnabled={activeKey === r.eventKey && !!voicePeerContext}
+                                            onVoiceCall={
+                                                activeKey === r.eventKey && voicePeerContext
+                                                    ? () => voiceCallRef.current?.startOutgoing()
+                                                    : undefined
+                                            }
                                         />
                                     </Tab.Pane>
                                 ))}

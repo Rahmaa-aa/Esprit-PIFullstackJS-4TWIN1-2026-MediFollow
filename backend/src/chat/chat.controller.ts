@@ -120,7 +120,14 @@ export class ChatController {
   @Post('messages')
   async post(
     @Req() req: { user?: { id?: unknown; role?: string } },
-    @Body() body: { patientId?: string; body?: string; peerRole?: 'doctor' | 'nurse'; peerId?: string },
+    @Body()
+    body: {
+      patientId?: string;
+      body?: string;
+      kind?: 'text' | 'call';
+      peerRole?: 'doctor' | 'nurse';
+      peerId?: string;
+    },
   ) {
     const u = req.user;
     if (!u?.id) throw new ForbiddenException();
@@ -128,6 +135,8 @@ export class ChatController {
       { id: u.id, role: String(u.role || '') },
       {
         text: body.body ?? '',
+        body: body.body,
+        kind: body.kind,
         patientId: body.patientId,
         peerRole: body.peerRole,
         peerId: body.peerId,

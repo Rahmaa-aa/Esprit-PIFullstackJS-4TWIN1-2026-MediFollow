@@ -7,12 +7,14 @@ import { mkdirSync } from 'fs';
 import { join } from 'path';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { AuthService } from './auth/auth.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false });
+  app.useWebSocketAdapter(new IoAdapter(app));
   const mediaDir = join(process.cwd(), 'uploads', 'chat');
   mkdirSync(mediaDir, { recursive: true });
   app.useStaticAssets(mediaDir, { prefix: '/api/chat/media/' });

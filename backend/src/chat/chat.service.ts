@@ -262,6 +262,23 @@ export class ChatService {
     if (kind === 'image') return 'Photo';
     if (kind === 'video') return 'Vidéo';
     if (kind === 'document') return 'Document';
+    if (kind === 'call') {
+      const raw = this.messageCrypto.decryptField(String((doc as any).body || ''));
+      try {
+        const j = JSON.parse(raw) as { outcome?: string; durationSec?: number };
+        if (j?.outcome === 'ended' && j.durationSec != null && j.durationSec >= 0) {
+          const m = Math.floor(j.durationSec / 60);
+          const s = j.durationSec % 60;
+          return m > 0 ? `Appel · ${m} min ${s} s` : `Appel · ${s} s`;
+        }
+        if (j?.outcome === 'declined') return 'Appel refusé';
+        if (j?.outcome === 'missed') return 'Appel manqué';
+        if (j?.outcome === 'cancelled') return 'Appel annulé';
+      } catch {
+        /* ignore */
+      }
+      return 'Appel vocal';
+    }
     const body = this.messageCrypto.decryptField(String((doc as any).body || ''));
     return body.slice(0, 120);
   }
@@ -269,7 +286,7 @@ export class ChatService {
   /** Chiffre les champs sensibles avant insertion (si clé configurée). */
   private sealForDb(payload: {
     body: string;
-    kind: 'text' | 'voice' | 'image' | 'video' | 'document';
+    kind: 'text' | 'voice' | 'image' | 'video' | 'document' | 'call';
     audioUrl?: string;
     mediaUrl?: string;
     mimeType?: string;
@@ -293,7 +310,7 @@ export class ChatService {
     }
     return out as {
       body: string;
-      kind: 'text' | 'voice' | 'image' | 'video' | 'document';
+      kind: 'text' | 'voice' | 'image' | 'video' | 'document' | 'call';
       audioUrl?: string;
       mediaUrl?: string;
       mimeType?: string;
@@ -428,14 +445,29 @@ export class ChatService {
     const mediaRaw = m.mediaUrl != null && m.mediaUrl !== '' ? String(m.mediaUrl) : undefined;
     const mtRaw = m.mimeType != null && m.mimeType !== '' ? String(m.mimeType) : undefined;
     const fnRaw = m.fileName != null && m.fileName !== '' ? String(m.fileName) : undefined;
+    const body = this.messageCrypto.decryptField(String(m.body ?? ''));
+    let kind = (m.kind as 'text' | 'voice' | 'image' | 'video' | 'document' | 'call') || 'text';
+    if (kind === 'text') {
+      try {
+        const t = body.trim();
+        if (t.startsWith('{')) {
+          const j = JSON.parse(t) as { outcome?: string };
+          if (['ended', 'declined', 'missed', 'cancelled'].includes(String(j?.outcome || ''))) {
+            kind = 'call';
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    }
     return {
       id: String(m._id),
       patientId: m.patientId ? String(m.patientId) : undefined,
       peerThreadKey: m.peerThreadKey,
       senderRole: m.senderRole,
       senderId: m.senderId,
-      body: this.messageCrypto.decryptField(String(m.body ?? '')),
-      kind: (m.kind as 'text' | 'voice' | 'image' | 'video' | 'document') || 'text',
+      body,
+      kind,
       audioUrl: audioRaw ? this.messageCrypto.decryptField(audioRaw) : undefined,
       mediaUrl: mediaRaw ? this.messageCrypto.decryptField(mediaRaw) : undefined,
       mimeType: mtRaw ? this.messageCrypto.decryptField(mtRaw) : undefined,
@@ -454,7 +486,7 @@ export class ChatService {
   private async routePostMessage(
     user: JwtUser,
     content: {
-      kind: 'text' | 'voice' | 'image' | 'video' | 'document';
+      kind: 'text' | 'voice' | 'image' | 'video' | 'document' | 'call';
       text: string;
       audioUrl?: string;
       mediaUrl?: string;
@@ -467,10 +499,25 @@ export class ChatService {
     const text = String(content.text ?? '').trim();
     const isVoice = kind === 'voice';
     const isMedia = kind === 'image' || kind === 'video' || kind === 'document';
+    const isCall = kind === 'call';
 
     if (kind === 'text') {
       if (!text) throw new BadRequestException('Message vide');
       if (text.length > 4000) throw new BadRequestException('Message trop long (4000 caractères max)');
+    } else if (isCall) {
+      if (!text) throw new BadRequestException('Métadonnées appel manquantes');
+      if (text.length > 2000) throw new BadRequestException('Métadonnées appel trop longues');
+      try {
+        const j = JSON.parse(text) as { outcome?: string; durationSec?: number };
+        const ok = ['ended', 'declined', 'missed', 'cancelled'].includes(String(j?.outcome || ''));
+        if (!ok) throw new Error('bad');
+        if (j.outcome === 'ended' && j.durationSec != null && (typeof j.durationSec !== 'number' || j.durationSec < 0)) {
+          throw new BadRequestException('Durée d’appel invalide');
+        }
+      } catch (e) {
+        if (e instanceof BadRequestException) throw e;
+        throw new BadRequestException('Métadonnées appel invalides (JSON)');
+      }
     } else if (isVoice) {
       if (!content.audioUrl) throw new BadRequestException('Fichier audio invalide');
     } else if (isMedia) {
@@ -621,11 +668,20 @@ export class ChatService {
 
   async postMessage(
     user: JwtUser,
-    body: { text: string; patientId?: string; peerRole?: 'doctor' | 'nurse'; peerId?: string },
+    body: {
+      text?: string;
+      body?: string;
+      kind?: 'text' | 'call';
+      patientId?: string;
+      peerRole?: 'doctor' | 'nurse';
+      peerId?: string;
+    },
   ) {
+    const kind = body.kind === 'call' ? 'call' : 'text';
+    const text = kind === 'call' ? String(body.body ?? '').trim() : String(body.text ?? body.body ?? '').trim();
     return this.routePostMessage(
       user,
-      { kind: 'text', text: body.text ?? '' },
+      { kind, text },
       { patientId: body.patientId, peerRole: body.peerRole, peerId: body.peerId },
     );
   }

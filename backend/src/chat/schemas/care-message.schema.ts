@@ -22,8 +22,8 @@ export class CareMessage extends Document {
   @Prop({ required: false, maxlength: 40000, default: '' })
   body?: string;
 
-  @Prop({ enum: ['text', 'voice', 'image', 'video', 'document'], default: 'text' })
-  kind: 'text' | 'voice' | 'image' | 'video' | 'document';
+  @Prop({ enum: ['text', 'voice', 'image', 'video', 'document', 'call'], default: 'text' })
+  kind: 'text' | 'voice' | 'image' | 'video' | 'document' | 'call';
 
   /** Message vocal (peut être chiffré au repos) */
   @Prop({ required: false, maxlength: 8000 })

@@ -89,17 +89,30 @@ span.avatar-status {
 }
 
 .chat-header-icons>a,
-.chat-header-icons>span {
+.chat-header-icons>span,
+.chat-header-icons>button {
     width: 40px;
     height: 40px;
     font-size: 20px;
     margin: 0 5px 0 0;
     color: #089bab;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    line-height: 40px;
+    line-height: 1;
     border-radius: 10px;
     cursor: pointer;
+    padding: 0;
+    border: none;
+    box-sizing: border-box;
+    vertical-align: middle;
+    appearance: none;
+}
+
+.chat-header-icons>button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 .chat-content {
@@ -424,6 +437,192 @@ div#sidebar-toggle {
 
     .modal-body video {
         background: #0a0a0a;
+    }
+}
+
+/* Modale appel vocal — alignée sur la charte #089bab (template Xray) */
+.voice-call-modal-unified {
+    .voice-call-modal__dialog {
+        max-width: 22rem;
+    }
+
+    .voice-call-modal__content {
+        border-radius: 1.25rem;
+        overflow: hidden;
+        box-shadow:
+            0 1.25rem 3rem rgba(0, 0, 0, 0.42),
+            0 0 0 1px rgba(8, 155, 171, 0.22);
+    }
+
+    .voice-call-modal__body {
+        padding: 1.75rem 1.35rem 1.5rem;
+        background: linear-gradient(165deg, #1e2328 0%, #14181c 55%, #0e1114 100%);
+        color: #f1f4f6;
+        border-top: 3px solid #089bab;
+    }
+
+    .voice-call-modal__title {
+        font-size: 1.1rem;
+        letter-spacing: 0.02em;
+        color: #fff;
+    }
+
+    .voice-call-modal__subtitle {
+        color: rgba(255, 255, 255, 0.62);
+        line-height: 1.45;
+    }
+
+    .voice-call-modal__timer {
+        font-size: 1.65rem;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.06em;
+        color: #9ee8ee;
+        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+        line-height: 1.2;
+    }
+
+    .voice-call-modal__avatar {
+        width: 72px;
+        height: 72px;
+        margin-left: auto;
+        margin-right: auto;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(145deg, #0bb8c4 0%, #089bab 48%, #067d8c 100%);
+        box-shadow:
+            0 6px 20px rgba(8, 155, 171, 0.45),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .voice-call-modal__avatar--ring {
+        width: 64px;
+        height: 64px;
+    }
+
+    .voice-call-modal__avatar .spinner-border {
+        width: 1.75rem;
+        height: 1.75rem;
+        border-width: 0.2em;
+    }
+
+    .voice-call-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+        align-items: stretch;
+        margin-bottom: 0.75rem;
+    }
+
+    .voice-call-btn {
+        min-height: 2.5rem;
+        padding: 0.45rem 0.9rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border-radius: 0.75rem;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        transition:
+            background 0.18s ease,
+            border-color 0.18s ease,
+            color 0.18s ease,
+            box-shadow 0.18s ease;
+    }
+
+    .voice-call-btn--ghost {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.18);
+        color: rgba(255, 255, 255, 0.92);
+
+        &:hover {
+            background: rgba(8, 155, 171, 0.12);
+            border-color: rgba(8, 155, 171, 0.45);
+            color: #fff;
+        }
+    }
+
+    .voice-call-btn--accent {
+        background: rgba(8, 155, 171, 0.18);
+        border-color: rgba(8, 155, 171, 0.55);
+        color: #9ee8ee;
+
+        &:hover {
+            background: rgba(8, 155, 171, 0.28);
+            color: #fff;
+        }
+    }
+
+    .voice-call-btn--record-on {
+        background: rgba(8, 155, 171, 0.35);
+        border-color: #089bab;
+        color: #fff;
+        box-shadow: 0 0 0 2px rgba(8, 155, 171, 0.25);
+
+        &:hover {
+            background: rgba(8, 155, 171, 0.45);
+        }
+    }
+
+    .voice-call-btn--hangup {
+        width: 100%;
+        margin-top: 0.25rem;
+        padding: 0.65rem 1rem;
+        font-weight: 600;
+        border-radius: 0.85rem;
+        border: none;
+        color: #fff;
+        background: linear-gradient(180deg, #e56773 0%, #c93b4a 100%);
+        box-shadow: 0 4px 14px rgba(201, 59, 74, 0.4);
+
+        &:hover {
+            filter: brightness(1.06);
+            color: #fff;
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(201, 59, 74, 0.45);
+        }
+    }
+
+    .voice-call-btn--secondary-outline {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        color: rgba(255, 255, 255, 0.88);
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: #fff;
+        }
+    }
+
+    .voice-call-btn--primary-accept {
+        background: linear-gradient(180deg, #0cb8c4 0%, #089bab 45%, #067d8c 100%);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(8, 155, 171, 0.35);
+
+        &:hover {
+            filter: brightness(1.05);
+            color: #fff;
+        }
+    }
+
+    .voice-call-modal__hint {
+        font-size: 0.72rem;
+        line-height: 1.35;
+        color: rgba(255, 255, 255, 0.42) !important;
+        max-width: 18rem;
+        margin-left: auto;
+        margin-right: auto;
     }
 }
 

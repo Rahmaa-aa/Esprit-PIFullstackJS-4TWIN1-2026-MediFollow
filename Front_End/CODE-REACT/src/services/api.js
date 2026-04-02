@@ -627,6 +627,7 @@ export const chatApi = {
   /** body = texte ; cible patient OU pair (pas les deux). */
   sendMessage: (payload) => {
     const data = { body: payload.body };
+    if (payload.kind) data.kind = payload.kind;
     if (payload.patientId) data.patientId = payload.patientId;
     if (payload.peerRole && payload.peerId) {
       data.peerRole = payload.peerRole;
