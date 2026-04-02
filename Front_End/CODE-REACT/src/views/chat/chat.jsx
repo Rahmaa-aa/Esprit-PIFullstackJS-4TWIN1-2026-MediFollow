@@ -916,6 +916,11 @@ const Chat = () => {
                                                     ? () => voiceCallRef.current?.startOutgoing()
                                                     : undefined
                                             }
+                                            onVideoCall={
+                                                activeKey === r.eventKey && voicePeerContext
+                                                    ? () => voiceCallRef.current?.startVideoCall?.()
+                                                    : undefined
+                                            }
                                         />
                                     </Tab.Pane>
                                 ))}

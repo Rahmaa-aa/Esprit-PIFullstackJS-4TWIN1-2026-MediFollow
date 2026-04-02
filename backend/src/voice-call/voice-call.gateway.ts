@@ -51,7 +51,7 @@ export class VoiceCallGateway implements OnGatewayConnection, OnGatewayDisconnec
   invite(
     @ConnectedSocket() client: Socket,
     @MessageBody()
-    body: { roomId: string; toUserId: string; offer: unknown; callerName?: string },
+    body: { roomId: string; toUserId: string; offer: unknown; callerName?: string; video?: boolean },
   ) {
     const from = client.data?.userId as string | undefined;
     if (!from || !body?.toUserId || !body?.roomId || body.offer == null) return;
@@ -60,6 +60,7 @@ export class VoiceCallGateway implements OnGatewayConnection, OnGatewayDisconnec
       fromUserId: from,
       callerName: body.callerName || 'Appel',
       offer: body.offer,
+      video: !!body.video,
     });
   }
 

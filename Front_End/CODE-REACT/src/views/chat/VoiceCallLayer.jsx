@@ -1,4 +1,12 @@
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import React, {
+    forwardRef,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from "react";
 import { Modal, Spinner } from "react-bootstrap";
 import { io } from "socket.io-client";
 import { chatApi } from "../../services/api";
@@ -35,6 +43,13 @@ function sendCallLogToThread(routing, bodyJson) {
     return Promise.resolve();
 }
 
+/** Détecte une offre WebRTC vidéo même si le champ socket `video` est absent (récepteur). */
+function sdpOfferIndicatesVideo(offer) {
+    if (!offer || typeof offer !== "object") return false;
+    const sdp = typeof offer.sdp === "string" ? offer.sdp : "";
+    return sdp.includes("m=video");
+}
+
 function cleanupPeer(pcRef, streamRef) {
     const pc = pcRef.current;
     if (pc) {
@@ -54,13 +69,18 @@ function cleanupPeer(pcRef, streamRef) {
     }
 }
 
+/** @typedef {'audio' | 'video'} CallMediaMode */
+
 /**
- * Signalisation Socket.IO (/voice) + WebRTC audio 1:1.
+ * Signalisation Socket.IO (/voice) + WebRTC audio ou vidéo 1:1.
  */
 const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext, onAfterCallLogged }, ref) {
     const [phase, setPhase] = useState("idle");
     const [pendingIncoming, setPendingIncoming] = useState(null);
     const [errorHint, setErrorHint] = useState(null);
+    /** audio = appel vocal ; video = visio (caméra + micro). */
+    const [mediaMode, setMediaMode] = useState(/** @type {CallMediaMode} */ ("audio"));
+    const [camOff, setCamOff] = useState(false);
 
     const phaseRef = useRef(phase);
     useEffect(() => {
@@ -71,6 +91,9 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
     const pcRef = useRef(null);
     const localStreamRef = useRef(null);
     const remoteAudioRef = useRef(null);
+    const localVideoRef = useRef(null);
+    const remoteVideoRef = useRef(null);
+    const callMediaRef = useRef(/** @type {CallMediaMode} */ ("audio"));
     const roomIdRef = useRef(null);
     const remoteUserIdRef = useRef(null);
     const callRecordMediaRecorderRef = useRef(null);
@@ -79,6 +102,8 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
     /** Si défini, `runHangupBody` est appelé après l’arrêt de l’enregistrement (fichier téléchargé). */
     const pendingHangupAfterRecordRef = useRef(null);
     const connectedAtRef = useRef(null);
+    /** Flux distant si ontrack arrive avant le montage du <video> (récepteur / appelant). */
+    const pendingRemoteStreamRef = useRef(null);
 
     const [micMuted, setMicMuted] = useState(false);
     const [callRecording, setCallRecording] = useState(false);
@@ -88,7 +113,13 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
     const runHangupBody = useCallback((notifyPeer) => {
         connectedAtRef.current = null;
         setMicMuted(false);
+        setCamOff(false);
         setCallRecording(false);
+        setMediaMode("audio");
+        callMediaRef.current = "audio";
+        if (localVideoRef.current) localVideoRef.current.srcObject = null;
+        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+        pendingRemoteStreamRef.current = null;
         const remote = remoteUserIdRef.current;
         const room = roomIdRef.current;
         const s = socketRef.current;
@@ -123,6 +154,68 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
         const id = setInterval(tick, 1000);
         return () => clearInterval(id);
     }, [phase]);
+
+    /** Si la session locale a une piste vidéo, forcer l’UI visio (filet de sécurité récepteur). */
+    useEffect(() => {
+        if (phase !== "connected") return;
+        const stream = localStreamRef.current;
+        if (stream?.getVideoTracks().length) {
+            setMediaMode("video");
+            callMediaRef.current = "video";
+        }
+    }, [phase]);
+
+    /** Attache le flux distant au <video> même si ontrack arrive avant le montage React du popup. */
+    const attachRemoteVideoStream = useCallback((rs) => {
+        if (!rs) return;
+        pendingRemoteStreamRef.current = rs;
+        const tryAttach = () => {
+            const el = remoteVideoRef.current;
+            if (!el || !pendingRemoteStreamRef.current) return false;
+            el.srcObject = pendingRemoteStreamRef.current;
+            el.play().catch(() => {});
+            pendingRemoteStreamRef.current = null;
+            return true;
+        };
+        if (tryAttach()) return;
+        requestAnimationFrame(() => {
+            if (tryAttach()) return;
+            requestAnimationFrame(() => {
+                tryAttach();
+            });
+        });
+    }, []);
+
+    const handleRemoteTrack = useCallback((ev) => {
+        let rs = ev.streams[0];
+        if (!rs && ev.track) rs = new MediaStream([ev.track]);
+        if (!rs) return;
+        if (callMediaRef.current === "video") {
+            attachRemoteVideoStream(rs);
+        } else if (remoteAudioRef.current) {
+            remoteAudioRef.current.srcObject = rs;
+            remoteAudioRef.current.play().catch(() => {});
+        }
+    }, [attachRemoteVideoStream]);
+
+    /** Après paint : aperçu local + dernier flux distant en attente (récepteur). */
+    useLayoutEffect(() => {
+        if (mediaMode !== "video") return;
+        if (phase !== "connected" && phase !== "outgoing") return;
+        const ls = localStreamRef.current;
+        const lv = localVideoRef.current;
+        if (ls && lv) {
+            lv.srcObject = ls;
+            lv.play().catch(() => {});
+        }
+        const pending = pendingRemoteStreamRef.current;
+        const rv = remoteVideoRef.current;
+        if (pending && rv) {
+            rv.srcObject = pending;
+            rv.play().catch(() => {});
+            pendingRemoteStreamRef.current = null;
+        }
+    }, [phase, mediaMode]);
 
     const enqueueHangup = useCallback(
         (notifyPeer) => {
@@ -185,10 +278,21 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
         setMicMuted(nextMuted);
     }, [micMuted]);
 
+    const toggleCam = useCallback(() => {
+        const stream = localStreamRef.current;
+        if (!stream) return;
+        const next = !camOff;
+        stream.getVideoTracks().forEach((t) => {
+            t.enabled = !next;
+        });
+        setCamOff(next);
+    }, [camOff]);
+
     const toggleCallRecording = useCallback(() => {
         if (!callRecording) {
             const local = localStreamRef.current;
-            const remote = remoteAudioRef.current?.srcObject;
+            const remote =
+                remoteAudioRef.current?.srcObject || remoteVideoRef.current?.srcObject;
             if (!local || !remote) {
                 setErrorHint("Flux audio incomplet — patientez encore un instant.");
                 return;
@@ -282,11 +386,15 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
             const ph = phaseRef.current;
             if (ph !== "idle" && ph !== "ringing") return;
             if (!payload?.fromUserId || !payload?.offer) return;
+            const isVideo = !!payload.video || sdpOfferIndicatesVideo(payload.offer);
+            setMediaMode(isVideo ? "video" : "audio");
+            callMediaRef.current = isVideo ? "video" : "audio";
             setPendingIncoming({
                 roomId: payload.roomId,
                 fromUserId: payload.fromUserId,
                 callerName: payload.callerName || "Appel",
                 offer: payload.offer,
+                video: isVideo,
             });
             setPhase("ringing");
         };
@@ -347,6 +455,9 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
             if (remoteAudioRef.current) {
                 remoteAudioRef.current.srcObject = null;
             }
+            if (localVideoRef.current) localVideoRef.current.srcObject = null;
+            if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+            pendingRemoteStreamRef.current = null;
             roomIdRef.current = null;
             remoteUserIdRef.current = null;
         };
@@ -364,7 +475,8 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
         }
     }, [peerContext?.roomId, hangup]);
 
-    const startOutgoing = useCallback(async () => {
+    const startOutgoing = useCallback(async (opts = {}) => {
+        const isVideo = !!opts.video;
         if (!peerContext?.remoteUserId || !peerContext?.roomId) return;
         const s = socketRef.current;
         if (!s?.connected) {
@@ -374,13 +486,17 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
         if (phaseRef.current !== "idle") return;
 
         connectedAtRef.current = null;
+        setMediaMode(isVideo ? "video" : "audio");
+        callMediaRef.current = isVideo ? "video" : "audio";
         setPhase("outgoing");
         setErrorHint(null);
         roomIdRef.current = peerContext.roomId;
         remoteUserIdRef.current = peerContext.remoteUserId;
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia(
+                isVideo ? { audio: true, video: { facingMode: "user" } } : { audio: true },
+            );
             localStreamRef.current = stream;
             const pc = new RTCPeerConnection({ iceServers: VOICE_ICE_SERVERS });
             pcRef.current = pc;
@@ -397,14 +513,12 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                 }
             };
 
-            pc.ontrack = (ev) => {
-                if (remoteAudioRef.current && ev.streams[0]) {
-                    remoteAudioRef.current.srcObject = ev.streams[0];
-                    remoteAudioRef.current.play().catch(() => {});
-                }
-            };
+            pc.ontrack = handleRemoteTrack;
 
-            const offer = await pc.createOffer({ offerToReceiveAudio: true });
+            const offer = await pc.createOffer({
+                offerToReceiveAudio: true,
+                offerToReceiveVideo: isVideo,
+            });
             await pc.setLocalDescription(offer);
 
             s.emit("voice:invite", {
@@ -412,26 +526,38 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                 toUserId: peerContext.remoteUserId,
                 offer: pc.localDescription,
                 callerName: getSelfDisplayName(session),
+                video: isVideo,
             });
+            if (isVideo && localVideoRef.current) {
+                localVideoRef.current.srcObject = stream;
+                localVideoRef.current.play().catch(() => {});
+            }
         } catch (e) {
             console.error(e);
-            setErrorHint("Microphone inaccessible ou refusé");
+            setErrorHint(
+                isVideo ? "Caméra ou micro inaccessible / refusé" : "Microphone inaccessible ou refusé",
+            );
             hangup(false);
         }
-    }, [peerContext, session, hangup]);
+    }, [peerContext, session, hangup, handleRemoteTrack]);
 
     const acceptIncoming = useCallback(async () => {
         const p = pendingIncoming;
         const s = socketRef.current;
         if (!p || !s?.connected) return;
 
-        const { roomId, fromUserId, offer } = p;
+        const { roomId, fromUserId, offer, video: wantVideo } = p;
+        const isVideo = !!wantVideo || sdpOfferIndicatesVideo(offer);
+        setMediaMode(isVideo ? "video" : "audio");
+        callMediaRef.current = isVideo ? "video" : "audio";
         roomIdRef.current = roomId;
         remoteUserIdRef.current = fromUserId;
         setPendingIncoming(null);
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia(
+                isVideo ? { audio: true, video: { facingMode: "user" } } : { audio: true },
+            );
             localStreamRef.current = stream;
             const pc = new RTCPeerConnection({ iceServers: VOICE_ICE_SERVERS });
             pcRef.current = pc;
@@ -448,12 +574,7 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                 }
             };
 
-            pc.ontrack = (ev) => {
-                if (remoteAudioRef.current && ev.streams[0]) {
-                    remoteAudioRef.current.srcObject = ev.streams[0];
-                    remoteAudioRef.current.play().catch(() => {});
-                }
-            };
+            pc.ontrack = handleRemoteTrack;
 
             await pc.setRemoteDescription(new RTCSessionDescription(offer));
             const answer = await pc.createAnswer();
@@ -466,12 +587,18 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
             });
             connectedAtRef.current = Date.now();
             setPhase("connected");
+            if (isVideo && localVideoRef.current) {
+                localVideoRef.current.srcObject = stream;
+                localVideoRef.current.play().catch(() => {});
+            }
         } catch (e) {
             console.error(e);
-            setErrorHint("Impossible d’accepter l’appel");
+            setErrorHint(
+                isVideo ? "Impossible d’accepter (caméra / micro)" : "Impossible d’accepter l’appel",
+            );
             hangup(false);
         }
-    }, [pendingIncoming, hangup]);
+    }, [pendingIncoming, hangup, handleRemoteTrack]);
 
     const rejectIncoming = useCallback(() => {
         const p = pendingIncoming;
@@ -489,6 +616,8 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                 console.warn("Historique appel", e);
             }
         })();
+        setMediaMode("audio");
+        callMediaRef.current = "audio";
         setPendingIncoming(null);
         setPhase("idle");
     }, [pendingIncoming, peerContext, onAfterCallLogged]);
@@ -497,6 +626,7 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
         ref,
         () => ({
             startOutgoing,
+            startVideoCall: () => startOutgoing({ video: true }),
         }),
         [startOutgoing],
     );
@@ -519,12 +649,18 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                 centered
                 backdrop="static"
                 keyboard
-                className="voice-call-modal-unified"
-                dialogClassName="voice-call-modal__dialog"
+                className={`voice-call-modal-unified ${mediaMode === "video" ? "voice-call-modal--video" : ""}`}
+                dialogClassName={`voice-call-modal__dialog ${mediaMode === "video" ? "voice-call-modal__dialog--video" : ""}`}
                 contentClassName="voice-call-modal__content"
                 aria-labelledby="voice-call-modal-title"
             >
-                <Modal.Body className="voice-call-modal__body text-center position-relative">
+                <Modal.Body
+                    className={`voice-call-modal__body text-center position-relative ${
+                        mediaMode === "video" && (phase === "outgoing" || phase === "connected")
+                            ? "voice-call-modal__body--video p-0"
+                            : ""
+                    }`}
+                >
                     {phase === "ringing" && (
                         <>
                             <button
@@ -532,17 +668,26 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                                 className="btn-close btn-close-white position-absolute top-0 end-0 mt-2 me-2"
                                 onClick={rejectIncoming}
                                 aria-label="Refuser l’appel"
+                                style={{ zIndex: 2 }}
                             />
                             <div className="voice-call-modal__avatar voice-call-modal__avatar--ring mb-3">
-                                <i className="ri-phone-fill text-white" style={{ fontSize: "1.65rem" }} aria-hidden />
+                                <i
+                                    className={pendingIncoming?.video ? "ri-vidicon-fill text-white" : "ri-phone-fill text-white"}
+                                    style={{ fontSize: "1.65rem" }}
+                                    aria-hidden
+                                />
                             </div>
                             <p id="voice-call-modal-title" className="voice-call-modal__title mb-2 fw-semibold">
-                                Appel entrant
+                                {pendingIncoming?.video ? "Appel vidéo entrant" : "Appel entrant"}
                             </p>
                             <p className="voice-call-modal__subtitle small mb-4">
                                 <strong className="text-white">{pendingIncoming?.callerName || "Contact"}</strong>
                                 <br />
-                                souhaite un appel vocal.
+                                {pendingIncoming?.video ? (
+                                    <>souhaite un <strong>appel vidéo</strong>.</>
+                                ) : (
+                                    <>souhaite un appel vocal.</>
+                                )}
                             </p>
                             <div className="d-flex flex-wrap gap-2 justify-content-center">
                                 <button
@@ -557,14 +702,140 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                                     className="voice-call-btn voice-call-btn--primary-accept"
                                     onClick={acceptIncoming}
                                 >
-                                    <i className="ri-phone-fill" aria-hidden />
+                                    <i className={pendingIncoming?.video ? "ri-vidicon-fill" : "ri-phone-fill"} aria-hidden />
                                     Accepter
                                 </button>
                             </div>
                         </>
                     )}
 
-                    {phase === "outgoing" && (
+                    {mediaMode === "video" && (phase === "outgoing" || phase === "connected") && (
+                        <div className={`voice-call-modal__video-wrap ${phase === "outgoing" ? "is-outgoing" : "is-live"}`}>
+                            <video ref={remoteVideoRef} className="voice-call-modal__remote" playsInline autoPlay />
+                            <video ref={localVideoRef} className="voice-call-modal__local" playsInline autoPlay muted />
+                            <div className="voice-call-modal__video-overlay">
+                                {phase === "outgoing" && (
+                                    <>
+                                        <Spinner animation="border" role="status" variant="light" className="mb-2" />
+                                        <p className="voice-call-modal__title mb-1 fw-semibold">Appel vidéo</p>
+                                        <p className="voice-call-modal__subtitle small mb-3">
+                                            Connexion à{" "}
+                                            <strong className="text-white">{peerContext?.label || "…"}</strong>…
+                                        </p>
+                                        <div className="voice-call-toolbar">
+                                            <button
+                                                type="button"
+                                                className={`voice-call-btn ${micMuted ? "voice-call-btn--accent" : "voice-call-btn--ghost"}`}
+                                                onClick={toggleMicMute}
+                                                title={micMuted ? "Réactiver le micro" : "Couper le micro"}
+                                            >
+                                                <i className={micMuted ? "ri-mic-off-line" : "ri-mic-line"} aria-hidden />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`voice-call-btn ${camOff ? "voice-call-btn--accent" : "voice-call-btn--ghost"}`}
+                                                onClick={toggleCam}
+                                                title={camOff ? "Réactiver la caméra" : "Couper la caméra"}
+                                            >
+                                                <i className={camOff ? "ri-camera-off-line" : "ri-camera-line"} aria-hidden />
+                                            </button>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="voice-call-btn voice-call-btn--hangup mt-2"
+                                            onClick={() => hangup(true)}
+                                            title="Raccrocher"
+                                            aria-label="Raccrocher"
+                                        >
+                                            <i
+                                                className="ri-phone-fill me-2"
+                                                style={{ transform: "rotate(135deg)" }}
+                                                aria-hidden
+                                            />
+                                            Raccrocher
+                                        </button>
+                                    </>
+                                )}
+                                {phase === "connected" && (
+                                    <>
+                                        <p className="voice-call-modal__title mb-1 fw-semibold">Visioconférence</p>
+                                        <p
+                                            className="voice-call-modal__timer mb-1"
+                                            aria-label="Durée de l’appel"
+                                            aria-live="polite"
+                                        >
+                                            {callTimerLabel}
+                                        </p>
+                                        <p className="voice-call-modal__subtitle small mb-2">
+                                            avec <strong className="text-white">{peerContext?.label || "…"}</strong>
+                                        </p>
+                                        <div className="voice-call-toolbar">
+                                            <button
+                                                type="button"
+                                                className={`voice-call-btn ${micMuted ? "voice-call-btn--accent" : "voice-call-btn--ghost"}`}
+                                                onClick={toggleMicMute}
+                                                title={micMuted ? "Réactiver le micro" : "Couper le micro"}
+                                                aria-pressed={micMuted}
+                                            >
+                                                <i className={micMuted ? "ri-mic-off-line" : "ri-mic-line"} aria-hidden />
+                                                <span className="d-none d-sm-inline">
+                                                    {micMuted ? "Micro" : "Micro"}
+                                                </span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`voice-call-btn ${camOff ? "voice-call-btn--accent" : "voice-call-btn--ghost"}`}
+                                                onClick={toggleCam}
+                                                title={camOff ? "Réactiver la caméra" : "Couper la caméra"}
+                                                aria-pressed={camOff}
+                                            >
+                                                <i className={camOff ? "ri-camera-off-line" : "ri-camera-line"} aria-hidden />
+                                                <span className="d-none d-sm-inline">Caméra</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`voice-call-btn ${callRecording ? "voice-call-btn--record-on" : "voice-call-btn--ghost"}`}
+                                                onClick={toggleCallRecording}
+                                                title={
+                                                    callRecording
+                                                        ? "Arrêter l’enregistrement et télécharger"
+                                                        : "Enregistrer la conversation (audio)"
+                                                }
+                                                aria-pressed={callRecording}
+                                            >
+                                                <i
+                                                    className={callRecording ? "ri-stop-circle-fill" : "ri-record-circle-line"}
+                                                    aria-hidden
+                                                />
+                                                <span className="d-none d-sm-inline">
+                                                    {callRecording ? "Stop" : "Enreg."}
+                                                </span>
+                                            </button>
+                                        </div>
+                                        <p className="voice-call-modal__hint mb-2">
+                                            Enregistrement : audio .webm (mix des deux voix).
+                                        </p>
+                                        <button
+                                            type="button"
+                                            className="voice-call-btn voice-call-btn--hangup"
+                                            onClick={() => hangup(true)}
+                                            title="Raccrocher"
+                                            aria-label="Raccrocher"
+                                        >
+                                            <i
+                                                className="ri-phone-fill me-2"
+                                                style={{ transform: "rotate(135deg)" }}
+                                                aria-hidden
+                                            />
+                                            Raccrocher
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {phase === "outgoing" && mediaMode === "audio" && (
                         <>
                             <div className="voice-call-modal__avatar voice-call-modal__avatar--ring mb-3">
                                 <Spinner animation="border" role="status" variant="light" />
@@ -601,7 +872,7 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                         </>
                     )}
 
-                    {phase === "connected" && (
+                    {phase === "connected" && mediaMode === "audio" && (
                         <>
                             <div className="voice-call-modal__avatar mb-3">
                                 <i className="ri-phone-fill text-white" style={{ fontSize: "1.85rem" }} aria-hidden />

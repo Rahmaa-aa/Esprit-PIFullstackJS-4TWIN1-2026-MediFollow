@@ -61,6 +61,7 @@ const ChatData = (props) => {
     const session = props.session || { id: "", role: "" };
     const voiceCallEnabled = props.voiceCallEnabled;
     const onVoiceCall = props.onVoiceCall;
+    const onVideoCall = props.onVideoCall;
 
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [show, setShow] = useState(false)
@@ -352,9 +353,24 @@ const ChatData = (props) => {
                         >
                             <i className="ri-phone-line" aria-hidden />
                         </button>
-                        <Link to="#" className="chat-icon-video bg-primary-subtle">
-                            <i className="ri-vidicon-line"></i>
-                        </Link>
+                        <button
+                            type="button"
+                            className="chat-icon-video bg-primary-subtle border-0"
+                            onClick={() => {
+                                if (isLive && voiceCallEnabled && onVideoCall && !sending && !recording) {
+                                    onVideoCall();
+                                }
+                            }}
+                            disabled={!isLive || !voiceCallEnabled || !onVideoCall || sending || recording}
+                            title={
+                                isLive && voiceCallEnabled
+                                    ? "Appel vidéo"
+                                    : "Appel vidéo indisponible pour ce fil"
+                            }
+                            aria-label="Appel vidéo"
+                        >
+                            <i className="ri-vidicon-line" aria-hidden />
+                        </button>
                         <Link to="#" className="chat-icon-delete bg-primary-subtle">
                             <i className="ri-delete-bin-line"></i>
                         </Link>

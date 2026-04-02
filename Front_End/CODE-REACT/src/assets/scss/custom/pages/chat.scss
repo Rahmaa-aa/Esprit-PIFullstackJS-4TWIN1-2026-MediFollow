@@ -446,6 +446,12 @@ div#sidebar-toggle {
         max-width: 22rem;
     }
 
+    &.voice-call-modal--video .voice-call-modal__dialog--video {
+        width: min(99vw, 72rem);
+        max-width: min(99vw, 72rem);
+        margin: 0.5rem auto;
+    }
+
     .voice-call-modal__content {
         border-radius: 1.25rem;
         overflow: hidden;
@@ -623,6 +629,90 @@ div#sidebar-toggle {
         max-width: 18rem;
         margin-left: auto;
         margin-right: auto;
+    }
+
+    .voice-call-modal__body--video {
+        min-height: min(72vh, 680px);
+    }
+
+    .voice-call-modal__video-wrap {
+        position: relative;
+        width: 100%;
+        min-height: min(68vh, 640px);
+        background: #0a0e12;
+        border-radius: 0 0 1.15rem 1.15rem;
+        overflow: hidden;
+
+        &.is-outgoing .voice-call-modal__remote {
+            display: none;
+        }
+
+        &.is-outgoing .voice-call-modal__local {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 0;
+        }
+
+        &.is-live .voice-call-modal__remote {
+            display: block;
+            width: 100%;
+            min-height: min(58vh, 560px);
+            max-height: min(78vh, 780px);
+            object-fit: contain;
+            background: #000;
+        }
+
+        &.is-live .voice-call-modal__local {
+            position: absolute;
+            bottom: 0.85rem;
+            right: 0.85rem;
+            width: 22%;
+            min-width: 140px;
+            max-width: 260px;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+            border-radius: 0.65rem;
+            border: 2px solid rgba(8, 155, 171, 0.85);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+            z-index: 1;
+        }
+    }
+
+    .voice-call-modal__video-overlay {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 0.65rem 0.75rem 0.85rem;
+        background: transparent;
+        z-index: 2;
+        text-align: center;
+        pointer-events: none;
+
+        .voice-call-toolbar,
+        .voice-call-btn--hangup {
+            pointer-events: auto;
+        }
+
+        .voice-call-modal__title,
+        .voice-call-modal__subtitle {
+            text-shadow:
+                0 0 8px rgba(0, 0, 0, 0.65),
+                0 1px 3px rgba(0, 0, 0, 0.9);
+        }
+
+        .voice-call-modal__timer {
+            text-shadow:
+                0 0 10px rgba(0, 0, 0, 0.55),
+                0 2px 4px rgba(0, 0, 0, 0.85);
+        }
+
+        .voice-call-modal__hint {
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+        }
     }
 }
 
