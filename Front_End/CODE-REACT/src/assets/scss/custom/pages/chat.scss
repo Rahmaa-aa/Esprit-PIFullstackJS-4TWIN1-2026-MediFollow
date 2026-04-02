@@ -79,6 +79,34 @@ span.avatar-status {
     height: calc(100vh - 15rem);
 }
 
+/* Barre de recherche : même logique visuelle que le header (navbar .search-input) */
+.chat-sidebar-channel .search-input.chat-sidebar-search {
+    &.input-group {
+        .input-group-text {
+            padding: 0;
+            padding-right: 10px;
+            border-left: 0;
+            background-color: var(--bs-gray-900);
+        }
+
+        .form-control {
+            border-right: 0 !important;
+            background-color: var(--bs-gray-900);
+
+            &:focus {
+                border-color: var(--bs-border-color);
+            }
+        }
+
+        &:focus-within {
+            .input-group-text,
+            .form-control {
+                border-color: var(--bs-primary);
+            }
+        }
+    }
+}
+
 .chat-data {
     background: var(--bs-gray-900);
     border-radius: 25px;

@@ -137,54 +137,6 @@ function buildSidebarRows(dc, session) {
             });
         }
 
-        const adId = dc.assignedDoctor?.id;
-        const anId = dc.assignedNurse?.id;
-        pushSection("Médecins — même service");
-        for (const d of dc.doctors || []) {
-            if (adId && d.id === adId) continue;
-            pushItem({
-                thread: "patientStaff",
-                patientId: selfId,
-                peerRole: "doctor",
-                peerId: d.id,
-                title: d.displayName,
-                subtitle: d.subtitle || "Médecin",
-                data: {
-                    title: d.displayName,
-                    userimg: imgUrl(d.profileImage),
-                    userdetailname: d.displayName,
-                    useraddress: d.department || departmentLabel,
-                    usersortname: d.firstName || "",
-                    usertelnumber: "—",
-                    userdob: "—",
-                    usergender: "—",
-                    userlanguage: "—",
-                },
-            });
-        }
-        pushSection("Infirmiers — même service");
-        for (const n of dc.nurses || []) {
-            if (anId && n.id === anId) continue;
-            pushItem({
-                thread: "patientStaff",
-                patientId: selfId,
-                peerRole: "nurse",
-                peerId: n.id,
-                title: n.displayName,
-                subtitle: n.subtitle || "Infirmier(ère)",
-                data: {
-                    title: n.displayName,
-                    userimg: imgUrl(n.profileImage),
-                    userdetailname: n.displayName,
-                    useraddress: n.department || departmentLabel,
-                    usersortname: n.firstName || "",
-                    usertelnumber: "—",
-                    userdob: "—",
-                    usergender: "—",
-                    userlanguage: "—",
-                },
-            });
-        }
         return { rows, departmentLabel };
     }
 
@@ -212,8 +164,15 @@ function buildSidebarRows(dc, session) {
                 });
             }
         }
+        const medSame = dc.doctors || [];
+        const nurSame = dc.nurses || [];
+        const idSameDoc = new Set(medSame.map((d) => d.id));
+        const idSameNur = new Set(nurSame.map((n) => n.id));
+        const doctorsAll = dc.doctorsAll != null ? dc.doctorsAll : [];
+        const nursesAll = dc.nursesAll != null ? dc.nursesAll : [];
+
         pushSection("Médecins — même service");
-        for (const d of dc.doctors || []) {
+        for (const d of medSame) {
             pushItem({
                 thread: "peer",
                 peerRole: "doctor",
@@ -234,7 +193,51 @@ function buildSidebarRows(dc, session) {
             });
         }
         pushSection("Infirmiers — même service");
-        for (const n of dc.nurses || []) {
+        for (const n of nurSame) {
+            pushItem({
+                thread: "peer",
+                peerRole: "nurse",
+                peerId: n.id,
+                title: n.displayName,
+                subtitle: n.subtitle || "Infirmier(ère)",
+                data: {
+                    title: n.displayName,
+                    userimg: imgUrl(n.profileImage),
+                    userdetailname: n.displayName,
+                    useraddress: n.department || departmentLabel,
+                    usersortname: n.firstName || "",
+                    usertelnumber: "—",
+                    userdob: "—",
+                    usergender: "—",
+                    userlanguage: "—",
+                },
+            });
+        }
+        pushSection("Tous les médecins");
+        for (const d of doctorsAll) {
+            if (idSameDoc.has(d.id)) continue;
+            pushItem({
+                thread: "peer",
+                peerRole: "doctor",
+                peerId: d.id,
+                title: d.displayName,
+                subtitle: d.subtitle || "Médecin",
+                data: {
+                    title: d.displayName,
+                    userimg: imgUrl(d.profileImage),
+                    userdetailname: d.displayName,
+                    useraddress: d.department || departmentLabel,
+                    usersortname: d.firstName || "",
+                    usertelnumber: "—",
+                    userdob: "—",
+                    usergender: "—",
+                    userlanguage: "—",
+                },
+            });
+        }
+        pushSection("Tous les infirmiers");
+        for (const n of nursesAll) {
+            if (idSameNur.has(n.id)) continue;
             pushItem({
                 thread: "peer",
                 peerRole: "nurse",
@@ -258,6 +261,64 @@ function buildSidebarRows(dc, session) {
     }
 
     return { rows: [], departmentLabel };
+}
+
+/** Texte affiché pour la recherche sidebar (médecin / infirmier) */
+function staffSearchText(def) {
+    const t = (def.title || "").trim();
+    const d = (def.data?.userdetailname || "").trim();
+    if (t && d && t.toLowerCase() !== d.toLowerCase()) return `${t} ${d}`;
+    return t || d || "";
+}
+
+/** Correspondance : sous-chaîne du nom, mots qui commencent par chaque token, ou initiales (ex. « jd » pour Jean Dupont). */
+function rowMatchesStaffSearch(def, rawQuery) {
+    const q = (rawQuery || "").trim().toLowerCase();
+    if (!q) return true;
+    const full = staffSearchText(def).toLowerCase();
+    if (!full) return false;
+    if (full.includes(q)) return true;
+    const sub = (def.subtitle || "").trim().toLowerCase();
+    if (sub && sub.includes(q)) return true;
+    const words = full.split(/\s+/).filter(Boolean);
+    if (!words.length) return false;
+    const initials = words.map((w) => w[0]).join("");
+    if (initials.startsWith(q)) return true;
+    const qParts = q.split(/\s+/).filter(Boolean);
+    if (qParts.length > 1) {
+        return qParts.every((qp, i) => words[i]?.startsWith(qp));
+    }
+    return words.some((w) => w.startsWith(q));
+}
+
+/** Filtre les lignes sidebar ; masque les sections vides. */
+function filterSidebarRowsForStaffSearch(rows, query, role) {
+    if (role !== "doctor" && role !== "nurse") return rows;
+    if (!(query || "").trim()) return rows;
+    const out = [];
+    let i = 0;
+    while (i < rows.length) {
+        const r = rows[i];
+        if (r.type === "section") {
+            const title = r.title;
+            const items = [];
+            i += 1;
+            while (i < rows.length && rows[i].type === "item") {
+                if (rowMatchesStaffSearch(rows[i].def, query)) items.push(rows[i]);
+                i += 1;
+            }
+            if (items.length) {
+                out.push({ type: "section", title });
+                out.push(...items);
+            }
+        } else if (r.type === "item") {
+            if (rowMatchesStaffSearch(r.def, query)) out.push(r);
+            i += 1;
+        } else {
+            i += 1;
+        }
+    }
+    return out;
 }
 
 const STATIC_USER_DATA = [
@@ -382,6 +443,7 @@ const Chat = () => {
     const [loadError, setLoadError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [unreadByPatientId, setUnreadByPatientId] = useState({});
+    const [sidebarSearchQuery, setSidebarSearchQuery] = useState("");
     const voiceCallRef = useRef(null);
 
     const SidebarToggle = () => {
@@ -402,6 +464,21 @@ const Chat = () => {
         const filtered = filterHiddenRows(sidebarRows, hiddenKeys);
         return sortRowsByPinned(filtered, pinnedKeys);
     }, [sidebarRows, hiddenKeys, pinnedKeys]);
+
+    const displaySidebarRowsForList = useMemo(
+        () => filterSidebarRowsForStaffSearch(displaySidebarRows, sidebarSearchQuery, session.role),
+        [displaySidebarRows, sidebarSearchQuery, session.role],
+    );
+
+    const itemsOnlyAll = useMemo(
+        () => displaySidebarRows.filter((r) => r.type === "item"),
+        [displaySidebarRows],
+    );
+
+    const visibleSidebarItems = useMemo(
+        () => displaySidebarRowsForList.filter((r) => r.type === "item"),
+        [displaySidebarRowsForList],
+    );
 
     const hasAnyThreadInSidebar = useMemo(
         () => sidebarRows.some((r) => r.type === "item"),
@@ -645,7 +722,8 @@ const Chat = () => {
     }, [session.id]);
 
     useEffect(() => {
-        const items = displaySidebarRows.filter((r) => r.type === "item");
+        const items =
+            session.role === "doctor" || session.role === "nurse" ? visibleSidebarItems : itemsOnlyAll;
         if (items.length === 0) return;
         const valid = new Set(items.map((i) => i.eventKey));
         if (!valid.has(activeKey)) {
@@ -653,7 +731,7 @@ const Chat = () => {
             setActiveKey(first.eventKey);
             loadThread(first.eventKey, first.def);
         }
-    }, [displaySidebarRows, activeKey, loadThread]);
+    }, [session.role, visibleSidebarItems, itemsOnlyAll, activeKey, loadThread]);
 
     if (!session.id) {
         const userData = STATIC_USER_DATA;
@@ -896,7 +974,8 @@ const Chat = () => {
         );
     }
 
-    const itemsOnly = displaySidebarRows.filter((r) => r.type === "item");
+    const staffSearchActive =
+        (session.role === "doctor" || session.role === "nurse") && sidebarSearchQuery.trim().length > 0;
 
     return (
         <>
@@ -930,11 +1009,51 @@ const Chat = () => {
                                     ></i>
                                 </div>
                             </div>
+                            {(session.role === "doctor" || session.role === "nurse") && (
+                                <div className="form-group input-group mb-0 search-input chat-sidebar-search px-3 pb-3">
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Rechercher (nom, prénom, initiales…)"
+                                        value={sidebarSearchQuery}
+                                        onChange={(e) => setSidebarSearchQuery(e.target.value)}
+                                        aria-label="Rechercher un patient, un médecin ou un infirmier"
+                                    />{" "}
+                                    <span className="input-group-text">
+                                        <svg
+                                            className="icon-20 text-primary"
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            aria-hidden
+                                        >
+                                            <circle
+                                                cx="11.7669"
+                                                cy="11.7666"
+                                                r="8.98856"
+                                                stroke="currentColor"
+                                                strokeWidth="1.5"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                            <path
+                                                d="M18.0186 18.4851L21.5426 22"
+                                                stroke="currentColor"
+                                                strokeWidth="1.5"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </svg>
+                                    </span>
+                                </div>
+                            )}
                             {loading ? (
                                 <div className="p-4 text-center">
                                     <Spinner animation="border" size="sm" />
                                 </div>
-                            ) : itemsOnly.length === 0 && hasAnyThreadInSidebar && hiddenKeys.size > 0 ? (
+                            ) : itemsOnlyAll.length === 0 && hasAnyThreadInSidebar && hiddenKeys.size > 0 ? (
                                 <div className="p-3 small">
                                     <p className="text-muted mb-2">Toutes les conversations sont masquées.</p>
                                     <button
@@ -946,8 +1065,12 @@ const Chat = () => {
                                         Restaurer les conversations masquées
                                     </button>
                                 </div>
-                            ) : itemsOnly.length === 0 ? (
+                            ) : itemsOnlyAll.length === 0 ? (
                                 <div className="p-3 small text-muted">Aucun contact (vérifiez le département ou l&apos;affectation).</div>
+                            ) : staffSearchActive && visibleSidebarItems.length === 0 ? (
+                                <div className="p-3 small text-muted">
+                                    Aucun résultat pour « {sidebarSearchQuery.trim()} ». Essayez un autre nom ou des initiales.
+                                </div>
                             ) : (
                                 <>
                                 <ul className="iq-chat-ui nav flex-column nav-pills" role="tablist">
@@ -964,7 +1087,7 @@ const Chat = () => {
                                             </div>
                                         </Nav.Link>
                                     </Nav.Item>
-                                    {displaySidebarRows.map((r, idx) => {
+                                    {displaySidebarRowsForList.map((r, idx) => {
                                         if (r.type === "section") {
                                             return (
                                                 <Nav.Item as="li" key={`sec-${idx}`}>
@@ -1044,7 +1167,7 @@ const Chat = () => {
                                         </button>
                                     </div>
                                 </Tab.Pane>
-                                {itemsOnly.map((r) => {
+                                {itemsOnlyAll.map((r) => {
                                     const tk = getThreadKey(r.def);
                                     const blocked = tk ? blockedKeys.has(tk) : false;
                                     const pinned = tk ? pinnedKeys.includes(tk) : false;

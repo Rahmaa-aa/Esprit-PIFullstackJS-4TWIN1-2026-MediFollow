@@ -83,7 +83,7 @@ export class ChatService {
     return (n as any)?.department?.trim() || '';
   }
 
-  /** Fil pair : deux professionnels (médecin/infirmier), même département. */
+  /** Fil pair : médecin ou infirmier ↔ tout médecin / tout infirmier de l'établissement. */
   async assertPeerStaff(user: JwtUser, peerRole: 'doctor' | 'nurse', peerId: string): Promise<void> {
     const ur = user.role as string;
     if (ur === 'patient') throw new ForbiddenException('Messagerie pair réservée au personnel');
@@ -91,18 +91,18 @@ export class ChatService {
     const uid = this.uid(user);
     if (uid === peerId && ur === peerRole) throw new BadRequestException('Destinataire invalide');
 
-    let deptUser = '';
-    if (ur === 'doctor') deptUser = await this.deptOfDoctor(uid);
-    else if (ur === 'nurse') deptUser = await this.deptOfNurse(uid);
-    else throw new ForbiddenException();
-
-    let deptPeer = '';
-    if (peerRole === 'doctor') deptPeer = await this.deptOfDoctor(peerId);
-    else deptPeer = await this.deptOfNurse(peerId);
-
-    if (!deptUser || !deptPeer || deptUser !== deptPeer) {
-      throw new ForbiddenException('Échange autorisé uniquement au sein du même département');
+    if (ur === 'doctor' || ur === 'nurse') {
+      if (peerRole === 'doctor') {
+        const d = await this.doctorModel.findById(peerId).select('_id').lean().exec();
+        if (!d) throw new NotFoundException('Médecin introuvable');
+      } else {
+        const n = await this.nurseModel.findById(peerId).select('_id').lean().exec();
+        if (!n) throw new NotFoundException('Infirmier introuvable');
+      }
+      return;
     }
+
+    throw new ForbiddenException();
   }
 
   /** Patient ↔ médecin ou patient ↔ infirmier (référent ou même département). */
@@ -393,18 +393,22 @@ export class ChatService {
 
     if (role === 'doctor') {
       const dept = await this.deptOfDoctor(uid);
-      const [doctors, nurses, patients] = await Promise.all([
+      const [sameDoctors, sameNurses, allDoctors, allNurses, patients] = await Promise.all([
         dept
           ? this.doctorModel.find({ department: dept }).select('-password').sort({ lastName: 1 }).lean().exec()
           : [],
         dept ? this.nurseModel.find({ department: dept }).select('-password').sort({ lastName: 1 }).lean().exec() : [],
+        this.doctorModel.find({}).select('-password').sort({ lastName: 1 }).lean().exec(),
+        this.nurseModel.find({}).select('-password').sort({ lastName: 1 }).lean().exec(),
         this.patientModel.find({ doctorId: uid }).select('firstName lastName profileImage').sort({ lastName: 1 }).lean().exec(),
       ]);
       return {
         department: dept,
         myRole: 'doctor',
-        doctors: doctors.filter((d) => String(d._id) !== uid).map((d) => this.mapDoc(d)),
-        nurses: nurses.map((n) => this.mapNurse(n)),
+        doctors: sameDoctors.filter((d) => String(d._id) !== uid).map((d) => this.mapDoc(d)),
+        nurses: sameNurses.map((n) => this.mapNurse(n)),
+        doctorsAll: allDoctors.filter((d) => String(d._id) !== uid).map((d) => this.mapDoc(d)),
+        nursesAll: allNurses.map((n) => this.mapNurse(n)),
         assignedPatients: patients.map((p: any) => ({
           id: String(p._id),
           role: 'patient' as const,
@@ -417,18 +421,22 @@ export class ChatService {
 
     if (role === 'nurse') {
       const dept = await this.deptOfNurse(uid);
-      const [doctors, nurses, patients] = await Promise.all([
+      const [sameDoctors, sameNurses, allDoctors, allNurses, patients] = await Promise.all([
         dept
           ? this.doctorModel.find({ department: dept }).select('-password').sort({ lastName: 1 }).lean().exec()
           : [],
         dept ? this.nurseModel.find({ department: dept }).select('-password').sort({ lastName: 1 }).lean().exec() : [],
+        this.doctorModel.find({}).select('-password').sort({ lastName: 1 }).lean().exec(),
+        this.nurseModel.find({}).select('-password').sort({ lastName: 1 }).lean().exec(),
         this.patientModel.find({ nurseId: uid }).select('firstName lastName profileImage').sort({ lastName: 1 }).lean().exec(),
       ]);
       return {
         department: dept,
         myRole: 'nurse',
-        doctors: doctors.map((d) => this.mapDoc(d)),
-        nurses: nurses.filter((n) => String(n._id) !== uid).map((n) => this.mapNurse(n)),
+        doctors: sameDoctors.map((d) => this.mapDoc(d)),
+        nurses: sameNurses.filter((n) => String(n._id) !== uid).map((n) => this.mapNurse(n)),
+        doctorsAll: allDoctors.map((d) => this.mapDoc(d)),
+        nursesAll: allNurses.filter((n) => String(n._id) !== uid).map((n) => this.mapNurse(n)),
         assignedPatients: patients.map((p: any) => ({
           id: String(p._id),
           role: 'patient' as const,
