@@ -16,6 +16,7 @@ import {
     getAuthTokenForSocket,
     getSelfDisplayName,
 } from "./voiceCallUtils";
+import { startIncomingRingtone, startOutgoingRingback } from "./callRingtone";
 
 /** Routage messagerie aligné sur POST /chat/messages (patient seul, patient+staff, ou pair). */
 function sendCallLogToThread(routing, bodyJson) {
@@ -86,6 +87,18 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
     useEffect(() => {
         phaseRef.current = phase;
     }, [phase]);
+
+    /** Sonnerie entrante (appel vocal ou vidéo). */
+    useEffect(() => {
+        if (phase !== "ringing") return undefined;
+        return startIncomingRingtone(mediaMode === "video");
+    }, [phase, mediaMode]);
+
+    /** Tonalité d’attente côté appelant. */
+    useEffect(() => {
+        if (phase !== "outgoing") return undefined;
+        return startOutgoingRingback(mediaMode === "video");
+    }, [phase, mediaMode]);
 
     const socketRef = useRef(null);
     const pcRef = useRef(null);
