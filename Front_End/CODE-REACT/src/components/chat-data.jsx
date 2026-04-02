@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Col, Dropdown, DropdownItem, DropdownMenu, DropdownToggle, Form, Modal, Row } from "react-bootstrap";
+import { Button, Col, Dropdown, DropdownItem, DropdownMenu, DropdownToggle, Form, Modal, Row } from "react-bootstrap";
 import EmojiPicker from "emoji-picker-react";
-import { Link } from "react-router-dom";
 
 
 import user01 from "/assets/images/user/1.jpg"
@@ -63,7 +62,16 @@ const ChatData = (props) => {
     const onVoiceCall = props.onVoiceCall;
     const onVideoCall = props.onVideoCall;
 
+    const threadPinned = props.threadPinned ?? false;
+    const threadBlocked = props.threadBlocked ?? false;
+    const onThreadTogglePin = props.onThreadTogglePin;
+    const onThreadHide = props.onThreadHide;
+    const onThreadToggleBlock = props.onThreadToggleBlock;
+    const hasThreadActions = !!(onThreadTogglePin || onThreadHide || onThreadToggleBlock);
+    const inputLocked = threadBlocked;
+
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [confirmModal, setConfirmModal] = useState(null);
     const [show, setShow] = useState(false)
     const [draft, setDraft] = useState("");
     const [recording, setRecording] = useState(false);
@@ -145,7 +153,7 @@ const ChatData = (props) => {
         const input = e.target;
         const f = input.files?.[0];
         input.value = "";
-        if (!f || !onSendMedia || sending || recording) return;
+        if (!f || !onSendMedia || sending || recording || inputLocked) return;
         try {
             await onSendMedia(f, category, draft.trim());
             setDraft("");
@@ -160,7 +168,7 @@ const ChatData = (props) => {
     };
 
     const openCameraCapture = async () => {
-        if (!onSendMedia || sending || recording) return;
+        if (!onSendMedia || sending || recording || inputLocked) return;
         stopCameraStream();
         try {
             let stream = null;
@@ -186,7 +194,7 @@ const ChatData = (props) => {
 
     const captureCameraPhoto = () => {
         const v = cameraVideoRef.current;
-        if (!v || !onSendMedia || sending || recording) return;
+        if (!v || !onSendMedia || sending || recording || inputLocked) return;
         const w = v.videoWidth;
         const h = v.videoHeight;
         if (!w || !h) {
@@ -219,18 +227,31 @@ const ChatData = (props) => {
 
     const isLive = Array.isArray(liveMessages);
 
+    const runConfirm = () => {
+        if (confirmModal === "remove") onThreadHide?.();
+        else if (confirmModal === "block") onThreadToggleBlock?.();
+        setConfirmModal(null);
+    };
+
+    /** Suppression = retrait de la liste (local) ; pas d’API serveur de wipe. */
+    const openRemoveConversationModal = (e) => {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        setConfirmModal("remove");
+    };
+
     const isMine = (m) => m.senderId === session.id && m.senderRole === session.role;
 
     const submitLive = (e) => {
         e.preventDefault();
         const t = draft.trim();
-        if (!t || !onSendMessage || sending) return;
+        if (!t || !onSendMessage || sending || inputLocked) return;
         onSendMessage(t);
         setDraft("");
     };
 
     const toggleVoiceRecording = async () => {
-        if (!onSendVoice || sending) return;
+        if (!onSendVoice || sending || inputLocked) return;
         if (recording) {
             const mr = mediaRecorderRef.current;
             if (mr && mr.state !== "inactive") {
@@ -339,11 +360,11 @@ const ChatData = (props) => {
                             type="button"
                             className="chat-icon-phone bg-primary-subtle ms-3"
                             onClick={() => {
-                                if (isLive && voiceCallEnabled && onVoiceCall && !sending && !recording) {
+                                if (isLive && voiceCallEnabled && onVoiceCall && !sending && !recording && !inputLocked) {
                                     onVoiceCall();
                                 }
                             }}
-                            disabled={!isLive || !voiceCallEnabled || !onVoiceCall || sending || recording}
+                            disabled={!isLive || inputLocked || !voiceCallEnabled || !onVoiceCall || sending || recording}
                             title={
                                 isLive && voiceCallEnabled
                                     ? "Appel vocal"
@@ -357,11 +378,11 @@ const ChatData = (props) => {
                             type="button"
                             className="chat-icon-video bg-primary-subtle border-0"
                             onClick={() => {
-                                if (isLive && voiceCallEnabled && onVideoCall && !sending && !recording) {
+                                if (isLive && voiceCallEnabled && onVideoCall && !sending && !recording && !inputLocked) {
                                     onVideoCall();
                                 }
                             }}
-                            disabled={!isLive || !voiceCallEnabled || !onVideoCall || sending || recording}
+                            disabled={!isLive || inputLocked || !voiceCallEnabled || !onVideoCall || sending || recording}
                             title={
                                 isLive && voiceCallEnabled
                                     ? "Appel vidéo"
@@ -371,29 +392,74 @@ const ChatData = (props) => {
                         >
                             <i className="ri-vidicon-line" aria-hidden />
                         </button>
-                        <Link to="#" className="chat-icon-delete bg-primary-subtle">
-                            <i className="ri-delete-bin-line"></i>
-                        </Link>
+                        {onThreadHide ? (
+                            <button
+                                type="button"
+                                className="chat-icon-delete bg-primary-subtle border-0"
+                                title="Supprimer la discussion"
+                                aria-label="Supprimer la discussion"
+                                onClick={openRemoveConversationModal}
+                            >
+                                <i className="ri-delete-bin-line" aria-hidden />
+                            </button>
+                        ) : null}
+                        {hasThreadActions ? (
                         <span className="bg-primary-subtle d-flex align-items-center justify-content-center">
                             <Dropdown>
                                 <DropdownToggle as="i" className="ri-more-2-line cursor-pointer dropdown-toggle nav-hide-arrow cursor-pointer pe-0"
                                     id="dropdownMenuButton02" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
                                     role="menu"></DropdownToggle>
                                 <DropdownMenu className="dropdown-menu-right" aria-labelledby="dropdownMenuButton02">
-                                    <DropdownItem as="a" href="#"><i className="fa fa-thumb-tack"
-                                        aria-hidden="true"></i>{" "}
-                                        Pin to top</DropdownItem>
-                                    <DropdownItem as="a" href="#"><i className="fa fa-trash-o" aria-hidden="true"></i>{" "}
-                                        Delete chat</DropdownItem>
-                                    <DropdownItem as="a" href="#"><i className="fa fa-ban" aria-hidden="true"></i>{" "}
-                                        Block</DropdownItem>
+                                    {onThreadTogglePin ? (
+                                        <DropdownItem
+                                            as="button"
+                                            type="button"
+                                            onClick={() => onThreadTogglePin()}
+                                        >
+                                            <i className="fa fa-thumb-tack" aria-hidden />
+                                            {" "}
+                                            {threadPinned ? "Désépingler" : "Épingler en haut"}
+                                        </DropdownItem>
+                                    ) : null}
+                                    {onThreadHide ? (
+                                        <DropdownItem
+                                            as="button"
+                                            type="button"
+                                            onClick={openRemoveConversationModal}
+                                        >
+                                            <i className="fa fa-trash-o" aria-hidden />
+                                            {" "}
+                                            Supprimer la discussion
+                                        </DropdownItem>
+                                    ) : null}
+                                    {onThreadToggleBlock ? (
+                                        <DropdownItem
+                                            as="button"
+                                            type="button"
+                                            onClick={() => {
+                                                if (threadBlocked) onThreadToggleBlock();
+                                                else setConfirmModal("block");
+                                            }}
+                                        >
+                                            <i className="fa fa-ban" aria-hidden />
+                                            {" "}
+                                            {threadBlocked ? "Débloquer" : "Bloquer"}
+                                        </DropdownItem>
+                                    ) : null}
                                 </DropdownMenu>
                             </Dropdown>
                         </span>
+                        ) : null}
                     </div>
                 </header>
             </div>
             <div className="chat-content scroller">
+                {isLive && inputLocked && (
+                    <div className="px-3 py-2 small bg-warning-subtle text-dark border-bottom">
+                        <i className="ri-forbid-line me-1" aria-hidden />
+                        Ce contact est bloqué. Vous ne pouvez pas envoyer de messages ni passer d&apos;appels.
+                    </div>
+                )}
                 {isLive ? (
                     liveMessages.length === 0 ? (
                         <div className="p-4 text-muted small">
@@ -671,9 +737,9 @@ const ChatData = (props) => {
                 <Form
                     className="d-flex align-items-center flex-nowrap gap-2 w-100"
                     style={{ minWidth: 0 }}
-                    onSubmit={isLive ? submitLive : undefined}
+                    onSubmit={isLive && !inputLocked ? submitLive : undefined}
                 >
-                    {isLive && onSendMedia && (
+                    {isLive && onSendMedia && !inputLocked && (
                         <>
                             <input
                                 ref={imageInputRef}
@@ -712,9 +778,11 @@ const ChatData = (props) => {
                                 style={{ minWidth: 36, minHeight: 36 }}
                                 aria-label="Emojis"
                                 aria-expanded={showEmojiPicker}
+                                disabled={!isLive || inputLocked}
                                 onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
+                                    if (inputLocked) return;
                                     toggleEmojiPicker();
                                 }}
                             >
@@ -731,13 +799,13 @@ const ChatData = (props) => {
                                 </div>
                             )}
                         </span>
-                        {isLive && onSendMedia && (
+                        {isLive && onSendMedia && !inputLocked && (
                             <Dropdown drop="up" className="flex-shrink-0">
                                 <DropdownToggle
                                     as="button"
                                     type="button"
                                     className="btn chat-attach-btn rounded-circle p-0 d-flex align-items-center justify-content-center border-0 text-white"
-                                    disabled={sending || recording}
+                                    disabled={sending || recording || inputLocked}
                                     title="Joindre un fichier"
                                     aria-label="Joindre un fichier"
                                     id="chat-attach-menu-toggle"
@@ -784,13 +852,13 @@ const ChatData = (props) => {
                                 </DropdownMenu>
                             </Dropdown>
                         )}
-                        {isLive && onSendVoice && (
+                        {isLive && onSendVoice && !inputLocked && (
                             <button
                                 type="button"
                                 className={`btn btn-link p-1 border-0 flex-shrink-0 d-flex align-items-center justify-content-center ${recording ? "text-danger" : "text-body"}`}
                                 style={{ minWidth: 36, minHeight: 36 }}
                                 onClick={toggleVoiceRecording}
-                                disabled={sending}
+                                disabled={sending || inputLocked}
                                 title={recording ? "Arrêter et envoyer le message vocal" : "Message vocal"}
                                 aria-label={recording ? "Arrêter l’enregistrement" : "Enregistrer un message vocal"}
                             >
@@ -809,12 +877,12 @@ const ChatData = (props) => {
                         onChange={(e) => {
                             if (isLive) setDraft(e.target.value);
                         }}
-                        disabled={!isLive || (isLive && (!onSendMessage || sending || recording))}
+                        disabled={!isLive || inputLocked || (isLive && (!onSendMessage || sending || recording))}
                     />
                     <button
                         type="submit"
                         className="btn btn-primary-subtle d-flex align-items-center flex-shrink-0 p-2"
-                        disabled={isLive && (!draft.trim() || sending || recording)}
+                        disabled={isLive && (inputLocked || !draft.trim() || sending || recording)}
                     >
                         <i className="fa fa-paper-plane-o"
                             aria-hidden="true"></i><span className="d-none d-lg-block ms-1">Send</span></button>
@@ -858,11 +926,45 @@ const ChatData = (props) => {
                         type="button"
                         className="btn btn-primary"
                         onClick={captureCameraPhoto}
-                        disabled={sending || recording}
+                        disabled={sending || recording || inputLocked}
                     >
                         <i className="ri-camera-fill me-1" aria-hidden />
                         Capturer et envoyer
                     </button>
+                </Modal.Footer>
+            </Modal>
+
+            <Modal show={confirmModal !== null} onHide={() => setConfirmModal(null)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title className="h6">
+                        {confirmModal === "remove" ? "Supprimer la discussion ?" : "Bloquer ce contact ?"}
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="small">
+                    {confirmModal === "remove" ? (
+                        <>
+                            La conversation sera retirée de votre liste sur cet appareil. Les messages ne sont pas effacés
+                            côté serveur. Vous pourrez la faire réapparaître avec « Restaurer les conversations masquées »
+                            en bas du panneau des discussions.
+                        </>
+                    ) : (
+                        <>
+                            Vous ne pourrez plus envoyer de messages ni passer d&apos;appels avec ce contact tant que le
+                            blocage est actif. Vous pourrez débloquer depuis le même menu.
+                        </>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="outline-secondary" size="sm" onClick={() => setConfirmModal(null)}>
+                        Annuler
+                    </Button>
+                    <Button
+                        variant={confirmModal === "remove" ? "danger" : "warning"}
+                        size="sm"
+                        onClick={runConfirm}
+                    >
+                        {confirmModal === "remove" ? "Supprimer" : "Bloquer"}
+                    </Button>
                 </Modal.Footer>
             </Modal>
         </>

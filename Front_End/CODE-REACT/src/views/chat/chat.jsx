@@ -10,6 +10,17 @@ import ChatData from "../../components/chat-data";
 import { chatApi } from "../../services/api";
 import VoiceCallLayer from "./VoiceCallLayer";
 import { buildVoiceCallContext } from "./voiceCallUtils";
+import {
+    filterHiddenRows,
+    getThreadKey,
+    loadBlocked,
+    loadHidden,
+    loadPinned,
+    saveBlocked,
+    saveHidden,
+    savePinned,
+    sortRowsByPinned,
+} from "./chatThreadPrefs";
 
 const generatePath = (path) => {
     const base = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "") || "";
@@ -360,6 +371,9 @@ const Chat = () => {
     const session = useMemo(() => getSession(), []);
     const [sidebar, setSidebar] = useState(false);
     const [sidebarRows, setSidebarRows] = useState([]);
+    const [pinnedKeys, setPinnedKeys] = useState([]);
+    const [hiddenKeys, setHiddenKeys] = useState(() => new Set());
+    const [blockedKeys, setBlockedKeys] = useState(() => new Set());
     const [departmentLabel, setDepartmentLabel] = useState("");
     const [activeKey, setActiveKey] = useState("chatbox1");
     /** eventKey -> messages (tableau vide = chargé, sans clé = pas encore chargé) */
@@ -376,13 +390,31 @@ const Chat = () => {
         }
     };
 
+    useEffect(() => {
+        if (!session.id) return;
+        setPinnedKeys(loadPinned(session.id));
+        setHiddenKeys(new Set(loadHidden(session.id)));
+        setBlockedKeys(new Set(loadBlocked(session.id)));
+    }, [session.id]);
+
+    const displaySidebarRows = useMemo(() => {
+        if (!sidebarRows.length) return [];
+        const filtered = filterHiddenRows(sidebarRows, hiddenKeys);
+        return sortRowsByPinned(filtered, pinnedKeys);
+    }, [sidebarRows, hiddenKeys, pinnedKeys]);
+
+    const hasAnyThreadInSidebar = useMemo(
+        () => sidebarRows.some((r) => r.type === "item"),
+        [sidebarRows],
+    );
+
     const tabDefByKey = useMemo(() => {
         const m = {};
-        for (const r of sidebarRows) {
+        for (const r of displaySidebarRows) {
             if (r.type === "item") m[r.eventKey] = r.def;
         }
         return m;
-    }, [sidebarRows]);
+    }, [displaySidebarRows]);
 
     const voicePeerContext = useMemo(
         () => buildVoiceCallContext(session, tabDefByKey[activeKey]),
@@ -446,7 +478,14 @@ const Chat = () => {
                 const { rows, departmentLabel: dl } = buildSidebarRows(dc, session);
                 setDepartmentLabel(dl);
                 setSidebarRows(rows);
-                const first = rows.find((r) => r.type === "item");
+                const p = loadPinned(session.id);
+                const h = new Set(loadHidden(session.id));
+                const b = loadBlocked(session.id);
+                setPinnedKeys(p);
+                setHiddenKeys(h);
+                setBlockedKeys(new Set(b));
+                const display = sortRowsByPinned(filterHiddenRows(rows, h), p);
+                const first = display.find((r) => r.type === "item");
                 if (first) {
                     setActiveKey(first.eventKey);
                     await loadThread(first.eventKey, first.def);
@@ -544,6 +583,77 @@ const Chat = () => {
         setActiveKey(k);
         loadThread(k);
     };
+
+    const handleTogglePin = useCallback(
+        (def) => {
+            const k = getThreadKey(def);
+            if (!k || !session.id) return;
+            setPinnedKeys((prev) => {
+                const next = prev.includes(k)
+                    ? prev.filter((x) => x !== k)
+                    : [k, ...prev.filter((x) => x !== k)];
+                savePinned(session.id, next);
+                return next;
+            });
+        },
+        [session.id],
+    );
+
+    const handleHideThread = useCallback(
+        (eventKey, def) => {
+            const k = getThreadKey(def);
+            if (!k || !session.id) return;
+            setHiddenKeys((prev) => {
+                const next = new Set(prev);
+                next.add(k);
+                saveHidden(session.id, [...next]);
+                return next;
+            });
+            setPinnedKeys((prev) => {
+                const next = prev.filter((x) => x !== k);
+                savePinned(session.id, next);
+                return next;
+            });
+            setMessagesByKey((prev) => {
+                const p = { ...prev };
+                delete p[eventKey];
+                return p;
+            });
+        },
+        [session.id],
+    );
+
+    const handleToggleBlock = useCallback(
+        (def) => {
+            const k = getThreadKey(def);
+            if (!k || !session.id) return;
+            setBlockedKeys((prev) => {
+                const next = new Set(prev);
+                if (next.has(k)) next.delete(k);
+                else next.add(k);
+                saveBlocked(session.id, [...next]);
+                return next;
+            });
+        },
+        [session.id],
+    );
+
+    const handleRestoreHiddenThreads = useCallback(() => {
+        if (!session.id) return;
+        saveHidden(session.id, []);
+        setHiddenKeys(new Set());
+    }, [session.id]);
+
+    useEffect(() => {
+        const items = displaySidebarRows.filter((r) => r.type === "item");
+        if (items.length === 0) return;
+        const valid = new Set(items.map((i) => i.eventKey));
+        if (!valid.has(activeKey)) {
+            const first = items[0];
+            setActiveKey(first.eventKey);
+            loadThread(first.eventKey, first.def);
+        }
+    }, [displaySidebarRows, activeKey, loadThread]);
 
     if (!session.id) {
         const userData = STATIC_USER_DATA;
@@ -786,7 +896,7 @@ const Chat = () => {
         );
     }
 
-    const itemsOnly = sidebarRows.filter((r) => r.type === "item");
+    const itemsOnly = displaySidebarRows.filter((r) => r.type === "item");
 
     return (
         <>
@@ -824,9 +934,22 @@ const Chat = () => {
                                 <div className="p-4 text-center">
                                     <Spinner animation="border" size="sm" />
                                 </div>
+                            ) : itemsOnly.length === 0 && hasAnyThreadInSidebar && hiddenKeys.size > 0 ? (
+                                <div className="p-3 small">
+                                    <p className="text-muted mb-2">Toutes les conversations sont masquées.</p>
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline-primary btn-sm"
+                                        onClick={handleRestoreHiddenThreads}
+                                    >
+                                        <i className="ri-arrow-go-back-line me-1" aria-hidden />
+                                        Restaurer les conversations masquées
+                                    </button>
+                                </div>
                             ) : itemsOnly.length === 0 ? (
                                 <div className="p-3 small text-muted">Aucun contact (vérifiez le département ou l&apos;affectation).</div>
                             ) : (
+                                <>
                                 <ul className="iq-chat-ui nav flex-column nav-pills" role="tablist">
                                     <Nav.Item as="li">
                                         <Nav.Link as="a" className="d-none" data-bs-toggle="pill" eventKey="default-block" aria-selected="false" role="tab" tabIndex="-1">
@@ -841,7 +964,7 @@ const Chat = () => {
                                             </div>
                                         </Nav.Link>
                                     </Nav.Item>
-                                    {sidebarRows.map((r, idx) => {
+                                    {displaySidebarRows.map((r, idx) => {
                                         if (r.type === "section") {
                                             return (
                                                 <Nav.Item as="li" key={`sec-${idx}`}>
@@ -850,6 +973,8 @@ const Chat = () => {
                                             );
                                         }
                                         const def = r.def;
+                                        const tKey = getThreadKey(def);
+                                        const isPinned = tKey && pinnedKeys.includes(tKey);
                                         const unread =
                                             (def.thread === "patientLegacy" || def.thread === "patient") &&
                                             def.patientId
@@ -866,7 +991,12 @@ const Chat = () => {
                                                             </span>
                                                         </div>
                                                         <div className="chat-sidebar-name">
-                                                            <h6 className="mb-0">{def.title}</h6>
+                                                            <h6 className="mb-0 d-flex align-items-center gap-1">
+                                                                {isPinned && (
+                                                                    <i className="ri-pushpin-fill text-primary" style={{ fontSize: "0.85rem" }} title="Épinglé" aria-hidden />
+                                                                )}
+                                                                <span>{def.title}</span>
+                                                            </h6>
                                                             <span className="small text-truncate d-block" style={{ maxWidth: 140 }}>
                                                                 {def.subtitle}
                                                             </span>
@@ -882,6 +1012,22 @@ const Chat = () => {
                                         );
                                     })}
                                 </ul>
+                                {hiddenKeys.size > 0 ? (
+                                    <div className="chat-restore-hidden px-3 pb-3 pt-2 mt-1 border-top border-secondary-subtle">
+                                        <button
+                                            type="button"
+                                            className="btn btn-link btn-sm text-decoration-none p-0 d-inline-flex align-items-center gap-1 text-body-secondary"
+                                            onClick={handleRestoreHiddenThreads}
+                                        >
+                                            <i className="ri-arrow-go-back-line" aria-hidden />
+                                            <span>
+                                                Restaurer les conversations masquées
+                                                <span className="text-muted"> ({hiddenKeys.size})</span>
+                                            </span>
+                                        </button>
+                                    </div>
+                                ) : null}
+                                </>
                             )}
                         </div>
                     </Col>
@@ -898,35 +1044,45 @@ const Chat = () => {
                                         </button>
                                     </div>
                                 </Tab.Pane>
-                                {itemsOnly.map((r) => (
-                                    <Tab.Pane key={r.eventKey} className="fade" eventKey={r.eventKey}>
-                                        <ChatData
-                                            data={r.def.data}
-                                            SidebarToggle={SidebarToggle}
-                                            liveMessages={
-                                                activeKey === r.eventKey
-                                                    ? messagesByKey[r.eventKey] ?? []
-                                                    : undefined
-                                            }
-                                            onSendMessage={activeKey === r.eventKey ? onSendMessage : undefined}
-                                            onSendVoice={activeKey === r.eventKey ? onSendVoice : undefined}
-                                            onSendMedia={activeKey === r.eventKey ? onSendMedia : undefined}
-                                            sending={activeKey === r.eventKey ? sending : false}
-                                            session={session}
-                                            voiceCallEnabled={activeKey === r.eventKey && !!voicePeerContext}
-                                            onVoiceCall={
-                                                activeKey === r.eventKey && voicePeerContext
-                                                    ? () => voiceCallRef.current?.startOutgoing()
-                                                    : undefined
-                                            }
-                                            onVideoCall={
-                                                activeKey === r.eventKey && voicePeerContext
-                                                    ? () => voiceCallRef.current?.startVideoCall?.()
-                                                    : undefined
-                                            }
-                                        />
-                                    </Tab.Pane>
-                                ))}
+                                {itemsOnly.map((r) => {
+                                    const tk = getThreadKey(r.def);
+                                    const blocked = tk ? blockedKeys.has(tk) : false;
+                                    const pinned = tk ? pinnedKeys.includes(tk) : false;
+                                    return (
+                                        <Tab.Pane key={r.eventKey} className="fade" eventKey={r.eventKey}>
+                                            <ChatData
+                                                data={r.def.data}
+                                                SidebarToggle={SidebarToggle}
+                                                liveMessages={
+                                                    activeKey === r.eventKey
+                                                        ? messagesByKey[r.eventKey] ?? []
+                                                        : undefined
+                                                }
+                                                onSendMessage={activeKey === r.eventKey ? onSendMessage : undefined}
+                                                onSendVoice={activeKey === r.eventKey ? onSendVoice : undefined}
+                                                onSendMedia={activeKey === r.eventKey ? onSendMedia : undefined}
+                                                sending={activeKey === r.eventKey ? sending : false}
+                                                session={session}
+                                                voiceCallEnabled={activeKey === r.eventKey && !!voicePeerContext}
+                                                onVoiceCall={
+                                                    activeKey === r.eventKey && voicePeerContext
+                                                        ? () => voiceCallRef.current?.startOutgoing()
+                                                        : undefined
+                                                }
+                                                onVideoCall={
+                                                    activeKey === r.eventKey && voicePeerContext
+                                                        ? () => voiceCallRef.current?.startVideoCall?.()
+                                                        : undefined
+                                                }
+                                                threadPinned={pinned}
+                                                threadBlocked={blocked}
+                                                onThreadTogglePin={() => handleTogglePin(r.def)}
+                                                onThreadHide={() => handleHideThread(r.eventKey, r.def)}
+                                                onThreadToggleBlock={() => handleToggleBlock(r.def)}
+                                            />
+                                        </Tab.Pane>
+                                    );
+                                })}
                             </Tab.Content>
                         </div>
                     </div>
