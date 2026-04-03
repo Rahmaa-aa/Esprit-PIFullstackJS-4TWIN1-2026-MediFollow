@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Col, Row } from "react-bootstrap";
 import { useParams, Link } from "react-router-dom";
 import Card from "../../components/Card";
@@ -9,11 +9,30 @@ import img11 from "/assets/images/user/11.png";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 
+/** Face login enrollment only for the nurse viewing their own profile — not for doctors/admins viewing this page. */
+function isNurseViewingOwnProfile(profileId) {
+  if (!profileId) return false;
+  try {
+    if (localStorage.getItem("doctorUser") || localStorage.getItem("adminUser") || localStorage.getItem("patientUser")) {
+      return false;
+    }
+    const raw = localStorage.getItem("nurseUser");
+    if (!raw) return false;
+    const u = JSON.parse(raw);
+    const nid = u?.id ?? u?._id;
+    return nid != null && String(nid) === String(profileId);
+  } catch {
+    return false;
+  }
+}
+
 const NurseProfile = () => {
   const { id } = useParams();
   const [nurse, setNurse] = useState(null);
   const [loading, setLoading] = useState(!!id);
   const [error, setError] = useState("");
+
+  const showFaceEnrollment = useMemo(() => isNurseViewingOwnProfile(id), [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -70,11 +89,13 @@ const NurseProfile = () => {
 
   return (
     <>
-      <Row>
-        <Col sm={12}>
-          <FaceEnrollmentCard />
-        </Col>
-      </Row>
+      {showFaceEnrollment ? (
+        <Row>
+          <Col sm={12}>
+            <FaceEnrollmentCard />
+          </Col>
+        </Row>
+      ) : null}
       <Row>
         <Col lg={4}>
           <Card>
