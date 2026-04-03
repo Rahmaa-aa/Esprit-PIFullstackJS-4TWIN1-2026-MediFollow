@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Col, Row, Form, InputGroup } from "react-bootstrap";
+import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import { Link } from "react-router-dom";
 import { doctorApi } from "../../services/api";
@@ -10,6 +11,7 @@ const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 const DEFAULT_AVATAR = generatePath("/assets/images/user/11.png");
 
 const DoctorList = () => {
+  const { t } = useTranslation();
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,22 +30,22 @@ const DoctorList = () => {
     });
   }, [doctors, filterName, filterSpecialty]);
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = useCallback(async () => {
     try {
       const data = await doctorApi.getAll();
       setDoctors(data);
       setError("");
     } catch (err) {
-      setError(err.message || "Erreur lors du chargement des médecins");
+      setError(err.message || t("doctorList.loadError"));
       setDoctors([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchDoctors();
-  }, []);
+  }, [fetchDoctors]);
 
   const handleDelete = async (doctor) => {
     setDeletingId(doctor._id);
@@ -53,7 +55,7 @@ const DoctorList = () => {
       setDoctorToDelete(null);
     } catch (err) {
       if (err.status === 401) window.location.href = "/auth/lock-screen";
-      else alert(err.message || "Erreur lors de la suppression");
+      else alert(err.message || t("doctorList.deleteError"));
     } finally {
       setDeletingId(null);
     }
@@ -74,9 +76,9 @@ const DoctorList = () => {
           <Card>
             <Card.Body className="text-center py-5">
               <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Chargement...</span>
+                <span className="visually-hidden">{t("doctorList.loadingSpinner")}</span>
               </div>
-              <p className="mt-3 mb-0">Chargement des médecins...</p>
+              <p className="mt-3 mb-0">{t("doctorList.loadingText")}</p>
             </Card.Body>
           </Card>
         </Col>
@@ -91,22 +93,22 @@ const DoctorList = () => {
           <Card>
             <Card.Header className="card-header-custom d-flex justify-content-between align-items-center p-4 mb-0 border-bottom-0">
               <Card.Header.Title>
-                <h4 className="card-title">Liste des médecins</h4>
+                <h4 className="card-title">{t("doctorList.pageTitle")}</h4>
               </Card.Header.Title>
               <Link to="/doctor/add-doctor" className="btn btn-primary-subtle">
-                <i className="ri-user-add-fill me-1"></i>Ajouter un médecin
+                <i className="ri-user-add-fill me-1"></i>{t("doctorList.addDoctor")}
               </Link>
             </Card.Header>
             <Card.Body className="pt-0">
               <Row className="g-3">
                 <Col md={4}>
                   <Form.Group className="mb-0">
-                    <Form.Label className="small">Filtrer par nom</Form.Label>
+                    <Form.Label className="small">{t("doctorList.filterByName")}</Form.Label>
                     <InputGroup>
                       <InputGroup.Text><i className="ri-user-search-line"></i></InputGroup.Text>
                       <Form.Control
                         type="text"
-                        placeholder="Nom du médecin..."
+                        placeholder={t("doctorList.placeholderName")}
                         value={filterName}
                         onChange={(e) => setFilterName(e.target.value)}
                       />
@@ -115,12 +117,12 @@ const DoctorList = () => {
                 </Col>
                 <Col md={4}>
                   <Form.Group className="mb-0">
-                    <Form.Label className="small">Filtrer par spécialité</Form.Label>
+                    <Form.Label className="small">{t("doctorList.filterBySpecialty")}</Form.Label>
                     <InputGroup>
                       <InputGroup.Text><i className="ri-stethoscope-line"></i></InputGroup.Text>
                       <Form.Control
                         type="text"
-                        placeholder="Spécialité..."
+                        placeholder={t("doctorList.placeholderSpecialty")}
                         value={filterSpecialty}
                         onChange={(e) => setFilterSpecialty(e.target.value)}
                       />
@@ -134,14 +136,14 @@ const DoctorList = () => {
                       className="btn btn-outline-secondary btn-sm"
                       onClick={() => { setFilterName(""); setFilterSpecialty(""); }}
                     >
-                      <i className="ri-filter-off-line me-1"></i>Réinitialiser
+                      <i className="ri-filter-off-line me-1"></i>{t("doctorList.resetFilters")}
                     </button>
                   )}
                 </Col>
               </Row>
               {(filterName || filterSpecialty) && (
                 <p className="text-muted small mb-0 mt-2">
-                  {filteredDoctors.length} médecin{filteredDoctors.length !== 1 ? "s" : ""} trouvé{filteredDoctors.length !== 1 ? "s" : ""}
+                  {t("doctorList.foundDoctors", { count: filteredDoctors.length })}
                 </p>
               )}
             </Card.Body>
@@ -158,8 +160,8 @@ const DoctorList = () => {
           <Col sm={12}>
             <Card>
               <Card.Body className="text-center py-5">
-                <p className="text-muted mb-3">Aucun médecin enregistré.</p>
-                <Link to="/doctor/add-doctor" className="btn btn-primary-subtle">Ajouter le premier médecin</Link>
+                <p className="text-muted mb-3">{t("doctorList.emptyNoDoctors")}</p>
+                <Link to="/doctor/add-doctor" className="btn btn-primary-subtle">{t("doctorList.addFirstDoctor")}</Link>
               </Card.Body>
             </Card>
           </Col>
@@ -167,13 +169,13 @@ const DoctorList = () => {
           <Col sm={12}>
             <Card>
               <Card.Body className="text-center py-5">
-                <p className="text-muted mb-3">Aucun médecin ne correspond aux filtres.</p>
+                <p className="text-muted mb-3">{t("doctorList.emptyNoMatch")}</p>
                 <button
                   type="button"
                   className="btn btn-outline-primary"
                   onClick={() => { setFilterName(""); setFilterSpecialty(""); }}
                 >
-                  Réinitialiser les filtres
+                  {t("doctorList.resetFiltersLong")}
                 </button>
               </Card.Body>
             </Card>
@@ -188,13 +190,13 @@ const DoctorList = () => {
                   <img
                     className="rounded-circle img-fluid avatar-80"
                     src={getImageSrc(doctor)}
-                    alt={doctor.firstName}
+                    alt={t("doctorList.avatarAlt", { firstName: doctor.firstName || "", lastName: doctor.lastName || "" })}
                     style={{ width: "80px", height: "80px", objectFit: "cover" }}
                   />
                 </div>
                 <div className="doc-info mt-3">
-                  <h4>Dr. {doctor.firstName} {doctor.lastName}</h4>
-                  <p className="mb-0">{doctor.specialty || "Médecin"}</p>
+                  <h4>{t("doctorList.doctorPrefix")} {doctor.firstName} {doctor.lastName}</h4>
+                  <p className="mb-0">{doctor.specialty || t("doctorList.defaultSpecialty")}</p>
                   <a href={`mailto:${doctor.email}`}>{doctor.email}</a>
                 </div>
                 <div className="iq-doc-description mt-2">
@@ -207,31 +209,31 @@ const DoctorList = () => {
                   <ul className="m-0 p-0 list-group list-group-horizontal justify-content-center">
                     {doctor.facebookUrl && (
                       <li className="list-group-item border-0 p-0">
-                        <a href={doctor.facebookUrl} target="_blank" rel="noopener noreferrer"><i className="ri-facebook-fill"></i></a>
+                        <a href={doctor.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label={t("doctorList.socialFacebook")}><i className="ri-facebook-fill"></i></a>
                       </li>
                     )}
                     {doctor.twitterUrl && (
                       <li className="list-group-item border-0 p-0">
-                        <a href={doctor.twitterUrl} target="_blank" rel="noopener noreferrer"><i className="ri-twitter-fill"></i></a>
+                        <a href={doctor.twitterUrl} target="_blank" rel="noopener noreferrer" aria-label={t("doctorList.socialTwitter")}><i className="ri-twitter-fill"></i></a>
                       </li>
                     )}
                     {doctor.linkedinUrl && (
                       <li className="list-group-item border-0 p-0">
-                        <a href={doctor.linkedinUrl} target="_blank" rel="noopener noreferrer"><i className="ri-linkedin-fill"></i></a>
+                        <a href={doctor.linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label={t("doctorList.socialLinkedIn")}><i className="ri-linkedin-fill"></i></a>
                       </li>
                     )}
                   </ul>
                 </div>
                 <div className="d-flex gap-2 justify-content-center flex-wrap">
-                  <Link to={`/doctor/doctor-profile/${doctor._id}`} className="btn btn-primary-subtle btn-sm">Profil</Link>
-                  <Link to={`/doctor/edit-doctor/${doctor._id}`} className="btn btn-warning-subtle btn-sm">Modifier</Link>
+                  <Link to={`/doctor/doctor-profile/${doctor._id}`} className="btn btn-primary-subtle btn-sm">{t("doctorList.profile")}</Link>
+                  <Link to={`/doctor/edit-doctor/${doctor._id}`} className="btn btn-warning-subtle btn-sm">{t("doctorList.edit")}</Link>
                   <button
                     type="button"
                     className="btn btn-danger-subtle btn-sm"
                     onClick={() => setDoctorToDelete(doctor)}
                     disabled={deletingId === doctor._id}
                   >
-                    {deletingId === doctor._id ? "..." : "Supprimer"}
+                    {deletingId === doctor._id ? t("doctorList.deleting") : t("doctorList.delete")}
                   </button>
                 </div>
               </Card.Body>
@@ -241,11 +243,16 @@ const DoctorList = () => {
       </Row>
       <ConfirmActionModal
         show={!!doctorToDelete}
-        title="Supprimer ce médecin ?"
-        message={`Cette action supprimera définitivement Dr. ${doctorToDelete?.firstName || ""} ${doctorToDelete?.lastName || ""}.`}
+        title={t("doctorList.modalDeleteTitle")}
+        message={doctorToDelete
+          ? t("doctorList.modalDeleteMessage", {
+              firstName: doctorToDelete.firstName || "",
+              lastName: doctorToDelete.lastName || "",
+            })
+          : ""}
         onCancel={() => setDoctorToDelete(null)}
         onConfirm={() => doctorToDelete && handleDelete(doctorToDelete)}
-        confirmLabel="Supprimer"
+        confirmLabel={t("doctorList.confirmDelete")}
         loading={deletingId === doctorToDelete?._id}
         iconClass="ri-delete-bin-6-line"
       />
