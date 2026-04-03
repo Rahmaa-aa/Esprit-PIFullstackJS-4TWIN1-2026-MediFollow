@@ -1,10 +1,7 @@
 pipeline {
     agent any
     
-    // This tells Jenkins to use the NodeJS tool we configured earlier
-    tools {
-        nodejs 'Node'
-    }
+
     
     stages {
         stage('Checkout Repository') {
