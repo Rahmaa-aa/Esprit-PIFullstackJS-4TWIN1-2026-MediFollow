@@ -318,8 +318,8 @@ const ChatData = (props) => {
                                 setShow(!show)
                             }}></i></button>
                             <div className="user mb-4">
-                                <a className="avatar m-0">
-                                    <img src={userimg} alt="avatar" />
+                                <a className="avatar m-0 d-inline-block chat-profile-popup-avatar">
+                                    <img src={userimg} alt="" className="avatar-120 rounded object-cover" />
                                 </a>
                                 <div className="user-name mt-4">
                                     <h4>{userdetailname}</h4>

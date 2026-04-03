@@ -298,6 +298,20 @@ span.iq-start-icon {
     padding: 0 35px;
 }
 
+/* Panneau profil (header chat) : évite débordement si classes avatar manquantes */
+.chat-user-detail-popup .user-profile {
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+
+    .chat-profile-popup-avatar img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        object-fit: cover;
+    }
+}
+
 .user-profile button.close-popup {
     display: block;
     font-size: 24px;
