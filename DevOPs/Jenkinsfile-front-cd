@@ -12,7 +12,7 @@ pipeline {
                 dir('Front_End/CODE-REACT') {
                     echo "Building Frontend Docker Image..."
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
-                        sh 'docker build -t "$DOCKER_USER/medifollow-front:latest" .'
+                        sh 'docker build --network=host -t "$DOCKER_USER/medifollow-front:latest" .'
                     }
                 }
             }
