@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Card from "../../components/Card";
 import { Button, Col, Container, Form, Row } from "react-bootstrap";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { nurseApi } from "../../services/api";
 import { HOSPITAL_DEPARTMENTS } from "../../constants/hospitalDepartments";
 
@@ -25,6 +26,7 @@ const SPECIALTIES = [
 const COUNTRIES = ["France", "Canada", "USA", "Maroc", "Algérie", "Tunisie"];
 
 const EditNurse = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -59,13 +61,13 @@ const EditNurse = () => {
           lurl: data.linkedinUrl || "",
         });
       } catch (err) {
-        setError(err.message || "Infirmière non trouvée");
+        setError(err.message || t("editNurse.loadError"));
       } finally {
         setLoadingData(false);
       }
     };
     if (id) fetchNurse();
-  }, [id]);
+  }, [id, t]);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -87,12 +89,12 @@ const EditNurse = () => {
 
     if (password || rpass) {
       if (password !== rpass) {
-        setError("Les mots de passe ne correspondent pas");
+        setError(t("editNurse.passwordMismatch"));
         setLoading(false);
         return;
       }
       if (password?.length < 6) {
-        setError("Le mot de passe doit contenir au moins 6 caractères");
+        setError(t("editNurse.passwordMinLength"));
         setLoading(false);
         return;
       }
@@ -127,7 +129,7 @@ const EditNurse = () => {
         navigate("/auth/lock-screen");
         return;
       }
-      setError(err.message || "Erreur lors de la mise à jour");
+      setError(err.message || t("editNurse.updateError"));
     } finally {
       setLoading(false);
     }
@@ -139,8 +141,10 @@ const EditNurse = () => {
         <Col sm={12}>
           <Card>
             <Card.Body className="text-center py-5">
-              <div className="spinner-border text-primary" role="status" />
-              <p className="mt-3 mb-0">Chargement...</p>
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">{t("editNurse.loading")}</span>
+              </div>
+              <p className="mt-3 mb-0">{t("editNurse.loading")}</p>
             </Card.Body>
           </Card>
         </Col>
@@ -154,8 +158,8 @@ const EditNurse = () => {
         <Col sm={12}>
           <Card>
             <Card.Body className="text-center py-5">
-              <p className="text-danger mb-3">{error || "ID manquant"}</p>
-              <Button variant="primary" onClick={() => navigate("/nurse/nurse-list")}>Retour à la liste</Button>
+              <p className="text-danger mb-3">{error || t("editNurse.missingId")}</p>
+              <Button variant="primary" onClick={() => navigate("/nurse/nurse-list")}>{t("editNurse.backToList")}</Button>
             </Card.Body>
           </Card>
         </Col>
@@ -170,48 +174,48 @@ const EditNurse = () => {
           <Col lg={3}>
             <Card>
               <Card.Header>
-                <Card.Header.Title><h4 className="card-title">Modifier l'infirmière</h4></Card.Header.Title>
+                <Card.Header.Title><h4 className="card-title">{t("editNurse.pageTitle")}</h4></Card.Header.Title>
               </Card.Header>
               <Card.Body>
                 <Form.Group>
                   <Container className="d-flex flex-column align-items-center py-5">
                     <div className="text-center">
-                      <img className="profile-pic img-fluid rounded-circle mb-3" src={profilePreview} alt="profile-pic" style={{ width: "150px", height: "150px", objectFit: "cover" }} />
+                      <img className="profile-pic img-fluid rounded-circle mb-3" src={profilePreview} alt={t("editNurse.profilePhotoAlt")} style={{ width: "150px", height: "150px", objectFit: "cover" }} />
                       <div>
-                        <Button type="button" className="btn btn-primary rounded-1" onClick={() => document.getElementById("file-upload").click()}>Photo de profil</Button>
+                        <Button type="button" className="btn btn-primary rounded-1" onClick={() => document.getElementById("file-upload").click()}>{t("editNurse.profilePhoto")}</Button>
                         <input id="file-upload" className="d-none" type="file" accept="image/*" onChange={handleFileChange} />
                       </div>
                     </div>
                     <div className="mt-3 text-center">
-                      <span>Formats acceptés : </span>
+                      <span>{t("editNurse.acceptedFormats")} </span>
                       <span className="text-primary">.jpg .png .jpeg</span>
                     </div>
                   </Container>
                 </Form.Group>
                 <Form.Group className="cust-form-input">
-                  <Form.Label className="mb-0">Spécialité :</Form.Label>
+                  <Form.Label className="mb-0">{t("editNurse.labelSpecialty")}</Form.Label>
                   <Form.Control as="select" className="my-2" name="selectuserrole" defaultValue={formData.selectuserrole}>
-                    <option value="">Sélectionner</option>
+                    <option value="">{t("editNurse.selectPlaceholder")}</option>
                     {SPECIALTIES.map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </Form.Control>
                 </Form.Group>
                 <Form.Group className="cust-form-input">
-                  <Form.Label className="mb-0">Facebook :</Form.Label>
-                  <Form.Control type="text" className="my-2" name="furl" placeholder="URL Facebook" defaultValue={formData.furl} />
+                  <Form.Label className="mb-0">{t("editNurse.labelFacebook")}</Form.Label>
+                  <Form.Control type="text" className="my-2" name="furl" placeholder={t("editNurse.placeholderFacebook")} defaultValue={formData.furl} />
                 </Form.Group>
                 <Form.Group className="cust-form-input">
-                  <Form.Label className="mb-0">Twitter :</Form.Label>
-                  <Form.Control type="text" className="my-2" name="turl" placeholder="URL Twitter" defaultValue={formData.turl} />
+                  <Form.Label className="mb-0">{t("editNurse.labelTwitter")}</Form.Label>
+                  <Form.Control type="text" className="my-2" name="turl" placeholder={t("editNurse.placeholderTwitter")} defaultValue={formData.turl} />
                 </Form.Group>
                 <Form.Group className="cust-form-input">
-                  <Form.Label className="mb-0">Instagram :</Form.Label>
-                  <Form.Control type="text" className="my-2" name="instaurl" placeholder="URL Instagram" defaultValue={formData.instaurl} />
+                  <Form.Label className="mb-0">{t("editNurse.labelInstagram")}</Form.Label>
+                  <Form.Control type="text" className="my-2" name="instaurl" placeholder={t("editNurse.placeholderInstagram")} defaultValue={formData.instaurl} />
                 </Form.Group>
                 <Form.Group className="cust-form-input">
-                  <Form.Label className="mb-0">LinkedIn :</Form.Label>
-                  <Form.Control type="text" className="my-2" name="lurl" placeholder="URL LinkedIn" defaultValue={formData.lurl} />
+                  <Form.Label className="mb-0">{t("editNurse.labelLinkedIn")}</Form.Label>
+                  <Form.Control type="text" className="my-2" name="lurl" placeholder={t("editNurse.placeholderLinkedIn")} defaultValue={formData.lurl} />
                 </Form.Group>
               </Card.Body>
             </Card>
@@ -219,83 +223,83 @@ const EditNurse = () => {
           <Col lg={9}>
             <Card>
               <Card.Header>
-                <Card.Header.Title><h4 className="card-title">Informations de l'infirmière</h4></Card.Header.Title>
+                <Card.Header.Title><h4 className="card-title">{t("editNurse.nurseInfoTitle")}</h4></Card.Header.Title>
               </Card.Header>
               <Card.Body>
                 <div className="new-user-info">
                   {error && <div className="alert alert-danger">{error}</div>}
                   <Row className="cust-form-input">
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Prénom :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="fname" placeholder="Prénom" required defaultValue={formData.fname} />
+                      <Form.Label className="mb-0">{t("editNurse.labelFirstName")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="fname" placeholder={t("editNurse.placeholderFirstName")} required defaultValue={formData.fname} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Nom :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="lname" placeholder="Nom" required defaultValue={formData.lname} />
+                      <Form.Label className="mb-0">{t("editNurse.labelLastName")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="lname" placeholder={t("editNurse.placeholderLastName")} required defaultValue={formData.lname} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Adresse 1 :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="add1" placeholder="Adresse" defaultValue={formData.add1} />
+                      <Form.Label className="mb-0">{t("editNurse.labelAddress1")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="add1" placeholder={t("editNurse.placeholderAddress")} defaultValue={formData.add1} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Adresse 2 :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="add2" placeholder="Complément" />
+                      <Form.Label className="mb-0">{t("editNurse.labelAddress2")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="add2" placeholder={t("editNurse.placeholderAddress2")} />
                     </Col>
                     <Col sm={12} className="form-group">
-                      <Form.Label className="mb-0">Département hospitalier :</Form.Label>
+                      <Form.Label className="mb-0">{t("editNurse.labelDepartment")}</Form.Label>
                       <Form.Control as="select" className="my-2" name="cname" defaultValue={formData.cname}>
-                        <option value="">Sélectionner un département</option>
+                        <option value="">{t("editNurse.selectDepartment")}</option>
                         {HOSPITAL_DEPARTMENTS.map((d) => (
                           <option key={d} value={d}>{d}</option>
                         ))}
                       </Form.Control>
                     </Col>
                     <Col sm={12} className="form-group">
-                      <Form.Label className="mb-0">Pays :</Form.Label>
+                      <Form.Label className="mb-0">{t("editNurse.labelCountry")}</Form.Label>
                       <Form.Control as="select" className="my-2" name="selectcountry" defaultValue={formData.selectcountry}>
-                        <option value="">Sélectionner</option>
+                        <option value="">{t("editNurse.selectPlaceholder")}</option>
                         {COUNTRIES.map((c) => (
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </Form.Control>
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Téléphone :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="mobno" placeholder="Téléphone" defaultValue={formData.mobno} />
+                      <Form.Label className="mb-0">{t("editNurse.labelPhone")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="mobno" placeholder={t("editNurse.placeholderPhone")} defaultValue={formData.mobno} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Contact alternatif :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="altconno" placeholder="Contact alternatif" />
+                      <Form.Label className="mb-0">{t("editNurse.labelAltContact")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="altconno" placeholder={t("editNurse.placeholderAltContact")} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Email :</Form.Label>
-                      <Form.Control type="email" className="my-2" name="email" placeholder="Email" required defaultValue={formData.email} />
+                      <Form.Label className="mb-0">{t("editNurse.labelEmail")}</Form.Label>
+                      <Form.Control type="email" className="my-2" name="email" placeholder={t("editNurse.placeholderEmail")} required defaultValue={formData.email} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Code postal :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="pno" placeholder="Code postal" defaultValue={formData.pno} />
+                      <Form.Label className="mb-0">{t("editNurse.labelPostalCode")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="pno" placeholder={t("editNurse.placeholderPostalCode")} defaultValue={formData.pno} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Ville :</Form.Label>
-                      <Form.Control type="text" className="my-2" name="city" placeholder="Ville" defaultValue={formData.city} />
+                      <Form.Label className="mb-0">{t("editNurse.labelCity")}</Form.Label>
+                      <Form.Control type="text" className="my-2" name="city" placeholder={t("editNurse.placeholderCity")} defaultValue={formData.city} />
                     </Col>
                   </Row>
                   <hr />
-                  <h5 className="mb-3">Changer le mot de passe (optionnel)</h5>
+                  <h5 className="mb-3">{t("editNurse.passwordSection")}</h5>
                   <Row className="cust-form-input">
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Nouveau mot de passe :</Form.Label>
-                      <Form.Control type="password" className="my-2" name="pass" placeholder="Laisser vide pour conserver" minLength={6} />
+                      <Form.Label className="mb-0">{t("editNurse.labelNewPassword")}</Form.Label>
+                      <Form.Control type="password" className="my-2" name="pass" placeholder={t("editNurse.placeholderPasswordKeep")} minLength={6} />
                     </Col>
                     <Col md={6} className="form-group">
-                      <Form.Label className="mb-0">Confirmer :</Form.Label>
-                      <Form.Control type="password" className="my-2" name="rpass" placeholder="Confirmer" minLength={6} />
+                      <Form.Label className="mb-0">{t("editNurse.labelConfirmPassword")}</Form.Label>
+                      <Form.Control type="password" className="my-2" name="rpass" placeholder={t("editNurse.placeholderConfirm")} minLength={6} />
                     </Col>
                   </Row>
                   <div className="d-flex gap-2 mt-3">
-                    <Button type="button" variant="outline-danger" onClick={() => navigate("/nurse/nurse-list")}>Annuler</Button>
+                    <Button type="button" variant="outline-danger" onClick={() => navigate("/nurse/nurse-list")}>{t("editNurse.cancel")}</Button>
                     <Button type="submit" className="btn btn-primary-subtle" disabled={loading}>
-                      {loading ? "Enregistrement..." : "Enregistrer"}
+                      {loading ? t("editNurse.saving") : t("editNurse.save")}
                     </Button>
                   </div>
                 </div>
