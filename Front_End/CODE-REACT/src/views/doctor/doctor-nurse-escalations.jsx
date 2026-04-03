@@ -14,58 +14,33 @@ import {
   Table,
 } from "react-bootstrap";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { appointmentApi, healthLogApi, medicationApi } from "../../services/api";
 import MedicationNameAutocomplete from "../../components/MedicationNameAutocomplete";
 import DosageAutocomplete from "../../components/DosageAutocomplete";
 import { broadcastDoctorHealthLogResolved, subscribeDoctorHealthLogResolved } from "../../utils/healthLogResolveBroadcast";
 
-const FREQUENCIES = [
-  "1 fois par jour",
-  "2 fois par jour",
-  "3 fois par jour",
-  "Toutes les 8 heures",
-  "Hebdomadaire",
-  "Si besoin",
+const FREQUENCY_KEYS = ["freqOnceDay", "freqTwiceDay", "freqThriceDay", "freqEvery8h", "freqWeekly", "freqPrn"];
+
+const APPOINTMENT_TYPES = [
+  { value: "checkup", labelKey: "apptTypeCheckup" },
+  { value: "lab", labelKey: "apptTypeLab" },
+  { value: "specialist", labelKey: "apptTypeSpecialist" },
+  { value: "imaging", labelKey: "apptTypeImaging" },
+  { value: "physiotherapy", labelKey: "apptTypePhysio" },
 ];
 
 const newMedLineId = () => `med-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-const emptyMedLine = () => ({
-  id: newMedLineId(),
-  name: "",
-  useCustomMedication: false,
-  dosage: "",
-  useCustomDosage: false,
-  frequency: FREQUENCIES[0],
-  startDate: "",
-  endDate: "",
-  notes: "",
-});
-
-const defaultRdvForm = () => ({
-  title: "Rendez-vous urgent — suivi constantes",
-  type: "checkup",
-  date: new Date().toISOString().slice(0, 10),
-  time: "09:00",
-  notes: "",
-});
-
-const APPOINTMENT_TYPES = [
-  { value: "checkup", label: "Consultation de suivi" },
-  { value: "lab", label: "Analyses" },
-  { value: "specialist", label: "Spécialiste" },
-  { value: "imaging", label: "Imagerie" },
-  { value: "physiotherapy", label: "Rééducation" },
-];
-
 const VITALS_TZ = "Africa/Tunis";
 
-function formatWhen(iso) {
+function formatWhen(iso, localeTag) {
   if (!iso) return "—";
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "—";
-    return new Intl.DateTimeFormat("fr-FR", {
+    const loc = localeTag === "ar" ? "ar-TN" : localeTag === "fr" ? "fr-FR" : "en-US";
+    return new Intl.DateTimeFormat(loc, {
       timeZone: VITALS_TZ,
       day: "2-digit",
       month: "short",
@@ -78,25 +53,56 @@ function formatWhen(iso) {
   }
 }
 
-function formatVitalsShort(v) {
+function formatVitalsShort(v, t) {
   if (!v || typeof v !== "object") return "—";
   const parts = [];
-  if (v.heartRate != null) parts.push(`FC ${v.heartRate}`);
+  if (v.heartRate != null) parts.push(t("doctorPatientDossier.vitalsPartHR", { hr: v.heartRate }));
   if (v.bloodPressureSystolic != null) {
-    parts.push(`TA ${v.bloodPressureSystolic}/${v.bloodPressureDiastolic ?? "—"}`);
+    parts.push(
+      t("doctorPatientDossier.vitalsPartBP", {
+        sys: v.bloodPressureSystolic,
+        dia: v.bloodPressureDiastolic ?? "—",
+      })
+    );
   }
-  if (v.oxygenSaturation != null) parts.push(`SpO₂ ${v.oxygenSaturation}%`);
-  if (v.temperature != null && v.temperature !== "") parts.push(`T° ${v.temperature}`);
+  if (v.oxygenSaturation != null) parts.push(t("doctorPatientDossier.vitalsPartO2", { o2: v.oxygenSaturation }));
+  if (v.temperature != null && v.temperature !== "") parts.push(t("doctorPatientDossier.vitalsPartTemp", { temp: v.temperature }));
   return parts.length ? parts.join(" · ") : "—";
 }
 
-const FILTER_TABS = [
-  { key: "all", label: "Tous" },
-  { key: "pending", label: "En attente" },
-  { key: "resolved", label: "Résolus" },
-];
-
 const DoctorNurseEscalations = () => {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith("ar") ? "ar" : i18n.language?.startsWith("fr") ? "fr" : "en";
+
+  const makeDefaultRdvForm = () => ({
+    title: t("doctorNurseEscalations.defaultUrgentRdvTitle"),
+    type: "checkup",
+    date: new Date().toISOString().slice(0, 10),
+    time: "09:00",
+    notes: "",
+  });
+
+  const makeEmptyMedLine = () => ({
+    id: newMedLineId(),
+    name: "",
+    useCustomMedication: false,
+    dosage: "",
+    useCustomDosage: false,
+    frequency: t("doctorNurseEscalations.freqOnceDay"),
+    startDate: "",
+    endDate: "",
+    notes: "",
+  });
+
+  const filterTabs = useMemo(
+    () => [
+      { key: "all", label: t("doctorNurseEscalations.tabAll") },
+      { key: "pending", label: t("doctorNurseEscalations.tabPending") },
+      { key: "resolved", label: t("doctorNurseEscalations.tabResolved") },
+    ],
+    [t]
+  );
+
   const [doctorUser] = useState(() => {
     try {
       const s = localStorage.getItem("doctorUser");
@@ -114,19 +120,19 @@ const DoctorNurseEscalations = () => {
   const [resolveModal, setResolveModal] = useState(null);
   const [modalNote, setModalNote] = useState("");
   const [rdvModal, setRdvModal] = useState(null);
-  const [rdvForm, setRdvForm] = useState(() => defaultRdvForm());
+  const [rdvForm, setRdvForm] = useState(() => makeDefaultRdvForm());
   const [rdvSaving, setRdvSaving] = useState(false);
   const [rdvError, setRdvError] = useState("");
   const [medModal, setMedModal] = useState(null);
-  const [medLine, setMedLine] = useState(() => emptyMedLine());
+  const [medLine, setMedLine] = useState(() => makeEmptyMedLine());
   const [medSaving, setMedSaving] = useState(false);
   const [medError, setMedError] = useState("");
 
   const doctorDisplayName = useMemo(() => {
     if (!doctorUser) return "";
     const ln = doctorUser.lastName ? `Dr. ${doctorUser.firstName || ""} ${doctorUser.lastName}`.trim() : "";
-    return ln || doctorUser.firstName || "Médecin";
-  }, [doctorUser]);
+    return ln || doctorUser.firstName || t("doctorNurseEscalations.doctorFallback");
+  }, [doctorUser, t]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -135,12 +141,12 @@ const DoctorNurseEscalations = () => {
       const raw = await healthLogApi.doctorNurseEscalations("all");
       setItems(Array.isArray(raw) ? raw : []);
     } catch (e) {
-      setError(e.message || "Impossible de charger l’historique");
+      setError(e.message || t("doctorNurseEscalations.loadError"));
       setItems([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!doctorId) return;
@@ -178,7 +184,7 @@ const DoctorNurseEscalations = () => {
   const resolveOne = async (healthLogId, patientId, resolutionNote) => {
     const note = String(resolutionNote ?? "").trim();
     if (!note) {
-      window.alert("Rédigez une consigne pour le patient avant de clôturer.");
+      window.alert(t("doctorNurseEscalations.alertNoteRequired"));
       return;
     }
     setResolveBusyId(healthLogId);
@@ -188,7 +194,7 @@ const DoctorNurseEscalations = () => {
       await load();
       broadcastDoctorHealthLogResolved(healthLogId, patientId);
     } catch (e) {
-      window.alert(e.message || "Clôture impossible");
+      window.alert(e.message || t("doctorNurseEscalations.alertResolveFailed"));
     } finally {
       setResolveBusyId(null);
     }
@@ -201,12 +207,12 @@ const DoctorNurseEscalations = () => {
 
   const closeRdvModal = () => {
     setRdvModal(null);
-    setRdvForm(defaultRdvForm());
+    setRdvForm(makeDefaultRdvForm());
     setRdvError("");
   };
 
   const openRdvModal = (patientId, patientName) => {
-    setRdvForm(defaultRdvForm());
+    setRdvForm(makeDefaultRdvForm());
     setRdvError("");
     setRdvModal({ patientId, patientName });
   };
@@ -217,11 +223,11 @@ const DoctorNurseEscalations = () => {
     const date = String(rdvForm.date || "").trim();
     const time = String(rdvForm.time || "").trim();
     if (!date) {
-      setRdvError("Indiquez une date.");
+      setRdvError(t("doctorNurseEscalations.rdvErrDate"));
       return;
     }
     if (!time) {
-      setRdvError("Indiquez une heure.");
+      setRdvError(t("doctorNurseEscalations.rdvErrTime"));
       return;
     }
     setRdvSaving(true);
@@ -231,7 +237,7 @@ const DoctorNurseEscalations = () => {
         patientId: rdvModal.patientId,
         doctorId: String(doctorId),
         doctorName: doctorDisplayName,
-        title: String(rdvForm.title || "").trim() || "Rendez-vous urgent",
+        title: String(rdvForm.title || "").trim() || t("doctorNurseEscalations.fallbackUrgentTitle"),
         type: rdvForm.type || "checkup",
         date,
         time,
@@ -242,7 +248,7 @@ const DoctorNurseEscalations = () => {
       });
       closeRdvModal();
     } catch (err) {
-      setRdvError(err.message || "Création impossible.");
+      setRdvError(err.message || t("doctorNurseEscalations.rdvErrCreate"));
     } finally {
       setRdvSaving(false);
     }
@@ -250,12 +256,12 @@ const DoctorNurseEscalations = () => {
 
   const closeMedModal = () => {
     setMedModal(null);
-    setMedLine(emptyMedLine());
+    setMedLine(makeEmptyMedLine());
     setMedError("");
   };
 
   const openMedModal = (patientId, patientName) => {
-    setMedLine(emptyMedLine());
+    setMedLine(makeEmptyMedLine());
     setMedError("");
     setMedModal({ patientId, patientName });
   };
@@ -269,7 +275,7 @@ const DoctorNurseEscalations = () => {
     if (!medModal) return;
     const name = String(medLine.name || "").trim();
     if (!name) {
-      setMedError("Saisissez le nom du médicament.");
+      setMedError(t("doctorNurseEscalations.medNameRequired"));
       return;
     }
     setMedSaving(true);
@@ -286,7 +292,7 @@ const DoctorNurseEscalations = () => {
       });
       closeMedModal();
     } catch (err) {
-      setMedError(err.message || "Enregistrement impossible.");
+      setMedError(err.message || t("doctorNurseEscalations.medErrSave"));
     } finally {
       setMedSaving(false);
     }
@@ -295,10 +301,10 @@ const DoctorNurseEscalations = () => {
   if (!doctorId) {
     return (
       <Container className="py-5">
-        <p className="text-muted text-center">Connectez-vous en tant que médecin.</p>
+        <p className="text-muted text-center">{t("doctorMyPatients.loginDoctor")}</p>
         <div className="text-center">
           <Link to="/auth/sign-in" className="btn btn-primary">
-            Connexion
+            {t("doctorMyPatients.signIn")}
           </Link>
         </div>
       </Container>
@@ -311,18 +317,14 @@ const DoctorNurseEscalations = () => {
         <Col md={8}>
           <h4 className="fw-bold mb-1">
             <i className="ri-alarm-warning-fill text-danger me-2" />
-            Urgences escaladées par l’infirmier
+            {t("doctorNurseEscalations.pageTitle")}
           </h4>
-          <p className="text-muted mb-0">
-            Historique des cas où un infirmier a sollicité votre avis (patients dont vous êtes le médecin référent).
-            Utilisez le bouton <strong>+</strong> pour la <strong>consigne</strong> (clôture), un <strong>rendez-vous urgent</strong> ou un{" "}
-            <strong>nouveau médicament</strong> via les fenêtres dédiées. Statuts : <strong>en attente</strong> ou <strong>résolu</strong>.
-          </p>
+          <p className="text-muted mb-0">{t("doctorNurseEscalations.pageLead")}</p>
         </Col>
         <Col md={4} className="text-md-end mt-3 mt-md-0">
           <Button variant="outline-secondary" size="sm" onClick={load} disabled={loading}>
             {loading ? <Spinner animation="border" size="sm" className="me-1" /> : <i className="ri-refresh-line me-1" />}
-            Actualiser
+            {t("doctorNurseEscalations.refresh")}
           </Button>
         </Col>
       </Row>
@@ -331,7 +333,7 @@ const DoctorNurseEscalations = () => {
         <Col md={4}>
           <Card className="border-0 shadow-sm h-100">
             <Card.Body className="py-3">
-              <div className="small text-muted">Total escalades</div>
+              <div className="small text-muted">{t("doctorNurseEscalations.statTotal")}</div>
               <div className="fs-4 fw-semibold text-primary">{counts.total}</div>
             </Card.Body>
           </Card>
@@ -339,7 +341,7 @@ const DoctorNurseEscalations = () => {
         <Col md={4}>
           <Card className="shadow-sm h-100 border-start border-warning border-3 rounded">
             <Card.Body className="py-3">
-              <div className="small text-muted">En attente</div>
+              <div className="small text-muted">{t("doctorNurseEscalations.statPending")}</div>
               <div className="fs-4 fw-semibold text-warning">{counts.pending}</div>
             </Card.Body>
           </Card>
@@ -347,7 +349,7 @@ const DoctorNurseEscalations = () => {
         <Col md={4}>
           <Card className="shadow-sm h-100 border-start border-success border-3 rounded">
             <Card.Body className="py-3">
-              <div className="small text-muted">Résolus</div>
+              <div className="small text-muted">{t("doctorNurseEscalations.statResolved")}</div>
               <div className="fs-4 fw-semibold text-success">{counts.resolved}</div>
             </Card.Body>
           </Card>
@@ -363,16 +365,16 @@ const DoctorNurseEscalations = () => {
       <Card className="border-0 shadow-sm">
         <Card.Body className="p-3">
           <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-            <span className="small text-muted">Filtrer l’affichage</span>
+            <span className="small text-muted">{t("doctorNurseEscalations.filterLabel")}</span>
             <ButtonGroup size="sm">
-              {FILTER_TABS.map((t) => (
+              {filterTabs.map((tab) => (
                 <Button
-                  key={t.key}
-                  variant={filter === t.key ? "primary" : "outline-primary"}
-                  onClick={() => setFilter(t.key)}
+                  key={tab.key}
+                  variant={filter === tab.key ? "primary" : "outline-primary"}
+                  onClick={() => setFilter(tab.key)}
                 >
-                  {t.label}
-                  {t.key === "pending" && counts.pending > 0 ? (
+                  {tab.label}
+                  {tab.key === "pending" && counts.pending > 0 ? (
                     <Badge bg="danger" className="ms-1">
                       {counts.pending}
                     </Badge>
@@ -388,9 +390,7 @@ const DoctorNurseEscalations = () => {
             </div>
           ) : filtered.length === 0 ? (
             <p className="text-muted text-center py-5 mb-0">
-              {counts.total === 0
-                ? "Aucune escalade infirmier enregistrée pour vos patients."
-                : "Aucun cas dans ce filtre."}
+              {counts.total === 0 ? t("doctorNurseEscalations.emptyNoEscalations") : t("doctorNurseEscalations.emptyFilter")}
             </p>
           ) : (
             <div className="table-responsive">
@@ -398,15 +398,15 @@ const DoctorNurseEscalations = () => {
               <Table hover className="mb-0 align-middle small">
                 <thead className="table-light">
                   <tr>
-                    <th>Patient</th>
-                    <th>Statut</th>
-                    <th>Relevé</th>
-                    <th>Escalade</th>
-                    <th>Infirmier</th>
-                    <th>Score</th>
-                    <th>Constantes</th>
-                    <th>Note infirmier</th>
-                    <th className="text-nowrap">Actions</th>
+                    <th>{t("doctorNurseEscalations.thPatient")}</th>
+                    <th>{t("doctorNurseEscalations.thStatus")}</th>
+                    <th>{t("doctorNurseEscalations.thRecorded")}</th>
+                    <th>{t("doctorNurseEscalations.thEscalation")}</th>
+                    <th>{t("doctorNurseEscalations.thNurse")}</th>
+                    <th>{t("doctorNurseEscalations.thScore")}</th>
+                    <th>{t("doctorNurseEscalations.thVitals")}</th>
+                    <th>{t("doctorNurseEscalations.thNurseNote")}</th>
+                    <th className="text-nowrap">{t("doctorNurseEscalations.thActions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -419,19 +419,19 @@ const DoctorNurseEscalations = () => {
                         <td>
                           {pending ? (
                             <Badge bg="warning" text="dark">
-                              En attente
+                              {t("doctorNurseEscalations.statusPendingBadge")}
                             </Badge>
                           ) : (
-                            <Badge bg="success">Résolu</Badge>
+                            <Badge bg="success">{t("doctorNurseEscalations.statusResolvedBadge")}</Badge>
                           )}
                         </td>
-                        <td className="text-nowrap">{formatWhen(row.recordedAt)}</td>
-                        <td className="text-nowrap">{formatWhen(row.escalatedAt)}</td>
+                        <td className="text-nowrap">{formatWhen(row.recordedAt, dateLocale)}</td>
+                        <td className="text-nowrap">{formatWhen(row.escalatedAt, dateLocale)}</td>
                         <td>{row.escalatedByNurseName || "—"}</td>
                         <td>
                           <span className="badge bg-light text-dark border">{row.riskScore ?? "—"}/100</span>
                         </td>
-                        <td style={{ maxWidth: 220 }}>{formatVitalsShort(row.vitals)}</td>
+                        <td style={{ maxWidth: 220 }}>{formatVitalsShort(row.vitals, t)}</td>
                         <td style={{ maxWidth: 200 }} className="text-muted">
                           {row.escalationNote ? (
                             <span title={row.escalationNote}>{row.escalationNote.slice(0, 80)}{row.escalationNote.length > 80 ? "…" : ""}</span>
@@ -446,7 +446,7 @@ const DoctorNurseEscalations = () => {
                                 to={`/doctor/my-patients/${encodeURIComponent(pid)}`}
                                 className="btn btn-outline-primary btn-sm"
                               >
-                                Dossier
+                                {t("doctorNurseEscalations.dossier")}
                               </Link>
                               <Dropdown as={ButtonGroup}>
                                 <Dropdown.Toggle
@@ -455,7 +455,7 @@ const DoctorNurseEscalations = () => {
                                   id={`urg-actions-${row.id}`}
                                   disabled={resolveBusyId != null}
                                   className="d-inline-flex align-items-center px-2"
-                                  title="Actions"
+                                  title={t("doctorNurseEscalations.actionsTooltip")}
                                 >
                                   <i className="ri-add-line fs-6" />
                                 </Dropdown.Toggle>
@@ -471,16 +471,16 @@ const DoctorNurseEscalations = () => {
                                     }}
                                   >
                                     <i className="ri-file-text-line me-2 text-primary" />
-                                    Consigne au patient (clôturer)
+                                    {t("doctorNurseEscalations.dropdownInstruction")}
                                   </Dropdown.Item>
                                   <Dropdown.Item onClick={() => openRdvModal(pid, row.patientName)}>
                                     <i className="ri-calendar-event-line me-2 text-warning" />
-                                    Rendez-vous urgent
+                                    {t("doctorNurseEscalations.dropdownUrgentRdv")}
                                   </Dropdown.Item>
                                   <Dropdown.Divider />
                                   <Dropdown.Item onClick={() => openMedModal(pid, row.patientName)}>
                                     <i className="ri-medicine-bottle-line me-2 text-success" />
-                                    Ajouter un médicament
+                                    {t("doctorNurseEscalations.dropdownAddMed")}
                                   </Dropdown.Item>
                                 </Dropdown.Menu>
                               </Dropdown>
@@ -490,7 +490,7 @@ const DoctorNurseEscalations = () => {
                               to={`/doctor/my-patients/${encodeURIComponent(pid)}`}
                               className="btn btn-outline-primary btn-sm"
                             >
-                              Dossier
+                              {t("doctorNurseEscalations.dossier")}
                             </Link>
                           )}
                         </td>
@@ -506,17 +506,15 @@ const DoctorNurseEscalations = () => {
 
       <Modal show={resolveModal != null} onHide={closeResolveModal} centered backdrop="static">
         <Modal.Header closeButton>
-          <Modal.Title>Consigne pour le patient</Modal.Title>
+          <Modal.Title>{t("doctorNurseEscalations.modalInstructionTitle")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p className="small text-muted mb-2">
-            Ce message est envoyé au patient dans la messagerie sécurisée et <strong>clôture</strong> cette alerte.
-          </p>
+          <p className="small text-muted mb-2">{t("doctorNurseEscalations.modalInstructionLead")}</p>
           <Form.Control
             as="textarea"
             rows={5}
             className="small"
-            placeholder="Votre solution : traitement, surveillance, consignes…"
+            placeholder={t("doctorNurseEscalations.placeholderInstruction")}
             value={modalNote}
             onChange={(e) => setModalNote(e.target.value)}
             disabled={resolveBusyId != null}
@@ -524,7 +522,7 @@ const DoctorNurseEscalations = () => {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" size="sm" onClick={closeResolveModal} disabled={resolveBusyId != null}>
-            Annuler
+            {t("doctorNurseEscalations.cancel")}
           </Button>
           <Button
             variant="primary"
@@ -535,12 +533,12 @@ const DoctorNurseEscalations = () => {
             {resolveBusyId != null ? (
               <>
                 <Spinner animation="border" size="sm" className="me-1" />
-                Envoi…
+                {t("doctorNurseEscalations.sending")}
               </>
             ) : (
               <>
                 <i className="ri-send-plane-line me-1" />
-                Envoyer et clôturer
+                {t("doctorNurseEscalations.sendAndClose")}
               </>
             )}
           </Button>
@@ -551,15 +549,13 @@ const DoctorNurseEscalations = () => {
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="ri-calendar-event-line me-2 text-warning" />
-            Rendez-vous urgent
+            {t("doctorNurseEscalations.modalRdvTitle")}
           </Modal.Title>
         </Modal.Header>
         <Form onSubmit={submitUrgentRdv}>
           <Modal.Body>
             {rdvModal && (
-              <p className="small text-muted mb-3">
-                Patient : <strong>{rdvModal.patientName}</strong>. Le rendez-vous est créé comme <strong>confirmé</strong>.
-              </p>
+              <p className="small text-muted mb-3">{t("doctorNurseEscalations.modalRdvPatientLead", { name: rdvModal.patientName })}</p>
             )}
             {rdvError && (
               <div className="alert alert-danger py-2 small" role="alert">
@@ -568,7 +564,7 @@ const DoctorNurseEscalations = () => {
             )}
             <Row className="g-2 mb-2">
               <Col md={12}>
-                <Form.Label className="small fw-semibold">Motif / titre</Form.Label>
+                <Form.Label className="small fw-semibold">{t("doctorNurseEscalations.labelMotif")}</Form.Label>
                 <Form.Control
                   size="sm"
                   value={rdvForm.title}
@@ -577,23 +573,23 @@ const DoctorNurseEscalations = () => {
                 />
               </Col>
               <Col md={6}>
-                <Form.Label className="small fw-semibold">Type</Form.Label>
+                <Form.Label className="small fw-semibold">{t("doctorNurseEscalations.labelType")}</Form.Label>
                 <Form.Select
                   size="sm"
                   value={rdvForm.type}
                   onChange={(e) => setRdvForm((f) => ({ ...f, type: e.target.value }))}
                   disabled={rdvSaving}
                 >
-                  {APPOINTMENT_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
+                  {APPOINTMENT_TYPES.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {t(`doctorNurseEscalations.${opt.labelKey}`)}
                     </option>
                   ))}
                 </Form.Select>
               </Col>
               <Col md={6} className="d-none d-md-block" aria-hidden />
               <Col md={6}>
-                <Form.Label className="small fw-semibold">Date *</Form.Label>
+                <Form.Label className="small fw-semibold">{t("doctorNurseEscalations.labelDate")}</Form.Label>
                 <Form.Control
                   type="date"
                   size="sm"
@@ -604,7 +600,7 @@ const DoctorNurseEscalations = () => {
                 />
               </Col>
               <Col md={6}>
-                <Form.Label className="small fw-semibold">Heure *</Form.Label>
+                <Form.Label className="small fw-semibold">{t("doctorNurseEscalations.labelTime")}</Form.Label>
                 <Form.Control
                   type="time"
                   size="sm"
@@ -615,12 +611,12 @@ const DoctorNurseEscalations = () => {
                 />
               </Col>
               <Col md={12}>
-                <Form.Label className="small fw-semibold">Notes (interne)</Form.Label>
+                <Form.Label className="small fw-semibold">{t("doctorNurseEscalations.labelNotesInternal")}</Form.Label>
                 <Form.Control
                   as="textarea"
                   rows={2}
                   size="sm"
-                  placeholder="Optionnel"
+                  placeholder={t("doctorNurseEscalations.notesOptional")}
                   value={rdvForm.notes}
                   onChange={(e) => setRdvForm((f) => ({ ...f, notes: e.target.value }))}
                   disabled={rdvSaving}
@@ -630,18 +626,18 @@ const DoctorNurseEscalations = () => {
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" size="sm" type="button" onClick={closeRdvModal} disabled={rdvSaving}>
-              Annuler
+              {t("doctorNurseEscalations.cancel")}
             </Button>
             <Button variant="warning" size="sm" type="submit" disabled={rdvSaving}>
               {rdvSaving ? (
                 <>
                   <Spinner animation="border" size="sm" className="me-1" />
-                  Enregistrement…
+                  {t("doctorNurseEscalations.rdvSaving")}
                 </>
               ) : (
                 <>
                   <i className="ri-check-line me-1" />
-                  Créer le rendez-vous
+                  {t("doctorNurseEscalations.createRdv")}
                 </>
               )}
             </Button>
@@ -653,15 +649,13 @@ const DoctorNurseEscalations = () => {
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="ri-medicine-bottle-line me-2 text-success" />
-            Nouveau médicament
+            {t("doctorNurseEscalations.medModalTitle")}
           </Modal.Title>
         </Modal.Header>
         <Form onSubmit={submitNewMedication}>
           <Modal.Body>
             {medModal && (
-              <p className="small text-muted mb-3">
-                Patient : <strong>{medModal.patientName}</strong>. Le traitement sera visible sur le tableau de bord patient.
-              </p>
+              <p className="small text-muted mb-3">{t("doctorNurseEscalations.medModalLead", { name: medModal.patientName })}</p>
             )}
             {medError && (
               <div className="alert alert-danger py-2 small" role="alert">
@@ -670,7 +664,7 @@ const DoctorNurseEscalations = () => {
             )}
             <Row className="g-2">
               <Col md={12}>
-                <Form.Label className="small fw-semibold">Nom du médicament *</Form.Label>
+                <Form.Label className="small fw-semibold">{t("doctorNurseEscalations.labelMedName")}</Form.Label>
                 <MedicationNameAutocomplete
                   id={`esc-med-name-${medLine.id}`}
                   value={medLine.name}
@@ -679,7 +673,7 @@ const DoctorNurseEscalations = () => {
                 />
               </Col>
               <Col md={6}>
-                <Form.Label className="small fw-semibold">Dosage</Form.Label>
+                <Form.Label className="small fw-semibold">{t("doctorNurseEscalations.labelDosage")}</Form.Label>
                 <DosageAutocomplete
                   id={`esc-med-dose-${medLine.id}`}
                   value={medLine.dosage}
@@ -688,22 +682,25 @@ const DoctorNurseEscalations = () => {
                 />
               </Col>
               <Col md={6}>
-                <Form.Label className="small fw-semibold">Fréquence</Form.Label>
+                <Form.Label className="small fw-semibold">{t("doctorNurseEscalations.labelFrequency")}</Form.Label>
                 <Form.Select
                   size="sm"
                   value={medLine.frequency}
                   onChange={(e) => patchMedLine({ frequency: e.target.value })}
                   disabled={medSaving}
                 >
-                  {FREQUENCIES.map((fr) => (
-                    <option key={fr} value={fr}>
-                      {fr}
-                    </option>
-                  ))}
+                  {FREQUENCY_KEYS.map((fk) => {
+                    const lab = t(`doctorNurseEscalations.${fk}`);
+                    return (
+                      <option key={fk} value={lab}>
+                        {lab}
+                      </option>
+                    );
+                  })}
                 </Form.Select>
               </Col>
               <Col md={6}>
-                <Form.Label className="small fw-semibold">Date de début</Form.Label>
+                <Form.Label className="small fw-semibold">{t("doctorNurseEscalations.labelStartDate")}</Form.Label>
                 <Form.Control
                   type="date"
                   size="sm"
@@ -713,7 +710,7 @@ const DoctorNurseEscalations = () => {
                 />
               </Col>
               <Col md={6}>
-                <Form.Label className="small fw-semibold">Date de fin</Form.Label>
+                <Form.Label className="small fw-semibold">{t("doctorNurseEscalations.labelEndDate")}</Form.Label>
                 <Form.Control
                   type="date"
                   size="sm"
@@ -723,12 +720,12 @@ const DoctorNurseEscalations = () => {
                 />
               </Col>
               <Col md={12}>
-                <Form.Label className="small fw-semibold">Notes</Form.Label>
+                <Form.Label className="small fw-semibold">{t("doctorNurseEscalations.labelNotes")}</Form.Label>
                 <Form.Control
                   as="textarea"
                   rows={2}
                   size="sm"
-                  placeholder="ex. Pendant les repas"
+                  placeholder={t("doctorNurseEscalations.notesMealsPlaceholder")}
                   value={medLine.notes}
                   onChange={(e) => patchMedLine({ notes: e.target.value })}
                   disabled={medSaving}
@@ -738,18 +735,18 @@ const DoctorNurseEscalations = () => {
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" size="sm" type="button" onClick={closeMedModal} disabled={medSaving}>
-              Annuler
+              {t("doctorNurseEscalations.cancel")}
             </Button>
             <Button variant="success" size="sm" type="submit" disabled={medSaving}>
               {medSaving ? (
                 <>
                   <Spinner animation="border" size="sm" className="me-1" />
-                  Enregistrement…
+                  {t("doctorNurseEscalations.medSaving")}
                 </>
               ) : (
                 <>
                   <i className="ri-check-line me-1" />
-                  Enregistrer le médicament
+                  {t("doctorNurseEscalations.saveMedication")}
                 </>
               )}
             </Button>
