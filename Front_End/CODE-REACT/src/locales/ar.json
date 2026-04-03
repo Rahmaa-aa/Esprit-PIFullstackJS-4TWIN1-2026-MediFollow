@@ -750,5 +750,29 @@
     "sendFailed": "تعذّر الإرسال. أعد المحاولة.",
     "doctorFallback": "طبيب",
     "doctorDisplay": "د. {{name}}"
+  },
+  "patientQuestionnaires": {
+    "title": "الاستبيانات السريرية",
+    "subtitle": "تقييمات مجدولة بعد خروجك من المستشفى (بالإضافة إلى الفحص اليومي).",
+    "backToDashboard": "العودة إلى لوحة التحكم",
+    "planningTitle": "الجدول",
+    "milestoneLine": "يوم +{{day}} ({{dueDate}}) — {{title}} — {{status}}",
+    "defaultQuestionnaireTitle": "استبيان",
+    "status_pending": "قيد الانتظار",
+    "status_completed": "مكتمل",
+    "status_overdue": "متأخر",
+    "status_due": "مستحق",
+    "status_scheduled": "مجدول",
+    "status_cancelled": "ملغى",
+    "status_skipped": "متخطى",
+    "loadError": "تعذّر التحميل",
+    "empty": "لا توجد استبيانات لإكمالها حاليًا (ستظهر مواعيد مثل +3، +7 يومًا في التاريخ المحدد).",
+    "dueHeader": "لإكماله · الموعد {{date}}",
+    "yesNoRequired": "أجب عن جميع أسئلة نعم/لا.",
+    "genericError": "خطأ",
+    "yes": "نعم",
+    "no": "لا",
+    "sending": "جاري الإرسال…",
+    "submit": "إرسال"
   }
 }

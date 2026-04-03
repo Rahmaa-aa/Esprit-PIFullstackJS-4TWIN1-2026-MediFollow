@@ -1,9 +1,18 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, Button, Card, Container, Form, Spinner } from "react-bootstrap";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { questionnaireApi } from "../../services/api";
 
+function translateMilestoneStatus(status, t) {
+  if (status == null || status === "") return "";
+  const slug = String(status).toLowerCase().replace(/[^a-z0-9]/g, "_");
+  const key = `patientQuestionnaires.status_${slug}`;
+  return t(key, { defaultValue: String(status) });
+}
+
 function QuestionForm({ item, onSubmitted }) {
+  const { t } = useTranslation();
   const q = item.questionnaire;
   const [answers, setAnswers] = useState({});
   const [saving, setSaving] = useState(false);
@@ -16,7 +25,7 @@ function QuestionForm({ item, onSubmitted }) {
     setErr("");
     for (const x of q.questions || []) {
       if (x.type === "yes_no" && answers[x.qid] === undefined) {
-        setErr("Répondez à toutes les questions (oui/non).");
+        setErr(t("patientQuestionnaires.yesNoRequired"));
         return;
       }
     }
@@ -39,7 +48,7 @@ function QuestionForm({ item, onSubmitted }) {
       await questionnaireApi.patientSubmit(body);
       onSubmitted();
     } catch (ex) {
-      setErr(ex.message || "Erreur");
+      setErr(ex.message || t("patientQuestionnaires.genericError"));
     } finally {
       setSaving(false);
     }
@@ -49,7 +58,7 @@ function QuestionForm({ item, onSubmitted }) {
     <Card className="border-0 shadow-sm mb-4">
       <Card.Header className="bg-primary text-white py-3">
         <div className="fw-semibold">{q.title}</div>
-        <div className="small opacity-90">À compléter · échéance {item.dueDate}</div>
+        <div className="small opacity-90">{t("patientQuestionnaires.dueHeader", { date: item.dueDate })}</div>
       </Card.Header>
       <Card.Body>
         <Form onSubmit={handleSubmit}>
@@ -65,7 +74,7 @@ function QuestionForm({ item, onSubmitted }) {
                       type="radio"
                       name={qu.qid}
                       id={`${qu.qid}-y`}
-                      label="Oui"
+                      label={t("patientQuestionnaires.yes")}
                       checked={answers[qu.qid] === true}
                       onChange={() => setVal(qu.qid, true)}
                     />
@@ -73,7 +82,7 @@ function QuestionForm({ item, onSubmitted }) {
                       type="radio"
                       name={qu.qid}
                       id={`${qu.qid}-n`}
-                      label="Non"
+                      label={t("patientQuestionnaires.no")}
                       checked={answers[qu.qid] === false}
                       onChange={() => setVal(qu.qid, false)}
                     />
@@ -101,7 +110,7 @@ function QuestionForm({ item, onSubmitted }) {
             </Alert>
           )}
           <Button type="submit" variant="primary" disabled={saving}>
-            {saving ? "Envoi…" : "Envoyer"}
+            {saving ? t("patientQuestionnaires.sending") : t("patientQuestionnaires.submit")}
           </Button>
         </Form>
       </Card.Body>
@@ -110,6 +119,7 @@ function QuestionForm({ item, onSubmitted }) {
 }
 
 const PatientQuestionnairesPage = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [schedule, setSchedule] = useState(null);
   const [pending, setPending] = useState({ protocol: [], addons: [] });
@@ -123,11 +133,11 @@ const PatientQuestionnairesPage = () => {
       setPending(p && typeof p === "object" ? p : { protocol: [], addons: [] });
       setSchedule(s);
     } catch (e) {
-      setErr(e.message || "Impossible de charger");
+      setErr(e.message || t("patientQuestionnaires.loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -139,22 +149,27 @@ const PatientQuestionnairesPage = () => {
     <Container className="py-4">
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
-          <h4 className="fw-bold mb-1">Questionnaires cliniques</h4>
-          <p className="text-muted small mb-0">Évaluations planifiées après votre sortie (complémentaire au check-in quotidien).</p>
+          <h4 className="fw-bold mb-1">{t("patientQuestionnaires.title")}</h4>
+          <p className="text-muted small mb-0">{t("patientQuestionnaires.subtitle")}</p>
         </div>
         <Button as={Link} to="/dashboard-pages/patient-dashboard" variant="outline-primary" size="sm">
-          Retour tableau de bord
+          {t("patientQuestionnaires.backToDashboard")}
         </Button>
       </div>
 
       {schedule?.milestones?.length > 0 && (
         <Card className="border-0 shadow-sm mb-4">
           <Card.Body>
-            <div className="fw-semibold mb-2">Planning</div>
+            <div className="fw-semibold mb-2">{t("patientQuestionnaires.planningTitle")}</div>
             <ul className="small text-muted mb-0 ps-3">
               {schedule.milestones.map((m, i) => (
                 <li key={i}>
-                  J+{m.dayOffset} ({m.dueDate}) — {m.title || "Questionnaire"} — <span className="text-capitalize">{m.status}</span>
+                  {t("patientQuestionnaires.milestoneLine", {
+                    day: m.dayOffset,
+                    dueDate: m.dueDate,
+                    title: m.title || t("patientQuestionnaires.defaultQuestionnaireTitle"),
+                    status: translateMilestoneStatus(m.status, t),
+                  })}
                 </li>
               ))}
             </ul>
@@ -164,7 +179,7 @@ const PatientQuestionnairesPage = () => {
 
       {loading && (
         <div className="text-center py-5">
-          <Spinner animation="border" variant="primary" />
+          <Spinner animation="border" variant="primary" aria-hidden="true" />
         </div>
       )}
 
@@ -172,7 +187,7 @@ const PatientQuestionnairesPage = () => {
 
       {!loading && !err && allPending.length === 0 && (
         <Alert variant="light" className="border text-muted">
-          Aucun questionnaire à remplir pour le moment (les échéances J+3, J+7, etc. apparaîtront à la date prévue).
+          {t("patientQuestionnaires.empty")}
         </Alert>
       )}
 

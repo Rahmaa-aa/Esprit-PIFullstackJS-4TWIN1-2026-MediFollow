@@ -746,5 +746,29 @@
     "sendFailed": "Envoi impossible. Réessayez.",
     "doctorFallback": "Médecin",
     "doctorDisplay": "Dr. {{name}}"
+  },
+  "patientQuestionnaires": {
+    "title": "Questionnaires cliniques",
+    "subtitle": "Évaluations planifiées après votre sortie (complémentaire au check-in quotidien).",
+    "backToDashboard": "Retour tableau de bord",
+    "planningTitle": "Planning",
+    "milestoneLine": "J+{{day}} ({{dueDate}}) — {{title}} — {{status}}",
+    "defaultQuestionnaireTitle": "Questionnaire",
+    "status_pending": "en attente",
+    "status_completed": "terminé",
+    "status_overdue": "en retard",
+    "status_due": "échu",
+    "status_scheduled": "planifié",
+    "status_cancelled": "annulé",
+    "status_skipped": "ignoré",
+    "loadError": "Impossible de charger",
+    "empty": "Aucun questionnaire à remplir pour le moment (les échéances J+3, J+7, etc. apparaîtront à la date prévue).",
+    "dueHeader": "À compléter · échéance {{date}}",
+    "yesNoRequired": "Répondez à toutes les questions (oui/non).",
+    "genericError": "Erreur",
+    "yes": "Oui",
+    "no": "Non",
+    "sending": "Envoi…",
+    "submit": "Envoyer"
   }
 }

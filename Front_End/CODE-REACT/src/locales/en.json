@@ -746,5 +746,29 @@
     "sendFailed": "Could not send. Please try again.",
     "doctorFallback": "Physician",
     "doctorDisplay": "Dr. {{name}}"
+  },
+  "patientQuestionnaires": {
+    "title": "Clinical questionnaires",
+    "subtitle": "Assessments scheduled after your discharge (in addition to your daily check-in).",
+    "backToDashboard": "Back to dashboard",
+    "planningTitle": "Schedule",
+    "milestoneLine": "Day +{{day}} ({{dueDate}}) — {{title}} — {{status}}",
+    "defaultQuestionnaireTitle": "Questionnaire",
+    "status_pending": "pending",
+    "status_completed": "completed",
+    "status_overdue": "overdue",
+    "status_due": "due",
+    "status_scheduled": "scheduled",
+    "status_cancelled": "cancelled",
+    "status_skipped": "skipped",
+    "loadError": "Could not load data.",
+    "empty": "No questionnaires to complete right now (J+3, J+7, etc. will appear on the scheduled date).",
+    "dueHeader": "To complete · due {{date}}",
+    "yesNoRequired": "Answer all yes/no questions.",
+    "genericError": "Error",
+    "yes": "Yes",
+    "no": "No",
+    "sending": "Sending…",
+    "submit": "Submit"
   }
 }
