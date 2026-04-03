@@ -1,14 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Button, Col, Container, Form, Modal, Row, Spinner, Table } from "react-bootstrap";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import { departmentApi, patientApi } from "../../services/api";
-
-const ROLE_META = {
-  patient: { label: "Patient", icon: "ri-user-heart-fill", variant: "info" },
-  doctor: { label: "Médecin", icon: "ri-stethoscope-fill", variant: "success" },
-  nurse: { label: "Infirmier(e)", icon: "ri-nurse-fill", variant: "warning" },
-};
 
 const initials = (first, last) => {
   const a = (first || "").trim().charAt(0);
@@ -18,6 +13,7 @@ const initials = (first, last) => {
 };
 
 const AdminDepartmentDetail = () => {
+  const { t, i18n } = useTranslation();
   const { departmentName } = useParams();
   const navigate = useNavigate();
   const name = departmentName ? decodeURIComponent(departmentName) : "";
@@ -30,6 +26,15 @@ const AdminDepartmentDetail = () => {
   const [modalNurseId, setModalNurseId] = useState("");
   const [assignSaving, setAssignSaving] = useState(false);
   const [assignError, setAssignError] = useState("");
+
+  const roleMeta = useMemo(
+    () => ({
+      patient: { label: t("adminDepartmentDetail.rolePatient"), icon: "ri-user-heart-fill", variant: "info" },
+      doctor: { label: t("adminDepartmentDetail.roleDoctor"), icon: "ri-stethoscope-fill", variant: "success" },
+      nurse: { label: t("adminDepartmentDetail.roleNurse"), icon: "ri-nurse-fill", variant: "warning" },
+    }),
+    [t]
+  );
 
   const loadDepartmentUsers = async () => {
     if (!name) return;
@@ -46,7 +51,7 @@ const AdminDepartmentDetail = () => {
       try {
         await loadDepartmentUsers();
       } catch (e) {
-        if (!cancelled) setError(e.message || "Erreur de chargement");
+        if (!cancelled) setError(e.message || t("adminDepartmentDetail.loadError"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -54,16 +59,19 @@ const AdminDepartmentDetail = () => {
     return () => {
       cancelled = true;
     };
-  }, [name]);
+  }, [name, t]);
 
   const rows = useMemo(() => {
     if (!data) return [];
+    const sortLocale = i18n.language || "en";
     return [
       ...(data.patients || []).map((u) => ({ ...u, role: "patient" })),
       ...(data.doctors || []).map((u) => ({ ...u, role: "doctor" })),
       ...(data.nurses || []).map((u) => ({ ...u, role: "nurse" })),
-    ].sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, "fr"));
-  }, [data]);
+    ].sort((a, b) =>
+      `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, sortLocale)
+    );
+  }, [data, i18n.language]);
 
   const filteredRows = useMemo(() => {
     if (filterRole === "all") return rows;
@@ -111,7 +119,7 @@ const AdminDepartmentDetail = () => {
       await loadDepartmentUsers();
       setAssignModal(null);
     } catch (err) {
-      setAssignError(err.message || "Enregistrement impossible");
+      setAssignError(err.message || t("adminDepartmentDetail.assignSaveError"));
     } finally {
       setAssignSaving(false);
     }
@@ -139,16 +147,16 @@ const AdminDepartmentDetail = () => {
       `}</style>
 
       <Container fluid className="admin-dept-detail pb-5">
-        <nav aria-label="Fil d'Ariane" className="mb-3">
+        <nav aria-label={t("adminDepartmentDetail.breadcrumbNavLabel")} className="mb-3">
           <ol className="breadcrumb mb-0 small">
             <li className="breadcrumb-item">
               <Link to="/admin/dashboard" className="text-decoration-none text-muted">
-                Tableau de bord
+                {t("adminDepartmentDetail.breadcrumbDashboard")}
               </Link>
             </li>
             <li className="breadcrumb-item">
               <Link to="/admin/departments" className="text-decoration-none text-muted">
-                Départements
+                {t("adminDepartmentDetail.breadcrumbDepartments")}
               </Link>
             </li>
             <li className="breadcrumb-item active text-truncate" aria-current="page" style={{ maxWidth: "280px" }}>
@@ -169,15 +177,15 @@ const AdminDepartmentDetail = () => {
                       variant="outline-secondary"
                       className="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center p-0"
                       style={{ width: 44, height: 44 }}
-                      aria-label="Retour aux départements"
+                      aria-label={t("adminDepartmentDetail.backAria")}
                     >
                       <i className="ri-arrow-left-line fs-5" />
                     </Button>
                     <div className="min-w-0">
-                      <div className="text-uppercase text-primary fw-semibold small mb-1" style={{ letterSpacing: "0.08em" }}>Département</div>
-                      <h3 className="fw-bold mb-1 text-break">{name || "Département"}</h3>
+                      <div className="text-uppercase text-primary fw-semibold small mb-1" style={{ letterSpacing: "0.08em" }}>{t("adminDepartmentDetail.eyebrow")}</div>
+                      <h3 className="fw-bold mb-1 text-break">{name || t("adminDepartmentDetail.departmentFallback")}</h3>
                       <p className="text-muted mb-0 small">
-                        Liste des comptes rattachés à ce service hospitalier — filtrez par rôle ou ouvrez un profil.
+                        {t("adminDepartmentDetail.lead")}
                       </p>
                     </div>
                   </div>
@@ -189,7 +197,7 @@ const AdminDepartmentDetail = () => {
                         className="rounded-pill px-3"
                         onClick={() => setFilterRole("all")}
                       >
-                        Tous ({rows.length})
+                        {t("adminDepartmentDetail.filterAll", { count: rows.length })}
                       </Button>
                       <Button
                         size="sm"
@@ -197,7 +205,7 @@ const AdminDepartmentDetail = () => {
                         className="rounded-pill px-3"
                         onClick={() => setFilterRole("patient")}
                       >
-                        Patients ({counts.p})
+                        {t("adminDepartmentDetail.filterPatients", { count: counts.p })}
                       </Button>
                       <Button
                         size="sm"
@@ -205,7 +213,7 @@ const AdminDepartmentDetail = () => {
                         className="rounded-pill px-3"
                         onClick={() => setFilterRole("doctor")}
                       >
-                        Médecins ({counts.d})
+                        {t("adminDepartmentDetail.filterDoctors", { count: counts.d })}
                       </Button>
                       <Button
                         size="sm"
@@ -213,7 +221,7 @@ const AdminDepartmentDetail = () => {
                         className="rounded-pill px-3"
                         onClick={() => setFilterRole("nurse")}
                       >
-                        Infirmiers ({counts.n})
+                        {t("adminDepartmentDetail.filterNurses", { count: counts.n })}
                       </Button>
                     </div>
                   )}
@@ -233,7 +241,7 @@ const AdminDepartmentDetail = () => {
         {loading ? (
           <div className="text-center py-5 rounded-3 bg-light border border-light">
             <Spinner animation="border" variant="primary" className="mb-3" />
-            <p className="text-muted mb-0 small">Chargement des utilisateurs…</p>
+            <p className="text-muted mb-0 small">{t("adminDepartmentDetail.loadingUsers")}</p>
           </div>
         ) : (
           <>
@@ -245,7 +253,7 @@ const AdminDepartmentDetail = () => {
                       <i className="ri-user-heart-fill" style={{ fontSize: "1.5rem" }} />
                     </div>
                     <div>
-                      <div className="text-muted small">Patients</div>
+                      <div className="text-muted small">{t("adminDepartmentDetail.statPatients")}</div>
                       <div className="fs-4 fw-bold text-dark">{counts.p}</div>
                     </div>
                   </Card.Body>
@@ -258,7 +266,7 @@ const AdminDepartmentDetail = () => {
                       <i className="ri-stethoscope-fill" style={{ fontSize: "1.5rem" }} />
                     </div>
                     <div>
-                      <div className="text-muted small">Médecins</div>
+                      <div className="text-muted small">{t("adminDepartmentDetail.statDoctors")}</div>
                       <div className="fs-4 fw-bold text-dark">{counts.d}</div>
                     </div>
                   </Card.Body>
@@ -271,7 +279,7 @@ const AdminDepartmentDetail = () => {
                       <i className="ri-nurse-fill" style={{ fontSize: "1.5rem" }} />
                     </div>
                     <div>
-                      <div className="text-muted small">Infirmier(e)s</div>
+                      <div className="text-muted small">{t("adminDepartmentDetail.statNurses")}</div>
                       <div className="fs-4 fw-bold text-dark">{counts.n}</div>
                     </div>
                   </Card.Body>
@@ -284,11 +292,11 @@ const AdminDepartmentDetail = () => {
                 <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
                   <Card.Header.Title className="mb-0 fw-semibold">
                     <i className="ri-team-line text-primary me-2" />
-                    Effectifs du département
+                    {t("adminDepartmentDetail.rosterTitle")}
                   </Card.Header.Title>
                   <span className="text-muted small">
-                    {filteredRows.length} affiché{filteredRows.length > 1 ? "s" : ""}
-                    {filterRole !== "all" ? ` · filtre actif` : ""}
+                    {t("adminDepartmentDetail.tableMetaShown", { count: filteredRows.length })}
+                    {filterRole !== "all" ? t("adminDepartmentDetail.tableMetaFilterActive") : ""}
                   </span>
                 </div>
               </Card.Header>
@@ -298,24 +306,24 @@ const AdminDepartmentDetail = () => {
                     <div className="rounded-circle bg-light text-muted d-inline-flex align-items-center justify-content-center mb-3" style={{ width: 72, height: 72 }}>
                       <i className="ri-user-unfollow-line" style={{ fontSize: "2rem" }} />
                     </div>
-                    <h6 className="fw-semibold">Aucun utilisateur dans ce département</h6>
-                    <p className="text-muted mb-0 small">Modifiez le filtre ou revenez à la liste des départements.</p>
+                    <h6 className="fw-semibold">{t("adminDepartmentDetail.emptyTitle")}</h6>
+                    <p className="text-muted mb-0 small">{t("adminDepartmentDetail.emptyHint")}</p>
                   </div>
                 ) : (
                   <div className="table-responsive">
                     <Table responsive hover className="mb-0 align-middle table-users">
                       <thead className="table-light">
                         <tr className="small text-muted text-uppercase" style={{ letterSpacing: "0.03em" }}>
-                          <th className="ps-4 border-0">Utilisateur</th>
-                          <th className="border-0">Rôle</th>
-                          <th className="border-0">Email</th>
-                          <th className="border-0">Statut</th>
-                          <th className="text-end pe-4 border-0">Action</th>
+                          <th className="ps-4 border-0">{t("adminDepartmentDetail.thUser")}</th>
+                          <th className="border-0">{t("adminDepartmentDetail.thRole")}</th>
+                          <th className="border-0">{t("adminDepartmentDetail.thEmail")}</th>
+                          <th className="border-0">{t("adminDepartmentDetail.thStatus")}</th>
+                          <th className="text-end pe-4 border-0">{t("adminDepartmentDetail.thAction")}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredRows.map((u) => {
-                          const meta = ROLE_META[u.role];
+                          const meta = roleMeta[u.role];
                           return (
                             <tr key={`${u.role}-${u.id}`}>
                               <td className="ps-4 py-3">
@@ -341,9 +349,9 @@ const AdminDepartmentDetail = () => {
                               <td className="text-muted small text-break">{u.email}</td>
                               <td>
                                 {u.isActive === false ? (
-                                  <span className="badge bg-danger-subtle text-danger rounded-pill">Inactif</span>
+                                  <span className="badge bg-danger-subtle text-danger rounded-pill">{t("adminDepartmentDetail.statusInactive")}</span>
                                 ) : (
-                                  <span className="badge bg-success-subtle text-success rounded-pill">Actif</span>
+                                  <span className="badge bg-success-subtle text-success rounded-pill">{t("adminDepartmentDetail.statusActive")}</span>
                                 )}
                               </td>
                               <td className="text-end pe-4">
@@ -356,7 +364,7 @@ const AdminDepartmentDetail = () => {
                                       onClick={() => openAssignModal(u)}
                                     >
                                       <i className="ri-team-line me-1" />
-                                      Assigner l&apos;équipe
+                                      {t("adminDepartmentDetail.assignTeam")}
                                     </Button>
                                   )}
                                   <Button
@@ -365,7 +373,7 @@ const AdminDepartmentDetail = () => {
                                     className="rounded-pill px-3"
                                     onClick={() => navigate(profilePath(u))}
                                   >
-                                    Voir le profil
+                                    {t("adminDepartmentDetail.viewProfile")}
                                     <i className="ri-external-link-line ms-1" />
                                   </Button>
                                 </div>
@@ -385,44 +393,44 @@ const AdminDepartmentDetail = () => {
 
       <Modal show={!!assignModal} onHide={closeAssignModal} centered backdrop="static">
         <Modal.Header closeButton>
-          <Modal.Title>Équipe soignante</Modal.Title>
+          <Modal.Title>{t("adminDepartmentDetail.modalTitle")}</Modal.Title>
         </Modal.Header>
         <Form onSubmit={handleSaveCareTeam}>
           <Modal.Body>
             {assignModal && (
               <>
                 <p className="text-muted small mb-3">
-                  Patient :{" "}
+                  {t("adminDepartmentDetail.modalPatientLabel")}{" "}
                   <strong>
                     {assignModal.firstName} {assignModal.lastName}
                   </strong>
-                  <span className="d-block mt-1">Département : {name}</span>
+                  <span className="d-block mt-1">{t("adminDepartmentDetail.modalDepartmentLabel")} {name}</span>
                 </p>
                 {assignError && <div className="alert alert-danger py-2 small mb-3">{assignError}</div>}
                 <Form.Group className="mb-3">
-                  <Form.Label>Médecin référent</Form.Label>
+                  <Form.Label>{t("adminDepartmentDetail.labelDoctor")}</Form.Label>
                   <Form.Select
                     value={modalDoctorId}
                     onChange={(e) => setModalDoctorId(e.target.value)}
-                    aria-label="Médecin référent"
+                    aria-label={t("adminDepartmentDetail.selectDoctorAria")}
                   >
-                    <option value="">— Aucun —</option>
+                    <option value="">{t("adminDepartmentDetail.selectNone")}</option>
                     {deptDoctors.map((d) => (
                       <option key={d.id} value={d.id}>
-                        Dr. {d.firstName} {d.lastName}
+                        {t("adminDepartmentDetail.doctorPrefix")} {d.firstName} {d.lastName}
                         {d.specialty ? ` · ${d.specialty}` : ""}
                       </option>
                     ))}
                   </Form.Select>
                 </Form.Group>
                 <Form.Group className="mb-0">
-                  <Form.Label>Infirmier(e)</Form.Label>
+                  <Form.Label>{t("adminDepartmentDetail.labelNurse")}</Form.Label>
                   <Form.Select
                     value={modalNurseId}
                     onChange={(e) => setModalNurseId(e.target.value)}
-                    aria-label="Infirmier ou infirmière"
+                    aria-label={t("adminDepartmentDetail.selectNurseAria")}
                   >
-                    <option value="">— Aucun —</option>
+                    <option value="">{t("adminDepartmentDetail.selectNone")}</option>
                     {deptNurses.map((n) => (
                       <option key={n.id} value={n.id}>
                         {n.firstName} {n.lastName}
@@ -431,17 +439,17 @@ const AdminDepartmentDetail = () => {
                   </Form.Select>
                 </Form.Group>
                 <p className="text-muted small mt-3 mb-0">
-                  Seuls les médecins et infirmiers rattachés à ce département sont proposés.
+                  {t("adminDepartmentDetail.modalHint")}
                 </p>
               </>
             )}
           </Modal.Body>
           <Modal.Footer className="border-0 pt-0">
             <Button variant="outline-secondary" type="button" onClick={closeAssignModal} disabled={assignSaving}>
-              Annuler
+              {t("adminDepartmentDetail.cancel")}
             </Button>
             <Button variant="primary" type="submit" disabled={assignSaving}>
-              {assignSaving ? "Enregistrement…" : "Enregistrer"}
+              {assignSaving ? t("adminDepartmentDetail.saving") : t("adminDepartmentDetail.save")}
             </Button>
           </Modal.Footer>
         </Form>
