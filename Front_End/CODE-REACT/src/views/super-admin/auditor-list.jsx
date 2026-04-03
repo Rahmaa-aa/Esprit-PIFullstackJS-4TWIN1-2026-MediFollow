@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Col, Row, Form, InputGroup } from "react-bootstrap";
+import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import { Link } from "react-router-dom";
 import { superAdminApi } from "../../services/api";
@@ -8,7 +9,24 @@ import ConfirmActionModal from "../../components/ConfirmActionModal";
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 const DEFAULT_AVATAR = generatePath("/assets/images/user/11.png");
 
+/** Same canonical values as add-auditor.jsx — keys under addAuditor.dept* */
+const DEPARTMENT_I18N = {
+  "Qualité": "deptQuality",
+  "Conformité": "deptCompliance",
+  "Audit Interne": "deptInternalAudit",
+  "Gestion des risques": "deptRiskManagement",
+  "Direction Médicale": "deptMedicalDirection",
+  "Autre": "deptOther",
+};
+
+function departmentLabel(department, t) {
+  if (!department) return t("auditorList.defaultDepartmentBadge");
+  const key = DEPARTMENT_I18N[department];
+  return key ? t(`addAuditor.${key}`) : department;
+}
+
 const AuditorList = () => {
+  const { t } = useTranslation();
   const [auditors, setAuditors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -16,18 +34,22 @@ const AuditorList = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [toDelete, setToDelete] = useState(null);
 
-  const fetchAuditors = async () => {
+  const fetchAuditors = useCallback(async () => {
     try {
+      setLoading(true);
+      setError("");
       const data = await superAdminApi.getAuditors();
       setAuditors(data);
     } catch (err) {
-      setError(err.message || "Erreur lors du chargement");
+      setError(err.message || t("auditorList.loadError"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
-  useEffect(() => { fetchAuditors(); }, []);
+  useEffect(() => {
+    fetchAuditors();
+  }, [fetchAuditors]);
 
   const filtered = useMemo(() => {
     const q = filterName.trim().toLowerCase();
@@ -43,7 +65,7 @@ const AuditorList = () => {
       setAuditors((prev) => prev.filter((a) => a.id !== auditor.id));
       setToDelete(null);
     } catch (err) {
-      alert(err.message || "Erreur");
+      alert(err.message || t("auditorList.deleteError"));
     } finally {
       setDeletingId(null);
     }
@@ -51,12 +73,28 @@ const AuditorList = () => {
 
   const getImageSrc = (a) => (a.profileImage?.startsWith("data:") || a.profileImage?.startsWith("http")) ? a.profileImage : DEFAULT_AVATAR;
 
-  if (loading) return (
-    <Row><Col sm={12}><Card><Card.Body className="text-center py-5">
-      <div className="spinner-border text-primary" role="status" />
-      <p className="mt-3 mb-0">Chargement des auditeurs...</p>
-    </Card.Body></Card></Col></Row>
-  );
+  const displayName = (a) => a.name || `${a.firstName || ""} ${a.lastName || ""}`.trim() || t("superAdminUsers.dash");
+
+  const deleteModalName = toDelete
+    ? (toDelete.name || `${toDelete.firstName || ""} ${toDelete.lastName || ""}`.trim() || toDelete.email)
+    : "";
+
+  if (loading) {
+    return (
+      <Row>
+        <Col sm={12}>
+          <Card>
+            <Card.Body className="text-center py-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">{t("auditorList.loadingSpinner")}</span>
+              </div>
+              <p className="mt-3 mb-0">{t("auditorList.loadingText")}</p>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    );
+  }
 
   return (
     <>
@@ -65,11 +103,13 @@ const AuditorList = () => {
           <Card>
             <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
               <div className="header-title">
-                <h4 className="card-title mb-0">Liste des Auditeurs</h4>
-                <p className="text-muted mb-0 small">{filtered.length} auditeur(s)</p>
+                <h4 className="card-title mb-0">{t("auditorList.pageTitle")}</h4>
+                <p className="text-muted mb-0 small">
+                  {t("auditorList.foundAuditors", { count: filtered.length })}
+                </p>
               </div>
               <Link to="/super-admin/auditors/add" className="btn btn-primary btn-sm">
-                <i className="ri-add-line me-1"></i>Ajouter un auditeur
+                <i className="ri-add-line me-1"></i>{t("auditorList.addAuditor")}
               </Link>
             </Card.Header>
             <Card.Body>
@@ -78,37 +118,60 @@ const AuditorList = () => {
                 <Col md={5}>
                   <InputGroup>
                     <InputGroup.Text><i className="ri-search-line"></i></InputGroup.Text>
-                    <Form.Control placeholder="Rechercher..." value={filterName} onChange={(e) => setFilterName(e.target.value)} />
+                    <Form.Control
+                      placeholder={t("auditorList.searchPlaceholder")}
+                      value={filterName}
+                      onChange={(e) => setFilterName(e.target.value)}
+                    />
                   </InputGroup>
                 </Col>
               </Row>
               <Row className="g-3">
                 {filtered.length === 0 ? (
-                  <Col sm={12}><div className="text-center text-muted py-5">Aucun auditeur trouvé</div></Col>
+                  <Col sm={12}><div className="text-center text-muted py-5">{t("auditorList.emptyNoResults")}</div></Col>
                 ) : filtered.map((a) => (
                   <Col key={a.id} xl={3} md={4} sm={6}>
                     <Card className="border shadow-sm h-100">
                       <Card.Body className="text-center p-3">
-                        <img src={getImageSrc(a)} alt="" className="rounded-circle mb-2 border"
-                          style={{ width: 72, height: 72, objectFit: "cover" }} />
-                        <h6 className="mb-0">{a.name || `${a.firstName || ""} ${a.lastName || ""}`.trim() || "—"}</h6>
+                        <img
+                          src={getImageSrc(a)}
+                          alt={t("auditorList.avatarAlt", { name: displayName(a) })}
+                          className="rounded-circle mb-2 border"
+                          style={{ width: 72, height: 72, objectFit: "cover" }}
+                        />
+                        <h6 className="mb-0">{displayName(a)}</h6>
                         <small className="text-muted">{a.email}</small>
                         <div className="mt-2">
-                          <span className="badge bg-warning bg-opacity-10 text-warning">{a.department || "Auditeur"}</span>
+                          <span className="badge bg-warning bg-opacity-10 text-warning">
+                            {departmentLabel(a.department, t)}
+                          </span>
                         </div>
                         <div className="mt-2">
                           <span className={`badge ${a.isActive ? "bg-success" : "bg-danger"} bg-opacity-10 ${a.isActive ? "text-success" : "text-danger"}`}>
-                            {a.isActive ? "Actif" : "Inactif"}
+                            {a.isActive ? t("superAdminDashboard.statusActive") : t("superAdminDashboard.statusInactive")}
                           </span>
                         </div>
                         <div className="d-flex justify-content-center gap-2 mt-3">
-                          <Link to={`/super-admin/auditors/${a.id}`} className="btn btn-sm btn-primary-subtle" title="Voir">
+                          <Link
+                            to={`/super-admin/auditors/${a.id}`}
+                            className="btn btn-sm btn-primary-subtle"
+                            title={t("auditorList.viewTitle")}
+                          >
                             <i className="ri-eye-line"></i>
                           </Link>
-                          <Link to={`/super-admin/auditors/edit/${a.id}`} className="btn btn-sm btn-info-subtle" title="Modifier">
+                          <Link
+                            to={`/super-admin/auditors/edit/${a.id}`}
+                            className="btn btn-sm btn-info-subtle"
+                            title={t("auditorList.editTitle")}
+                          >
                             <i className="ri-edit-line"></i>
                           </Link>
-                          <button className="btn btn-sm btn-danger-subtle" onClick={() => setToDelete(a)} title="Supprimer">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-danger-subtle"
+                            onClick={() => setToDelete(a)}
+                            title={t("auditorList.deleteTitle")}
+                          >
                             <i className="ri-delete-bin-line"></i>
                           </button>
                         </div>
@@ -122,11 +185,16 @@ const AuditorList = () => {
         </Col>
       </Row>
       <ConfirmActionModal
-        show={!!toDelete} onHide={() => setToDelete(null)}
-        onConfirm={() => handleDelete(toDelete)} loading={deletingId === toDelete?.id}
-        title="Supprimer l'auditeur"
-        message={`Supprimer ${toDelete?.name || toDelete?.email} ? Action irréversible.`}
-        confirmLabel="Supprimer" confirmVariant="danger"
+        show={!!toDelete}
+        onCancel={() => setToDelete(null)}
+        onConfirm={() => handleDelete(toDelete)}
+        loading={deletingId === toDelete?.id}
+        title={t("auditorList.modalDeleteTitle")}
+        message={toDelete ? t("auditorList.modalDeleteMessage", { name: deleteModalName }) : ""}
+        confirmLabel={t("auditorList.confirmDelete")}
+        cancelLabel={t("auditorList.cancel")}
+        confirmVariant="danger"
+        iconClass="ri-delete-bin-6-line"
       />
     </>
   );

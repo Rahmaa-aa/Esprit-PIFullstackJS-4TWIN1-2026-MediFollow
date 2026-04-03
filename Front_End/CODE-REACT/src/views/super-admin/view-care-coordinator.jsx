@@ -1,9 +1,41 @@
 import React, { useState, useEffect } from "react";
 import { Row, Col, Card, Button, Badge, Spinner, Alert } from "react-bootstrap";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { superAdminApi } from "../../services/api";
 
+const SPECIALTY_I18N = {
+  "Coordination des soins": "specCareCoordination",
+  "Suivi post-opératoire": "specPostOp",
+  "Maladies chroniques": "specChronic",
+  Pédiatrie: "specPediatrics",
+  Gériatrie: "specGeriatrics",
+  Oncologie: "specOncology",
+  Autre: "specOther",
+};
+
+function specialtyLabel(specialty, t) {
+  if (!specialty) return "";
+  const key = SPECIALTY_I18N[specialty];
+  return key ? t(`addCareCoordinator.${key}`) : specialty;
+}
+
+const FIELD_DEFS = [
+  { labelKey: "labelEmail", getValue: (a) => a.email, icon: "ri-mail-line" },
+  { labelKey: "labelPhone", getValue: (a) => a.phone, icon: "ri-phone-line" },
+  { labelKey: "labelDepartment", getValue: (a) => a.department, icon: "ri-building-2-line" },
+  {
+    labelKey: "labelSpecialty",
+    getValue: (a, t) => specialtyLabel(a.specialty, t),
+    icon: "ri-stethoscope-line",
+  },
+  { labelKey: "labelAddress", getValue: (a) => a.address, icon: "ri-map-pin-line" },
+  { labelKey: "labelCity", getValue: (a) => a.city, icon: "ri-building-line" },
+  { labelKey: "labelCountry", getValue: (a) => a.country, icon: "ri-global-line" },
+];
+
 const ViewCareCoordinator = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const [coordinator, setCoordinator] = useState(null);
@@ -11,23 +43,25 @@ const ViewCareCoordinator = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchCoord = async () => {
       try {
         const res = await superAdminApi.getCareCoordinatorById(id);
         setCoordinator(res?.data || res);
       } catch {
-        setError("Failed to load care coordinator profile.");
+        setError(t("superAdminViewCareCoordinator.loadError"));
       } finally {
         setLoading(false);
       }
     };
-    fetch();
-  }, [id]);
+    fetchCoord();
+  }, [id, t]);
 
   if (loading) {
     return (
       <div className="text-center py-5">
-        <Spinner animation="border" style={{ color: "#009688" }} />
+        <Spinner animation="border" style={{ color: "#009688" }} role="status" />
+        <span className="visually-hidden">{t("superAdminViewCareCoordinator.loading")}</span>
+        <p className="mt-3 text-muted mb-0">{t("superAdminViewCareCoordinator.loading")}</p>
       </div>
     );
   }
@@ -40,15 +74,7 @@ const ViewCareCoordinator = () => {
     `${coordinator.firstName || ""} ${coordinator.lastName || ""}`.trim() ||
     coordinator.email;
 
-  const fields = [
-    { label: "Email", value: coordinator.email, icon: "ri-mail-line" },
-    { label: "Phone", value: coordinator.phone, icon: "ri-phone-line" },
-    { label: "Department", value: coordinator.department, icon: "ri-building-2-line" },
-    { label: "Specialty", value: coordinator.specialty, icon: "ri-stethoscope-line" },
-    { label: "Address", value: coordinator.address, icon: "ri-map-pin-line" },
-    { label: "City", value: coordinator.city, icon: "ri-building-line" },
-    { label: "Country", value: coordinator.country, icon: "ri-global-line" },
-  ];
+  const initial = displayName?.length ? displayName[0].toUpperCase() : t("superAdminViewCareCoordinator.avatarFallback");
 
   return (
     <Row className="justify-content-center">
@@ -59,14 +85,14 @@ const ViewCareCoordinator = () => {
             style={{ background: "#009688", color: "#fff" }}
           >
             <h5 className="mb-0">
-              <i className="ri-heart-pulse-fill me-2"></i>Care Coordinator Profile
+              <i className="ri-heart-pulse-fill me-2"></i>{t("superAdminViewCareCoordinator.profileTitle")}
             </h5>
             <div className="d-flex gap-2">
               <Link to={`/super-admin/care-coordinators/edit/${id}`} className="btn btn-sm btn-light">
-                <i className="ri-edit-line me-1"></i>Edit
+                <i className="ri-edit-line me-1"></i>{t("superAdminViewCareCoordinator.edit")}
               </Link>
               <Button variant="outline-light" size="sm" onClick={() => navigate("/super-admin/care-coordinators")}>
-                <i className="ri-arrow-left-line me-1"></i>Back
+                <i className="ri-arrow-left-line me-1"></i>{t("superAdminViewCareCoordinator.back")}
               </Button>
             </div>
           </Card.Header>
@@ -76,31 +102,32 @@ const ViewCareCoordinator = () => {
                 className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
                 style={{ width: 80, height: 80, background: "#009688", fontSize: 28, flexShrink: 0 }}
               >
-                {displayName[0]?.toUpperCase() || "C"}
+                {initial}
               </div>
               <div>
                 <h4 className="mb-1">{displayName}</h4>
-                <Badge bg="success" className="me-2">Care Coordinator</Badge>
+                <Badge bg="secondary" className="me-2">{t("superAdminViewCareCoordinator.roleBadge")}</Badge>
                 <Badge bg={coordinator.isActive !== false ? "success" : "danger"}>
-                  {coordinator.isActive !== false ? "Active" : "Inactive"}
+                  {coordinator.isActive !== false ? t("superAdminDashboard.statusActive") : t("superAdminDashboard.statusInactive")}
                 </Badge>
               </div>
             </div>
 
             <Row className="g-3">
-              {fields.map(({ label, value, icon }) =>
-                value ? (
-                  <Col md={6} key={label}>
+              {FIELD_DEFS.map(({ labelKey, getValue, icon }) => {
+                const value = getValue(coordinator, t);
+                return value ? (
+                  <Col md={6} key={labelKey}>
                     <div className="d-flex align-items-start gap-2">
                       <i className={`${icon} mt-1`} style={{ color: "#009688", fontSize: 16 }}></i>
                       <div>
-                        <div className="text-muted small">{label}</div>
+                        <div className="text-muted small">{t(`superAdminViewCareCoordinator.${labelKey}`)}</div>
                         <div className="fw-medium">{value}</div>
                       </div>
                     </div>
                   </Col>
-                ) : null
-              )}
+                ) : null;
+              })}
             </Row>
           </Card.Body>
         </Card>

@@ -4,10 +4,29 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { superAdminApi } from "../../services/api";
 
+const DEPARTMENT_I18N = {
+  "Qualité": "deptQuality",
+  "Conformité": "deptCompliance",
+  "Audit Interne": "deptInternalAudit",
+  "Gestion des risques": "deptRiskManagement",
+  "Direction Médicale": "deptMedicalDirection",
+  "Autre": "deptOther",
+};
+
+function departmentLabel(department, t) {
+  if (!department) return "";
+  const key = DEPARTMENT_I18N[department];
+  return key ? t(`addAuditor.${key}`) : department;
+}
+
 const FIELD_DEFS = [
   { labelKey: "labelEmail", getValue: (a) => a.email, icon: "ri-mail-line" },
   { labelKey: "labelPhone", getValue: (a) => a.phone, icon: "ri-phone-line" },
-  { labelKey: "labelDepartment", getValue: (a) => a.department, icon: "ri-building-2-line" },
+  {
+    labelKey: "labelDepartment",
+    getValue: (a, t) => departmentLabel(a.department, t),
+    icon: "ri-building-2-line",
+  },
   { labelKey: "labelSpecialty", getValue: (a) => a.specialty, icon: "ri-stethoscope-line" },
   { labelKey: "labelAddress", getValue: (a) => a.address, icon: "ri-map-pin-line" },
   { labelKey: "labelCity", getValue: (a) => a.city, icon: "ri-building-line" },
@@ -95,7 +114,7 @@ const ViewAuditor = () => {
 
             <Row className="g-3">
               {FIELD_DEFS.map(({ labelKey, getValue, icon }) => {
-                const value = getValue(auditor);
+                const value = getValue(auditor, t);
                 return value ? (
                   <Col md={6} key={labelKey}>
                     <div className="d-flex align-items-start gap-2">
