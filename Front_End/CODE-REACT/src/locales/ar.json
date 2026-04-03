@@ -339,6 +339,42 @@
     "colSpecialty": "التخصّص",
     "profile": "الملف"
   },
+  "doctorDepartmentDoctors": {
+    "pageTitle": "أطباء القسم",
+    "subtitleWithDept": "زملاء القسم: {{department}}",
+    "subtitleNoDept": "لم يُعرَّف قسم في ملفك بعد (من قِبل المسؤول).",
+    "loadError": "تعذّر تحميل قائمة الأطباء.",
+    "emptyNoDept": "لا يوجد قسم في حسابك — لا يمكن عرض قائمة الأطباء في نفس الخدمة.",
+    "emptyNoDoctors": "لا يوجد أطباء مسجّلون لهذا القسم.",
+    "colName": "الاسم",
+    "colEmail": "البريد الإلكتروني",
+    "colSpecialty": "التخصّص",
+    "profile": "الملف"
+  },
+  "doctorProfile": {
+    "personalInfo": "المعلومات الشخصية",
+    "edit": "تعديل"
+  },
+  "nurseProfile": {
+    "loadError": "الممرض غير موجود.",
+    "loading": "جاري التحميل…",
+    "loadingProfile": "جاري تحميل الملف…",
+    "backToList": "العودة إلى القائمة",
+    "defaultSpecialty": "ممرض / ممرضة",
+    "personalInfo": "المعلومات الشخصية",
+    "edit": "تعديل",
+    "labelFirstName": "الاسم الأول:",
+    "labelLastName": "اسم العائلة:",
+    "labelSpecialty": "التخصّص:",
+    "labelDepartment": "القسم:",
+    "labelEmail": "البريد الإلكتروني:",
+    "labelPhone": "الهاتف:",
+    "labelAddress": "العنوان:",
+    "labelCity": "المدينة:",
+    "labelCountry": "البلد:",
+    "labelPostalCode": "الرمز البريدي:",
+    "profilePhotoAlt": "صورة الملف الشخصي"
+  },
   "dailyCheckIn": {
     "title": "التسجيل الصحي اليومي",
     "badgeDone": "مُنجَز اليوم",

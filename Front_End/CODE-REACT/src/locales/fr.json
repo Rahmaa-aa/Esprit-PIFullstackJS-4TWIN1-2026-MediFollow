@@ -339,6 +339,42 @@
     "colSpecialty": "Spécialité",
     "profile": "Profil"
   },
+  "doctorDepartmentDoctors": {
+    "pageTitle": "Médecins du département",
+    "subtitleWithDept": "Collaborateurs du service : {{department}}",
+    "subtitleNoDept": "Votre profil ne comporte pas encore de département défini (par un administrateur).",
+    "loadError": "Impossible de charger les médecins.",
+    "emptyNoDept": "Aucun département renseigné sur votre compte — la liste des médecins du même service ne peut pas être affichée.",
+    "emptyNoDoctors": "Aucun médecin enregistré pour ce département.",
+    "colName": "Nom",
+    "colEmail": "E-mail",
+    "colSpecialty": "Spécialité",
+    "profile": "Profil"
+  },
+  "doctorProfile": {
+    "personalInfo": "Informations personnelles",
+    "edit": "Modifier"
+  },
+  "nurseProfile": {
+    "loadError": "Infirmier(ère) introuvable.",
+    "loading": "Chargement…",
+    "loadingProfile": "Chargement du profil…",
+    "backToList": "Retour à la liste",
+    "defaultSpecialty": "Infirmier(ère)",
+    "personalInfo": "Informations personnelles",
+    "edit": "Modifier",
+    "labelFirstName": "Prénom :",
+    "labelLastName": "Nom :",
+    "labelSpecialty": "Spécialité :",
+    "labelDepartment": "Département :",
+    "labelEmail": "Email :",
+    "labelPhone": "Téléphone :",
+    "labelAddress": "Adresse :",
+    "labelCity": "Ville :",
+    "labelCountry": "Pays :",
+    "labelPostalCode": "Code postal :",
+    "profilePhotoAlt": "Photo de profil"
+  },
   "dailyCheckIn": {
     "title": "Relevé de santé du jour",
     "badgeDone": "Fait aujourd’hui",

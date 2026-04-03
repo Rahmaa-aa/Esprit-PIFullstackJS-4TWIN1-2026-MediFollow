@@ -20,6 +20,23 @@ const EditDoctor = () => {
   const [originalProfileImage, setOriginalProfileImage] = useState("");
 
   useEffect(() => {
+    if (!id) return;
+    try {
+      if (localStorage.getItem("adminUser")) return;
+      const docRaw = localStorage.getItem("doctorUser");
+      if (docRaw) {
+        const u = JSON.parse(docRaw);
+        const myId = u?.id ?? u?._id;
+        if (String(myId) !== String(id)) {
+          navigate(`/doctor/doctor-profile/${id}`, { replace: true });
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [id, navigate]);
+
+  useEffect(() => {
     const fetchDoctor = async () => {
       setError("");
       try {

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Col, Row } from "react-bootstrap";
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import FaceEnrollmentCard from "../../components/FaceEnrollmentCard";
 import { doctorApi } from "../../services/api";
@@ -23,7 +24,40 @@ import CountUp from "react-countup";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 
+/** Face enrollment only when the doctor views their own profile — not when viewing a colleague or other roles. */
+function isDoctorViewingOwnProfile(profileId) {
+    if (!profileId) return false;
+    try {
+        if (localStorage.getItem("adminUser") || localStorage.getItem("patientUser") || localStorage.getItem("nurseUser")) {
+            return false;
+        }
+        const raw = localStorage.getItem("doctorUser");
+        if (!raw) return false;
+        const u = JSON.parse(raw);
+        const did = u?.id ?? u?._id;
+        return did != null && String(did) === String(profileId);
+    } catch {
+        return false;
+    }
+}
+
+/** Edit: own profile or admin — not when a doctor views another doctor’s profile (read-only). */
+function canEditDoctorProfile(profileId) {
+    if (!profileId) return false;
+    try {
+        if (localStorage.getItem("adminUser")) return true;
+        const raw = localStorage.getItem("doctorUser");
+        if (!raw) return false;
+        const u = JSON.parse(raw);
+        const did = u?.id ?? u?._id;
+        return did != null && String(did) === String(profileId);
+    } catch {
+        return false;
+    }
+}
+
 const DoctorProfile = (props) => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const [doctor, setDoctor] = useState(null);
     const [loading, setLoading] = useState(!!id);
@@ -37,6 +71,9 @@ const DoctorProfile = (props) => {
         toggler: false,
         slide: 1,
     });
+
+    const showFaceEnrollment = useMemo(() => isDoctorViewingOwnProfile(id), [id]);
+    const showEditButton = useMemo(() => canEditDoctorProfile(id), [id]);
 
     useEffect(() => {
         if (!id) return;
@@ -103,11 +140,13 @@ const DoctorProfile = (props) => {
 
     return (
         <>
-            <Row>
-                <Col sm={12}>
-                    <FaceEnrollmentCard />
-                </Col>
-            </Row>
+            {showFaceEnrollment ? (
+                <Row>
+                    <Col sm={12}>
+                        <FaceEnrollmentCard />
+                    </Col>
+                </Row>
+            ) : null}
             <FsLightbox
                 toggler={imageController.toggler}
                 sources={[
@@ -149,10 +188,15 @@ const DoctorProfile = (props) => {
                         </Card.Body>
                     </Card>
                     <Card>
-                        <Card.Header className="d-flex justify-content-between">
-                            <Card.Header.Title>
-                                <h4 className="card-title">Personal Information</h4>
+                        <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <Card.Header.Title className="mb-0">
+                                <h4 className="card-title mb-0">{t("doctorProfile.personalInfo")}</h4>
                             </Card.Header.Title>
+                            {showEditButton ? (
+                                <Link to={`/doctor/edit-doctor/${id}`} className="btn btn-primary-subtle btn-sm">
+                                    {t("doctorProfile.edit")}
+                                </Link>
+                            ) : null}
                         </Card.Header>
                         <Card.Body>
                             <div className="about-info m-0 p-0">

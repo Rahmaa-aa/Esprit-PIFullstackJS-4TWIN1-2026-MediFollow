@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Col, Row } from "react-bootstrap";
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import FaceEnrollmentCard from "../../components/FaceEnrollmentCard";
 import { nurseApi } from "../../services/api";
@@ -26,13 +27,31 @@ function isNurseViewingOwnProfile(profileId) {
   }
 }
 
+/** Edit: nurse on own profile, or admin — never for doctors (read-only). */
+function canEditNurseProfile(profileId) {
+  if (!profileId) return false;
+  try {
+    if (localStorage.getItem("doctorUser")) return false;
+    if (localStorage.getItem("adminUser")) return true;
+    const raw = localStorage.getItem("nurseUser");
+    if (!raw) return false;
+    const u = JSON.parse(raw);
+    const nid = u?.id ?? u?._id;
+    return nid != null && String(nid) === String(profileId);
+  } catch {
+    return false;
+  }
+}
+
 const NurseProfile = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [nurse, setNurse] = useState(null);
   const [loading, setLoading] = useState(!!id);
   const [error, setError] = useState("");
 
   const showFaceEnrollment = useMemo(() => isNurseViewingOwnProfile(id), [id]);
+  const showEditButton = useMemo(() => canEditNurseProfile(id), [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -41,7 +60,7 @@ const NurseProfile = () => {
         const data = await nurseApi.getById(id);
         setNurse(data);
       } catch (err) {
-        setError(err.message || "Infirmière non trouvée");
+        setError(err.message || t("nurseProfile.loadError"));
       } finally {
         setLoading(false);
       }
@@ -62,9 +81,9 @@ const NurseProfile = () => {
           <Card>
             <Card.Body className="text-center py-5">
               <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Chargement...</span>
+                <span className="visually-hidden">{t("nurseProfile.loading")}</span>
               </div>
-              <p className="mt-3 mb-0">Chargement du profil...</p>
+              <p className="mt-3 mb-0">{t("nurseProfile.loadingProfile")}</p>
             </Card.Body>
           </Card>
         </Col>
@@ -79,7 +98,7 @@ const NurseProfile = () => {
           <Card>
             <Card.Body className="text-center py-5">
               <p className="text-danger mb-3">{error}</p>
-              <Link to="/nurse/nurse-list" className="btn btn-primary-subtle">Retour à la liste</Link>
+              <Link to="/nurse/nurse-list" className="btn btn-primary-subtle">{t("nurseProfile.backToList")}</Link>
             </Card.Body>
           </Card>
         </Col>
@@ -104,11 +123,11 @@ const NurseProfile = () => {
                 <div className="doc-profile-bg bg-primary rounded-top-2" style={{ height: "150px" }}>
                 </div>
                 <div className="docter-profile text-center">
-                  <img src={profileImg} alt="profile-img" className="avatar-130 img-fluid" style={{ objectFit: "cover" }} />
+                  <img src={profileImg} alt={t("nurseProfile.profilePhotoAlt")} className="avatar-130 img-fluid" style={{ objectFit: "cover" }} />
                 </div>
                 <div className="text-center mt-3 ps-3 pe-3">
                   <h4><b>{displayNurse.firstName} {displayNurse.lastName}</b></h4>
-                  <p>{displayNurse.specialty || "Infirmier(ère)"}</p>
+                  <p>{displayNurse.specialty || t("nurseProfile.defaultSpecialty")}</p>
                   <p className="mb-0">{displayNurse.department || "—"}</p>
                 </div>
               </div>
@@ -117,38 +136,42 @@ const NurseProfile = () => {
         </Col>
         <Col lg={8}>
           <Card>
-            <Card.Header className="d-flex justify-content-between">
-              <Card.Header.Title>
-                <h4 className="card-title">Informations personnelles</h4>
+            <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <Card.Header.Title className="mb-0">
+                <h4 className="card-title mb-0">{t("nurseProfile.personalInfo")}</h4>
               </Card.Header.Title>
-              <Link to={`/nurse/edit-nurse/${id}`} className="btn btn-primary-subtle btn-sm">Modifier</Link>
+              {showEditButton ? (
+                <Link to={`/nurse/edit-nurse/${id}`} className="btn btn-primary-subtle btn-sm">
+                  {t("nurseProfile.edit")}
+                </Link>
+              ) : null}
             </Card.Header>
             <Card.Body>
               <div className="about-info m-0 p-0">
                 <Row>
-                  <Col xs={4}>Prénom :</Col>
+                  <Col xs={4}>{t("nurseProfile.labelFirstName")}</Col>
                   <Col xs={8}>{displayNurse.firstName || "—"}</Col>
-                  <Col xs={4}>Nom :</Col>
+                  <Col xs={4}>{t("nurseProfile.labelLastName")}</Col>
                   <Col xs={8}>{displayNurse.lastName || "—"}</Col>
-                  <Col xs={4}>Spécialité :</Col>
+                  <Col xs={4}>{t("nurseProfile.labelSpecialty")}</Col>
                   <Col xs={8}>{displayNurse.specialty || "—"}</Col>
-                  <Col xs={4}>Département :</Col>
+                  <Col xs={4}>{t("nurseProfile.labelDepartment")}</Col>
                   <Col xs={8}>{displayNurse.department || "—"}</Col>
-                  <Col xs={4}>Email :</Col>
+                  <Col xs={4}>{t("nurseProfile.labelEmail")}</Col>
                   <Col xs={8}>
                     <a href={`mailto:${displayNurse.email || ""}`}>{displayNurse.email || "—"}</a>
                   </Col>
-                  <Col xs={4}>Téléphone :</Col>
+                  <Col xs={4}>{t("nurseProfile.labelPhone")}</Col>
                   <Col xs={8}>
                     <a href={`tel:${displayNurse.phone || ""}`}>{displayNurse.phone || "—"}</a>
                   </Col>
-                  <Col xs={4}>Adresse :</Col>
+                  <Col xs={4}>{t("nurseProfile.labelAddress")}</Col>
                   <Col xs={8}>{displayNurse.address || "—"}</Col>
-                  <Col xs={4}>Ville :</Col>
+                  <Col xs={4}>{t("nurseProfile.labelCity")}</Col>
                   <Col xs={8}>{displayNurse.city || "—"}</Col>
-                  <Col xs={4}>Pays :</Col>
+                  <Col xs={4}>{t("nurseProfile.labelCountry")}</Col>
                   <Col xs={8}>{displayNurse.country || "—"}</Col>
-                  <Col xs={4}>Code postal :</Col>
+                  <Col xs={4}>{t("nurseProfile.labelPostalCode")}</Col>
                   <Col xs={8}>{displayNurse.pinCode || "—"}</Col>
                 </Row>
               </div>

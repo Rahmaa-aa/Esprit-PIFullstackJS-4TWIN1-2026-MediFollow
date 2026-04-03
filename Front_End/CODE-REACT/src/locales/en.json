@@ -339,6 +339,42 @@
     "colSpecialty": "Specialty",
     "profile": "Profile"
   },
+  "doctorDepartmentDoctors": {
+    "pageTitle": "Department doctors",
+    "subtitleWithDept": "Colleagues in the department: {{department}}",
+    "subtitleNoDept": "Your profile does not yet have a department assigned (by an administrator).",
+    "loadError": "Unable to load doctors.",
+    "emptyNoDept": "No department on your account — the list of doctors in the same service cannot be displayed.",
+    "emptyNoDoctors": "No doctors registered for this department.",
+    "colName": "Name",
+    "colEmail": "Email",
+    "colSpecialty": "Specialty",
+    "profile": "Profile"
+  },
+  "doctorProfile": {
+    "personalInfo": "Personal information",
+    "edit": "Edit"
+  },
+  "nurseProfile": {
+    "loadError": "Nurse not found.",
+    "loading": "Loading…",
+    "loadingProfile": "Loading profile…",
+    "backToList": "Back to list",
+    "defaultSpecialty": "Nurse",
+    "personalInfo": "Personal information",
+    "edit": "Edit",
+    "labelFirstName": "First name:",
+    "labelLastName": "Last name:",
+    "labelSpecialty": "Specialty:",
+    "labelDepartment": "Department:",
+    "labelEmail": "Email:",
+    "labelPhone": "Phone:",
+    "labelAddress": "Address:",
+    "labelCity": "City:",
+    "labelCountry": "Country:",
+    "labelPostalCode": "Postal code:",
+    "profilePhotoAlt": "Profile photo"
+  },
   "dailyCheckIn": {
     "title": "Daily Health Check-in",
     "badgeDone": "Done Today",
