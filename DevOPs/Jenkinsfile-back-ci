@@ -17,8 +17,11 @@ pipeline {
         stage('Run NestJS Unit Tests') {
             steps {
                 dir('backend') {
-                    echo "Executing Authentic DevOps-Isolated Backend Tests..."
-                    sh 'npx jest --rootDir ../DevOPs/tests/backend'
+                    echo "Dynamically Injecting DevOps Backend Tests for Sandboxed Execution..."
+                    sh 'cp ../DevOPs/tests/backend/app.health.spec.ts src/app.health.spec.ts'
+                    sh 'npm run test'
+                    // Post-test cleanup
+                    sh 'rm src/app.health.spec.ts || true'
                 }
             }
         }

@@ -19,8 +19,11 @@ pipeline {
         stage('Run React Tests') {
             steps {
                 dir('Front_End/CODE-REACT') {
-                    echo "Executing Authentic DevOps-Isolated Frontend Tests..."
-                    sh 'npx vitest run ../../DevOPs/tests/frontend/render.spec.ts'
+                    echo "Dynamically Injecting DevOps Frontend Tests for Sandboxed Execution..."
+                    sh 'cp ../../DevOPs/tests/frontend/render.spec.ts src/render.spec.ts'
+                    sh 'npm run test'
+                    // Post-test cleanup
+                    sh 'rm src/render.spec.ts || true'
                 }
             }
         }
