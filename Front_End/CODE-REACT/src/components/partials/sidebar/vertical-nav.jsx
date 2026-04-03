@@ -231,6 +231,15 @@ const VerticalNav = () => {
                 {renderEmailAccordion()}
                 <Nav.Item as="li">
                     <Link
+                        to="/notifications"
+                        className={`nav-link ${location.pathname === "/notifications" ? "active" : ""}`}
+                    >
+                        <i className="ri-notification-3-fill"></i>
+                        <span className="item-name">{t("sidebar.notificationsCenter")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
                         to="/dashboard-pages/patient-medication-history"
                         className={`nav-link ${location.pathname === "/dashboard-pages/patient-medication-history" ? "active" : ""}`}
                     >
@@ -323,6 +332,15 @@ const VerticalNav = () => {
                     </Link>
                 </Nav.Item>
                 {renderEmailAccordion()}
+                <Nav.Item as="li">
+                    <Link
+                        to="/notifications"
+                        className={`nav-link ${location.pathname === "/notifications" ? "active" : ""}`}
+                    >
+                        <i className="ri-notification-3-fill"></i>
+                        <span className="item-name">{t("sidebar.notificationsCenter")}</span>
+                    </Link>
+                </Nav.Item>
                 <Nav.Item as="li">
                     <Link
                         to="/doctor/my-patients"
@@ -594,6 +612,16 @@ const VerticalNav = () => {
                         </div>
 
                     </Accordion.Item>
+
+                    <Nav.Item as="li">
+                        <Link
+                            to="/notifications"
+                            className={`nav-link ${location.pathname === "/notifications" ? "active" : ""}`}
+                        >
+                            <i className="ri-notification-3-fill"></i>
+                            <span className="item-name">{t("sidebar.notificationsCenter")}</span>
+                        </Link>
+                    </Nav.Item>
 
                     <Accordion.Item as="li" className={`nav-item ${active === "Doctor" && 'active'}`} onClick={() => setActive("Doctor")}>
                         <div className="colors">

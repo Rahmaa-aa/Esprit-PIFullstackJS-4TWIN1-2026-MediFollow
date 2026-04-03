@@ -362,6 +362,25 @@ export class NotificationService {
       .exec();
   }
 
+  async deleteOne(id: string, recipientId: string, recipientRole: RecipientRole) {
+    if (String(id).startsWith('virt-')) return { deleted: false };
+    if (!Types.ObjectId.isValid(id)) return { deleted: false };
+    const res = await this.notificationModel
+      .deleteOne({
+        _id: new Types.ObjectId(id),
+        recipientId: String(recipientId),
+        recipientRole,
+      })
+      .exec();
+    return { deleted: res.deletedCount > 0 };
+  }
+
+  async deleteAllForUser(recipientId: string, recipientRole: RecipientRole) {
+    return this.notificationModel
+      .deleteMany({ recipientId: String(recipientId), recipientRole })
+      .exec();
+  }
+
   async getMergedNotifications(userId: string, role: RecipientRole) {
     const withVirtuals = role === 'doctor' || role === 'patient';
     const [dbItems, virtuals, unreadDb] = await Promise.all([

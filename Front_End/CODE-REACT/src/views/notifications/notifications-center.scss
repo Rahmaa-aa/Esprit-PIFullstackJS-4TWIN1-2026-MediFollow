@@ -134,6 +134,16 @@
     align-items: flex-start;
   }
 
+  &__delete-one {
+    align-self: center;
+    line-height: 1;
+    text-decoration: none;
+
+    &:hover {
+      color: var(--bs-danger) !important;
+    }
+  }
+
   &__icon-box {
     width: 3rem;
     height: 3rem;

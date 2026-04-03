@@ -231,6 +231,28 @@ export default function NotificationsCenterPage() {
     }
   };
 
+  const onDeleteOne = async (id) => {
+    if (!id || isVirtualId(id)) return;
+    try {
+      await notificationApi.deleteOne(id);
+      if (role === "patient") await loadPatient();
+      else await loadStaff();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const onDeleteAll = async () => {
+    if (!window.confirm(t("notifications.deleteAllConfirm"))) return;
+    try {
+      await notificationApi.deleteAll();
+      if (role === "patient") await loadPatient();
+      else await loadStaff();
+    } catch {
+      /* ignore */
+    }
+  };
+
   const staffRole = role === "admin" ? "admin" : role === "doctor" ? "doctor" : "nurse";
 
   const roleLabel =
@@ -284,6 +306,10 @@ export default function NotificationsCenterPage() {
             <button type="button" className="btn btn-light btn-sm fw-semibold shadow-sm" onClick={onMarkAllRead}>
               <i className="ri-check-double-line me-1" aria-hidden />
               {t("notifications.markAllRead")}
+            </button>
+            <button type="button" className="btn btn-outline-light btn-sm fw-semibold shadow-sm" onClick={onDeleteAll}>
+              <i className="ri-delete-bin-line me-1" aria-hidden />
+              {t("notifications.deleteAll")}
             </button>
           </Col>
         </Row>
@@ -368,6 +394,21 @@ export default function NotificationsCenterPage() {
                   }}
                 >
                   <div className="notifications-center__item-inner">
+                    {!virt && (
+                      <button
+                        type="button"
+                        className="notifications-center__delete-one btn btn-link p-0 text-danger flex-shrink-0"
+                        aria-label={t("notifications.deleteOneAria")}
+                        title={t("notifications.deleteOneAria")}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onDeleteOne(id);
+                        }}
+                      >
+                        <i className="ri-delete-bin-line fs-5" aria-hidden />
+                      </button>
+                    )}
                     <div className={`notifications-center__icon-box ${iconWrapClass} border`}>
                       <i className={icon} aria-hidden />
                     </div>
@@ -453,6 +494,21 @@ export default function NotificationsCenterPage() {
                     }}
                   >
                     <div className="notifications-center__item-inner">
+                      {!isVirt && (
+                        <button
+                          type="button"
+                          className="notifications-center__delete-one btn btn-link p-0 text-danger flex-shrink-0"
+                          aria-label={t("notifications.deleteOneAria")}
+                          title={t("notifications.deleteOneAria")}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onDeleteOne(id);
+                          }}
+                        >
+                          <i className="ri-delete-bin-line fs-5" aria-hidden />
+                        </button>
+                      )}
                       <div
                         className={`notifications-center__icon-box border ${
                           isAppt || isChat || isMail ? "bg-primary-subtle text-primary" : "bg-light text-primary"

@@ -1,4 +1,13 @@
-import { Controller, Get, Patch, Param, Request, UseGuards, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Patch,
+  Param,
+  Request,
+  UseGuards,
+  ForbiddenException,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { NotificationService } from './notification.service';
 
@@ -40,6 +49,33 @@ export class NotificationController {
     }
     await this.notificationService.markAllRead(staffId(req), role);
     return { ok: true };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('all')
+  async deleteAll(@Request() req: { user?: { id?: unknown; role?: string } }) {
+    const role = notifRole(req);
+    if (!role) {
+      throw new ForbiddenException();
+    }
+    await this.notificationService.deleteAllForUser(staffId(req), role);
+    return { ok: true };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  async deleteOne(
+    @Request() req: { user?: { id?: unknown; role?: string } },
+    @Param('id') id: string,
+  ) {
+    const role = notifRole(req);
+    if (!role) {
+      throw new ForbiddenException();
+    }
+    if (String(id).startsWith('virt-')) {
+      return { ok: true, skipped: true };
+    }
+    return this.notificationService.deleteOne(id, staffId(req), role);
   }
 
   @UseGuards(JwtAuthGuard)

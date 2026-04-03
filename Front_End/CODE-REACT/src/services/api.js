@@ -418,6 +418,54 @@ export const api = {
     return res.json().catch(() => ({}));
   },
 
+  async deleteWithDoctorToken(endpoint) {
+    const token = okToken(localStorage.getItem("doctorToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "DELETE",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json().catch(() => ({}));
+  },
+
+  async deleteWithNurseToken(endpoint) {
+    const token = okToken(localStorage.getItem("nurseToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "DELETE",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json().catch(() => ({}));
+  },
+
+  async deleteWithPatientToken(endpoint) {
+    const token = okToken(localStorage.getItem("patientToken"));
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "DELETE",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      const error = new Error(messageFromApiErr(err));
+      error.status = res.status;
+      attachApiErrorFields(error, err);
+      throw error;
+    }
+    return res.json().catch(() => ({}));
+  },
+
   async postWithDoctorToken(endpoint, data) {
     const token = okToken(localStorage.getItem("doctorToken"));
     const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -776,6 +824,37 @@ export const notificationApi = {
       return api.patchWithPatientToken("/notifications/read-all", {});
     }
     return api.patch("/notifications/read-all", {});
+  },
+  deleteOne: (id) => {
+    const path = `/notifications/${encodeURIComponent(id)}`;
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.deleteWithDoctorToken(path);
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.deleteWithNurseToken(path);
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("adminUser")) {
+      return api.deleteWithAdminToken(path);
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.deleteWithPatientToken(path);
+    }
+    return api.delete(path);
+  },
+  deleteAll: () => {
+    if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
+      return api.deleteWithDoctorToken("/notifications/all");
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("nurseUser")) {
+      return api.deleteWithNurseToken("/notifications/all");
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("adminUser")) {
+      return api.deleteWithAdminToken("/notifications/all");
+    }
+    if (typeof localStorage !== "undefined" && localStorage.getItem("patientUser")) {
+      return api.deleteWithPatientToken("/notifications/all");
+    }
+    return api.delete("/notifications/all");
   },
 };
 
