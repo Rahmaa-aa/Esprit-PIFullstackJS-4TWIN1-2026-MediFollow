@@ -10,15 +10,20 @@ pipeline {
         stage('Build Docker Image (Nginx)') {
             steps {
                 dir('Front_End/CODE-REACT') {
-                    echo "Building Vercel/Nginx Docker Image..."
-                    sh 'docker build -t medifollow-front:latest .'
+                    echo "Building Frontend Docker Image..."
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                        sh 'docker build -t "$DOCKER_USER/medifollow-front:latest" .'
+                    }
                 }
             }
         }
         stage('Push to DockerHub') {
             steps {
-                echo "Pushing frontend to DockerHub..."
-                // Ready for Phase 4 Docker credentials
+                echo "Logging into DockerHub (bypassing 2FA via Token) and pushing image..."
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                    sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                    sh 'docker push "$DOCKER_USER/medifollow-front:latest"'
+                }
             }
         }
         stage('Deploy to Vercel') {
