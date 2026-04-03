@@ -375,7 +375,7 @@ export class NotificationService {
     return { deleted: res.deletedCount > 0 };
   }
 
-  async deleteAllForUser(recipientId: string, recipientRole: RecipientRole) {
+  async deleteAllForUser(recipientId: string, recipientRole: RecipientRole): Promise<any> {
     return this.notificationModel
       .deleteMany({ recipientId: String(recipientId), recipientRole })
       .exec();

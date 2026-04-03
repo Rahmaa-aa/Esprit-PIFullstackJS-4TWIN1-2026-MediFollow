@@ -647,7 +647,7 @@ export class MailService {
         throw new BadRequestException('Impossible de déplacer vers les brouillons');
       }
       if (st.isOutgoing) {
-        if (folder === 'inbox' || folder === 'drafts') {
+        if (String(folder) === 'inbox' || String(folder) === 'drafts') {
           throw new BadRequestException('Les messages envoyés ne vont pas dans la boîte de réception');
         }
       } else {
