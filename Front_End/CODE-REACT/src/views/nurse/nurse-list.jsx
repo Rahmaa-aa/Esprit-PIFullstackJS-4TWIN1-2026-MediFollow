@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Col, Row, Form, InputGroup } from "react-bootstrap";
+import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import { Link } from "react-router-dom";
 import { nurseApi } from "../../services/api";
@@ -10,6 +11,7 @@ const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 const DEFAULT_AVATAR = generatePath("/assets/images/user/11.png");
 
 const NurseList = () => {
+  const { t } = useTranslation();
   const [nurses, setNurses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,22 +30,22 @@ const NurseList = () => {
     });
   }, [nurses, filterName, filterSpecialty]);
 
-  const fetchNurses = async () => {
+  const fetchNurses = useCallback(async () => {
     try {
       const data = await nurseApi.getAll();
       setNurses(data);
       setError("");
     } catch (err) {
-      setError(err.message || "Erreur lors du chargement des infirmières");
+      setError(err.message || t("nurseList.loadError"));
       setNurses([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchNurses();
-  }, []);
+  }, [fetchNurses]);
 
   const handleDelete = async (nurse) => {
     setDeletingId(nurse._id);
@@ -53,7 +55,7 @@ const NurseList = () => {
       setNurseToDelete(null);
     } catch (err) {
       if (err.status === 401) window.location.href = "/auth/lock-screen";
-      else alert(err.message || "Erreur lors de la suppression");
+      else alert(err.message || t("nurseList.deleteError"));
     } finally {
       setDeletingId(null);
     }
@@ -74,9 +76,9 @@ const NurseList = () => {
           <Card>
             <Card.Body className="text-center py-5">
               <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Chargement...</span>
+                <span className="visually-hidden">{t("nurseList.loadingSpinner")}</span>
               </div>
-              <p className="mt-3 mb-0">Chargement des infirmières...</p>
+              <p className="mt-3 mb-0">{t("nurseList.loadingText")}</p>
             </Card.Body>
           </Card>
         </Col>
@@ -91,22 +93,22 @@ const NurseList = () => {
           <Card>
             <Card.Header className="card-header-custom d-flex justify-content-between align-items-center p-4 mb-0 border-bottom-0">
               <Card.Header.Title>
-                <h4 className="card-title">Liste des infirmières</h4>
+                <h4 className="card-title">{t("nurseList.pageTitle")}</h4>
               </Card.Header.Title>
               <Link to="/nurse/add-nurse" className="btn btn-primary-subtle">
-                <i className="ri-user-add-fill me-1"></i>Ajouter une infirmière
+                <i className="ri-user-add-fill me-1"></i>{t("nurseList.addNurse")}
               </Link>
             </Card.Header>
             <Card.Body className="pt-0">
               <Row className="g-3">
                 <Col md={4}>
                   <Form.Group className="mb-0">
-                    <Form.Label className="small">Filtrer par nom</Form.Label>
+                    <Form.Label className="small">{t("nurseList.filterByName")}</Form.Label>
                     <InputGroup>
                       <InputGroup.Text><i className="ri-user-search-line"></i></InputGroup.Text>
                       <Form.Control
                         type="text"
-                        placeholder="Nom..."
+                        placeholder={t("nurseList.placeholderName")}
                         value={filterName}
                         onChange={(e) => setFilterName(e.target.value)}
                       />
@@ -115,12 +117,12 @@ const NurseList = () => {
                 </Col>
                 <Col md={4}>
                   <Form.Group className="mb-0">
-                    <Form.Label className="small">Filtrer par spécialité</Form.Label>
+                    <Form.Label className="small">{t("nurseList.filterBySpecialty")}</Form.Label>
                     <InputGroup>
                       <InputGroup.Text><i className="ri-stethoscope-line"></i></InputGroup.Text>
                       <Form.Control
                         type="text"
-                        placeholder="Spécialité..."
+                        placeholder={t("nurseList.placeholderSpecialty")}
                         value={filterSpecialty}
                         onChange={(e) => setFilterSpecialty(e.target.value)}
                       />
@@ -134,14 +136,14 @@ const NurseList = () => {
                       className="btn btn-outline-secondary btn-sm"
                       onClick={() => { setFilterName(""); setFilterSpecialty(""); }}
                     >
-                      <i className="ri-filter-off-line me-1"></i>Réinitialiser
+                      <i className="ri-filter-off-line me-1"></i>{t("nurseList.resetFilters")}
                     </button>
                   )}
                 </Col>
               </Row>
               {(filterName || filterSpecialty) && (
                 <p className="text-muted small mb-0 mt-2">
-                  {filteredNurses.length} infirmière{filteredNurses.length !== 1 ? "s" : ""} trouvée{filteredNurses.length !== 1 ? "s" : ""}
+                  {t("nurseList.foundNurses", { count: filteredNurses.length })}
                 </p>
               )}
             </Card.Body>
@@ -158,8 +160,8 @@ const NurseList = () => {
           <Col sm={12}>
             <Card>
               <Card.Body className="text-center py-5">
-                <p className="text-muted mb-3">Aucune infirmière enregistrée.</p>
-                <Link to="/nurse/add-nurse" className="btn btn-primary-subtle">Ajouter la première infirmière</Link>
+                <p className="text-muted mb-3">{t("nurseList.emptyNoNurses")}</p>
+                <Link to="/nurse/add-nurse" className="btn btn-primary-subtle">{t("nurseList.addFirstNurse")}</Link>
               </Card.Body>
             </Card>
           </Col>
@@ -167,13 +169,13 @@ const NurseList = () => {
           <Col sm={12}>
             <Card>
               <Card.Body className="text-center py-5">
-                <p className="text-muted mb-3">Aucune infirmière ne correspond aux filtres.</p>
+                <p className="text-muted mb-3">{t("nurseList.emptyNoMatch")}</p>
                 <button
                   type="button"
                   className="btn btn-outline-primary"
                   onClick={() => { setFilterName(""); setFilterSpecialty(""); }}
                 >
-                  Réinitialiser les filtres
+                  {t("nurseList.resetFiltersLong")}
                 </button>
               </Card.Body>
             </Card>
@@ -189,26 +191,26 @@ const NurseList = () => {
                     <img
                       className="rounded-circle img-fluid avatar-80"
                       src={getImageSrc(nurse)}
-                      alt={nurse.firstName}
+                      alt={t("nurseList.avatarAlt", { firstName: nurse.firstName || "", lastName: nurse.lastName || "" })}
                       style={{ width: "80px", height: "80px", objectFit: "cover" }}
                     />
                   </div>
                   <div className="doc-info mt-3">
                     <h5 className="mb-1">{nurse.firstName} {nurse.lastName}</h5>
-                    <p className="text-muted mb-0">{nurse.specialty || "Infirmier(ère)"}{nurse.department ? ` • ${nurse.department}` : ""}</p>
+                    <p className="text-muted mb-0">{nurse.specialty || t("nurseList.defaultSpecialty")}{nurse.department ? ` • ${nurse.department}` : ""}</p>
                     <small className="text-muted">{nurse.email}</small>
                   </div>
                 </Link>
                 <div className="d-flex gap-2 justify-content-center flex-wrap mt-3">
-                  <Link to={`/nurse/nurse-profile/${nurse._id}`} className="btn btn-primary-subtle btn-sm">Profil</Link>
-                  <Link to={`/nurse/edit-nurse/${nurse._id}`} className="btn btn-warning-subtle btn-sm">Modifier</Link>
+                  <Link to={`/nurse/nurse-profile/${nurse._id}`} className="btn btn-primary-subtle btn-sm">{t("nurseList.profile")}</Link>
+                  <Link to={`/nurse/edit-nurse/${nurse._id}`} className="btn btn-warning-subtle btn-sm">{t("nurseList.edit")}</Link>
                   <button
                     type="button"
                     className="btn btn-danger-subtle btn-sm"
                     onClick={() => setNurseToDelete(nurse)}
                     disabled={deletingId === nurse._id}
                   >
-                    {deletingId === nurse._id ? "..." : "Supprimer"}
+                    {deletingId === nurse._id ? t("nurseList.deleting") : t("nurseList.delete")}
                   </button>
                 </div>
               </Card.Body>
@@ -218,11 +220,16 @@ const NurseList = () => {
       </Row>
       <ConfirmActionModal
         show={!!nurseToDelete}
-        title="Supprimer cette infirmière ?"
-        message={`Cette action supprimera définitivement ${nurseToDelete?.firstName || ""} ${nurseToDelete?.lastName || ""}.`}
+        title={t("nurseList.modalDeleteTitle")}
+        message={nurseToDelete
+          ? t("nurseList.modalDeleteMessage", {
+              firstName: nurseToDelete.firstName || "",
+              lastName: nurseToDelete.lastName || "",
+            })
+          : ""}
         onCancel={() => setNurseToDelete(null)}
         onConfirm={() => nurseToDelete && handleDelete(nurseToDelete)}
-        confirmLabel="Supprimer"
+        confirmLabel={t("nurseList.confirmDelete")}
         loading={deletingId === nurseToDelete?._id}
         iconClass="ri-delete-bin-6-line"
       />
