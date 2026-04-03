@@ -1,18 +1,37 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Row, Col, Card, Button, Badge, Form, InputGroup, Spinner, Alert, Modal } from "react-bootstrap";
+import { useTranslation } from "react-i18next";
 import { superAdminApi, doctorApi, patientApi, nurseApi } from "../../services/api";
 
-const ROLE_LABELS = {
-  admin: { label: "Admin", color: "danger" },
-  superadmin: { label: "Super Admin", color: "dark" },
-  doctor: { label: "Doctor", color: "primary" },
-  patient: { label: "Patient", color: "info" },
-  nurse: { label: "Nurse", color: "warning" },
-  auditor: { label: "Auditor", color: "secondary" },
-  carecoordinator: { label: "Care Coordinator", color: "success" },
+const ROLE_COLORS = {
+  admin: "danger",
+  superadmin: "dark",
+  doctor: "primary",
+  patient: "info",
+  nurse: "warning",
+  auditor: "secondary",
+  carecoordinator: "success",
 };
 
+/** Keys under superAdminDashboard.* for role labels */
+const ROLE_I18N = {
+  admin: "roleAdmin",
+  superadmin: "roleSuperAdmin",
+  doctor: "roleDoctor",
+  patient: "rolePatient",
+  nurse: "roleNurse",
+  auditor: "roleAuditor",
+  carecoordinator: "roleCareCoordinator",
+};
+
+const STAT_DEFS = [
+  { labelKey: "statTotal", valueKey: "total", color: "#009688", icon: "ri-team-fill" },
+  { labelKey: "statActive", valueKey: "active", color: "#4caf50", icon: "ri-user-follow-fill" },
+  { labelKey: "statInactive", valueKey: "inactive", color: "#f44336", icon: "ri-user-unfollow-fill" },
+];
+
 const UserList = () => {
+  const { t } = useTranslation();
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -20,9 +39,9 @@ const UserList = () => {
   const [filterRole, setFilterRole] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [actionMsg, setActionMsg] = useState("");
-  const [confirmModal, setConfirmModal] = useState({ show: false, user: null, action: "" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, user: null });
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -70,15 +89,15 @@ const UserList = () => {
 
       setAllUsers(mapped);
     } catch (err) {
-      setError("Failed to load users: " + (err.message || "Unknown error"));
+      setError(t("superAdminUsers.loadError", { message: err.message || t("superAdminUsers.unknownError") }));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [loadUsers]);
 
   const handleToggle = async (user) => {
     try {
@@ -87,17 +106,21 @@ const UserList = () => {
       else if (user.collection === "nurse") await nurseApi.toggleActive(user._id);
       else await superAdminApi.toggleUserActive(user._id);
 
-      setActionMsg(`Account of ${user.name} ${user.isActive ? "deactivated" : "activated"} successfully.`);
+      setActionMsg(
+        user.isActive
+          ? t("superAdminUsers.toastDeactivated", { name: user.name })
+          : t("superAdminUsers.toastActivated", { name: user.name }),
+      );
       setTimeout(() => setActionMsg(""), 3000);
       loadUsers();
     } catch (err) {
-      setError("Error changing account status: " + (err.message || ""));
+      setError(t("superAdminUsers.toggleError", { message: err.message || "" }));
     }
-    setConfirmModal({ show: false, user: null, action: "" });
+    setConfirmModal({ show: false, user: null });
   };
 
   const openConfirm = (user) => {
-    setConfirmModal({ show: true, user, action: user.isActive ? "deactivate" : "activate" });
+    setConfirmModal({ show: true, user });
   };
 
   const displayed = allUsers.filter((u) => {
@@ -118,24 +141,31 @@ const UserList = () => {
     inactive: allUsers.filter((u) => !u.isActive).length,
   };
 
+  const roleLabel = (role) => {
+    const key = ROLE_I18N[role];
+    return key ? t(`superAdminDashboard.${key}`) : role;
+  };
+
+  const modalBody = confirmModal.user
+    ? confirmModal.user.isActive
+      ? t("superAdminUsers.modalConfirmDeactivate", { name: confirmModal.user.name })
+      : t("superAdminUsers.modalConfirmActivate", { name: confirmModal.user.name })
+    : "";
+
   return (
     <>
       <Row>
         <Col md={12}>
           <h4 className="fw-bold mb-1" style={{ color: "#009688" }}>
-            All Users
+            {t("superAdminUsers.pageTitle")}
           </h4>
-          <p className="text-muted mb-4">Manage all accounts on the platform</p>
+          <p className="text-muted mb-4">{t("superAdminUsers.subtitle")}</p>
         </Col>
       </Row>
 
       <Row className="mb-4">
-        {[
-          { label: "Total Users", value: stats.total, color: "#009688", icon: "ri-team-fill" },
-          { label: "Active", value: stats.active, color: "#4caf50", icon: "ri-user-follow-fill" },
-          { label: "Deactivated", value: stats.inactive, color: "#f44336", icon: "ri-user-unfollow-fill" },
-        ].map((s) => (
-          <Col md={4} key={s.label}>
+        {STAT_DEFS.map((s) => (
+          <Col md={4} key={s.labelKey}>
             <Card className="border-0 shadow-sm">
               <Card.Body className="d-flex align-items-center gap-3">
                 <div
@@ -145,8 +175,8 @@ const UserList = () => {
                   <i className={s.icon} style={{ fontSize: 22, color: s.color }}></i>
                 </div>
                 <div>
-                  <div className="fw-bold fs-4" style={{ color: s.color }}>{s.value}</div>
-                  <div className="text-muted small">{s.label}</div>
+                  <div className="fw-bold fs-4" style={{ color: s.color }}>{stats[s.valueKey]}</div>
+                  <div className="text-muted small">{t(`superAdminUsers.${s.labelKey}`)}</div>
                 </div>
               </Card.Body>
             </Card>
@@ -164,7 +194,7 @@ const UserList = () => {
               <InputGroup>
                 <InputGroup.Text><i className="ri-search-line"></i></InputGroup.Text>
                 <Form.Control
-                  placeholder="Search by name or email..."
+                  placeholder={t("superAdminUsers.searchPlaceholder")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -172,24 +202,24 @@ const UserList = () => {
             </Col>
             <Col md={3}>
               <Form.Select value={filterRole} onChange={(e) => setFilterRole(e.target.value)}>
-                <option value="all">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="doctor">Doctor</option>
-                <option value="patient">Patient</option>
-                <option value="nurse">Nurse</option>
-                <option value="auditor">Auditor</option>
-                <option value="carecoordinator">Care Coordinator</option>
+                <option value="all">{t("superAdminUsers.filterAllRoles")}</option>
+                <option value="admin">{t("superAdminDashboard.roleAdmin")}</option>
+                <option value="doctor">{t("superAdminDashboard.roleDoctor")}</option>
+                <option value="patient">{t("superAdminDashboard.rolePatient")}</option>
+                <option value="nurse">{t("superAdminDashboard.roleNurse")}</option>
+                <option value="auditor">{t("superAdminDashboard.roleAuditor")}</option>
+                <option value="carecoordinator">{t("superAdminDashboard.roleCareCoordinator")}</option>
               </Form.Select>
             </Col>
             <Col md={3}>
               <Form.Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                <option value="all">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Deactivated</option>
+                <option value="all">{t("superAdminUsers.filterAllStatuses")}</option>
+                <option value="active">{t("superAdminDashboard.statusActive")}</option>
+                <option value="inactive">{t("superAdminDashboard.statusInactive")}</option>
               </Form.Select>
             </Col>
             <Col md={1}>
-              <Button variant="outline-secondary" onClick={loadUsers} title="Refresh">
+              <Button variant="outline-secondary" onClick={loadUsers} title={t("superAdminUsers.refreshTitle")}>
                 <i className="ri-refresh-line"></i>
               </Button>
             </Col>
@@ -197,96 +227,91 @@ const UserList = () => {
 
           {loading ? (
             <div className="text-center py-5">
-              <Spinner animation="border" style={{ color: "#009688" }} />
-              <p className="mt-3 text-muted">Loading users...</p>
+              <Spinner animation="border" style={{ color: "#009688" }} role="status" />
+              <span className="visually-hidden">{t("superAdminUsers.loadingSpinner")}</span>
+              <p className="mt-3 text-muted">{t("superAdminUsers.loadingUsers")}</p>
             </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover align-middle">
                 <thead style={{ background: "#f8f9fa" }}>
                   <tr>
-                    <th>#</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th>{t("superAdminUsers.colNumber")}</th>
+                    <th>{t("superAdminUsers.colName")}</th>
+                    <th>{t("superAdminUsers.colEmail")}</th>
+                    <th>{t("superAdminUsers.colRole")}</th>
+                    <th>{t("superAdminUsers.colStatus")}</th>
+                    <th>{t("superAdminUsers.colActions")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayed.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="text-center text-muted py-4">
-                        No users found
+                        {t("superAdminUsers.emptyNoUsers")}
                       </td>
                     </tr>
                   ) : (
-                    displayed.map((user, idx) => {
-                      const roleInfo = ROLE_LABELS[user.role] || { label: user.role, color: "secondary" };
-                      return (
-                        <tr key={`${user.collection}-${user._id}`}>
-                          <td className="text-muted">{idx + 1}</td>
-                          <td>
-                            <div className="d-flex align-items-center gap-2">
-                              <div
-                                className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                style={{ width: 36, height: 36, background: "#009688", fontSize: 14, flexShrink: 0 }}
-                              >
-                                {(user.name || "?")[0].toUpperCase()}
-                              </div>
-                              <span>{user.name || "—"}</span>
-                            </div>
-                          </td>
-                          <td className="text-muted">{user.email}</td>
-                          <td>
-                            <Badge bg={roleInfo.color}>{roleInfo.label}</Badge>
-                          </td>
-                          <td>
-                            <Badge bg={user.isActive ? "success" : "secondary"}>
-                              {user.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          </td>
-                          <td>
-                            <Button
-                              size="sm"
-                              variant={user.isActive ? "outline-danger" : "outline-success"}
-                              onClick={() => openConfirm(user)}
+                    displayed.map((user, idx) => (
+                      <tr key={`${user.collection}-${user._id}`}>
+                        <td className="text-muted">{idx + 1}</td>
+                        <td>
+                          <div className="d-flex align-items-center gap-2">
+                            <div
+                              className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                              style={{ width: 36, height: 36, background: "#009688", fontSize: 14, flexShrink: 0 }}
                             >
-                              <i className={user.isActive ? "ri-user-unfollow-line" : "ri-user-follow-line"}></i>
-                              {" "}{user.isActive ? "Deactivate" : "Activate"}
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })
+                              {(user.name || "?")[0].toUpperCase()}
+                            </div>
+                            <span>{user.name || t("superAdminUsers.dash")}</span>
+                          </div>
+                        </td>
+                        <td className="text-muted">{user.email}</td>
+                        <td>
+                          <Badge bg={ROLE_COLORS[user.role] || "secondary"}>{roleLabel(user.role)}</Badge>
+                        </td>
+                        <td>
+                          <Badge bg={user.isActive ? "success" : "secondary"}>
+                            {user.isActive ? t("superAdminDashboard.statusActive") : t("superAdminDashboard.statusInactive")}
+                          </Badge>
+                        </td>
+                        <td>
+                          <Button
+                            size="sm"
+                            variant={user.isActive ? "outline-danger" : "outline-success"}
+                            onClick={() => openConfirm(user)}
+                          >
+                            <i className={user.isActive ? "ri-user-unfollow-line" : "ri-user-follow-line"}></i>
+                            {" "}{user.isActive ? t("superAdminUsers.deactivate") : t("superAdminUsers.activate")}
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
               <div className="text-muted small mt-2">
-                Showing {displayed.length} of {allUsers.length} user(s)
+                {t("superAdminUsers.showingCount", { shown: displayed.length, total: allUsers.length })}
               </div>
             </div>
           )}
         </Card.Body>
       </Card>
 
-      <Modal show={confirmModal.show} onHide={() => setConfirmModal({ show: false, user: null, action: "" })}>
+      <Modal show={confirmModal.show} onHide={() => setConfirmModal({ show: false, user: null })}>
         <Modal.Header closeButton>
-          <Modal.Title>Confirm Action</Modal.Title>
+          <Modal.Title>{t("superAdminUsers.modalTitle")}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          Are you sure you want to <strong>{confirmModal.action}</strong> the account of{" "}
-          <strong>{confirmModal.user?.name}</strong>?
-        </Modal.Body>
+        <Modal.Body>{modalBody}</Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setConfirmModal({ show: false, user: null, action: "" })}>
-            Cancel
+          <Button variant="secondary" onClick={() => setConfirmModal({ show: false, user: null })}>
+            {t("superAdminUsers.cancel")}
           </Button>
           <Button
             variant={confirmModal.user?.isActive ? "danger" : "success"}
             onClick={() => handleToggle(confirmModal.user)}
           >
-            Confirm
+            {t("superAdminUsers.confirm")}
           </Button>
         </Modal.Footer>
       </Modal>
