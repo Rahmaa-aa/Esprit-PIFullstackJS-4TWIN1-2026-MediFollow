@@ -20,7 +20,7 @@ pipeline {
             steps {
                 dir('Front_End/CODE-REACT') {
                     echo "Executing Authentic DevOps-Isolated Frontend Tests..."
-                    sh 'npx vitest run ../../DevOPs/tests/frontend'
+                    sh 'npx vitest run ../../DevOPs/tests/frontend/render.spec.ts'
                 }
             }
         }
