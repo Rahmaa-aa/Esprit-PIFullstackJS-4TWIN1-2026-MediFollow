@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { Carousel, Container, Row, Col, Form, Modal } from 'react-bootstrap';
+import { Carousel, Container, Row, Col, Form, Modal } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { authApi } from "../../services/api";
 import { useHandGesture } from "../../context/HandGestureContext";
 import { captureFaceDescriptor } from "../../services/face-auth";
@@ -15,7 +16,7 @@ const isSpeechSupported = !!SpeechRecognition;
 const isTtsSupported = !!SpeechSynthesis;
 const LARGE_TEXT_KEY = "medifollow_large_text_signin";
 
-const KEYWORD_STOP = ["stop", "terminer", "arrêt", "arrêter", "finish", "fin"];
+const KEYWORD_STOP = ["stop", "terminer", "arrêt", "arrêter", "finish", "fin", "توقف", "إيقاف"];
 
 /** Supprime les autres rôles pour ne pas garder plusieurs JWT (sinon api.js pouvait envoyer le mauvais token). */
 function clearMedifollowSessionExcept(role) {
@@ -39,6 +40,7 @@ const isKeywordMatch = (text, keywords) => {
 };
 
 const SignIn = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { isActive: handActive, startHandGesture, stopHandGesture, error: handError, setError: setHandError } = useHandGesture();
   const [email, setEmail] = useState("");
@@ -67,12 +69,17 @@ const SignIn = () => {
 
   const isFaceNotEnrolledError = useCallback((message) => {
     const text = (message || "").toLowerCase();
-    return text.includes("aucun visage enregistre");
+    return (
+      text.includes("aucun visage enregistre") ||
+      text.includes("no face") ||
+      text.includes("not enrolled") ||
+      text.includes("visage non enregistr")
+    );
   }, []);
 
   const startVoiceInput = useCallback((field) => {
     if (!isSpeechSupported) {
-      setSpeechError("La reconnaissance vocale n'est pas supportée par votre navigateur. Utilisez Chrome ou Edge.");
+      setSpeechError(t("signIn.speechNotSupported"));
       return;
     }
     setSpeechError("");
@@ -85,7 +92,11 @@ const SignIn = () => {
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = "fr-FR";
+    recognition.lang = i18n.language?.startsWith("fr")
+      ? "fr-FR"
+      : i18n.language?.startsWith("ar")
+        ? "ar-SA"
+        : "en-US";
 
     recognition.onresult = (event) => {
       let transcript = "";
@@ -115,7 +126,9 @@ const SignIn = () => {
 
     recognition.onerror = (event) => {
       if (event.error !== "aborted") {
-        setSpeechError(event.error === "not-allowed" ? "Microphone non autorisé. Autorisez l'accès au micro." : `Erreur: ${event.error}`);
+        setSpeechError(
+          event.error === "not-allowed" ? t("signIn.speechMicDenied") : t("signIn.speechErrorGeneric", { error: event.error }),
+        );
       }
       setListeningField(null);
       recognitionRef.current = null;
@@ -128,7 +141,7 @@ const SignIn = () => {
 
     recognition.start();
     recognitionRef.current = recognition;
-  }, []);
+  }, [t, i18n.language]);
 
   const stopVoiceInput = useCallback(() => {
     if (recognitionRef.current) {
@@ -154,17 +167,21 @@ const SignIn = () => {
     stopPageReading();
 
     const parts = [
-      "Assistant vocal d'accessibilite active.",
-      "Bienvenue sur la page de connexion MediFollow.",
-      "Etape 1 : saisissez votre email puis votre mot de passe.",
-      "Etape 2 : vous pouvez utiliser la lecture vocale, la navigation par doigts et la connexion avec le visage.",
-      "Astuce : utilisez l'icone micro dans les champs pour la dictee manuelle.",
-      "Commande vocale disponible : dites stop pour arreter la dictee en cours.",
-      "Etape finale : cliquez sur le bouton Sign In pour ouvrir votre session.",
+      t("signIn.readPagePart1"),
+      t("signIn.readPagePart2"),
+      t("signIn.readPagePart3"),
+      t("signIn.readPagePart4"),
+      t("signIn.readPagePart5"),
+      t("signIn.readPagePart6"),
+      t("signIn.readPagePart7"),
     ];
 
     const utterance = new SpeechSynthesisUtterance(parts.join(" "));
-    utterance.lang = "fr-FR";
+    utterance.lang = i18n.language?.startsWith("fr")
+      ? "fr-FR"
+      : i18n.language?.startsWith("ar")
+        ? "ar-SA"
+        : "en-US";
     utterance.rate = 0.95;
     utterance.pitch = 1;
     utterance.onend = () => {
@@ -174,13 +191,13 @@ const SignIn = () => {
     utterance.onerror = () => {
       utteranceRef.current = null;
       setIsReadingPage(false);
-      setSpeechError("Lecture vocale indisponible sur ce navigateur.");
+      setSpeechError(t("signIn.ttsReadError"));
     };
 
     utteranceRef.current = utterance;
     setIsReadingPage(true);
     SpeechSynthesis.speak(utterance);
-  }, [isTtsSupported, stopPageReading, stopVoiceInput]);
+  }, [isTtsSupported, stopPageReading, stopVoiceInput, t, i18n.language]);
 
   useEffect(() => {
     localStorage.setItem(LARGE_TEXT_KEY, largeTextEnabled ? "1" : "0");
@@ -215,11 +232,11 @@ const SignIn = () => {
           setFaceCameraReady(true);
         }
       } catch {
-        setFaceCameraError("Impossible d'afficher le flux camera.");
+        setFaceCameraError(t("signIn.faceStreamError"));
       }
     };
     bindStreamToVideo();
-  }, [faceCameraOn]);
+  }, [faceCameraOn, t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -264,7 +281,7 @@ const SignIn = () => {
         }
       }
     } catch (err) {
-      setError(err.message || "Email ou mot de passe incorrect");
+      setError(err.message || t("signIn.loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -304,8 +321,8 @@ const SignIn = () => {
       window.location.href = path;
       return;
     }
-    setError("Role non supporte");
-  }, [navigate]);
+    setError(t("signIn.roleNotSupported"));
+  }, [navigate, t]);
 
   const stopFaceCamera = useCallback(() => {
     if (faceAutoLoginTimerRef.current) {
@@ -343,13 +360,13 @@ const SignIn = () => {
       faceStreamRef.current = stream;
       setFaceCameraOn(true);
     } catch (err) {
-      setFaceCameraError(err?.message || "Impossible d'acceder a la camera.");
+      setFaceCameraError(err?.message || t("signIn.faceCameraDenied"));
       setFaceCameraOn(false);
       setFaceCameraReady(false);
     } finally {
       setFaceCameraBooting(false);
     }
-  }, []);
+  }, [t]);
 
   const handleFaceCameraSignIn = useCallback(async (options = { auto: false }) => {
     if (faceAutoLoginBusyRef.current || faceLoading) {
@@ -357,7 +374,7 @@ const SignIn = () => {
     }
     if (!faceVideoRef.current) {
       if (!options.auto) {
-        setError("Ouvrez la camera puis reessayez.");
+        setError(t("signIn.faceOpenCameraFirst"));
       }
       return;
     }
@@ -379,7 +396,7 @@ const SignIn = () => {
       faceAutoLoginDoneRef.current = true;
       finalizeRoleLogin(data);
     } catch (err) {
-      const message = err?.message || "Connexion visage echouee.";
+      const message = err?.message || t("signIn.faceLoginFailed");
       if (isFaceNotEnrolledError(message) && !faceNotEnrolledPopupShownRef.current) {
         faceNotEnrolledPopupShownRef.current = true;
         faceAutoLoginDoneRef.current = true;
@@ -387,14 +404,14 @@ const SignIn = () => {
       }
       if (!options.auto) {
         setError(message);
-      } else if (message.toLowerCase() !== "visage non reconnu" && !isFaceNotEnrolledError(message)) {
+      } else if (!/visage non reconnu|face not recognized/i.test(message) && !isFaceNotEnrolledError(message)) {
         setFaceCameraError(message);
       }
     } finally {
       setFaceLoading(false);
       faceAutoLoginBusyRef.current = false;
     }
-  }, [email, finalizeRoleLogin, faceLoading, isFaceNotEnrolledError]);
+  }, [email, finalizeRoleLogin, faceLoading, isFaceNotEnrolledError, t]);
 
   useEffect(() => {
     if (!faceCameraOn || !faceCameraReady) return;
@@ -424,28 +441,28 @@ const SignIn = () => {
             <Col md={6} className="text-center z-2">
               <div className="sign-in-detail text-white">
                 <Link to="/" className="sign-in-logo mb-2">
-                  <img src={generatePath("/assets/images/logosite.png")} className="img-fluid" alt="Logo" style={{ maxWidth: "320px", maxHeight: "100px", objectFit: "contain" }} />
+                  <img src={generatePath("/assets/images/logosite.png")} className="img-fluid" alt={t("signIn.logoAlt")} style={{ maxWidth: "320px", maxHeight: "100px", objectFit: "contain" }} />
                 </Link>
                 <Carousel id="carouselExampleCaptions" interval={4000} controls={false}>
                   <Carousel.Item>
-                    <img src={generatePath("/assets/images/login/image_signin_signup.png")} className="d-block w-100" alt="Slide 1" />
+                    <img src={generatePath("/assets/images/login/image_signin_signup.png")} className="d-block w-100" alt="" />
                     <div className="carousel-caption-container">
-                      <h4 className="mb-1 mt-3 text-white">Manage your orders</h4>
-                      <p className="pb-5">It is a long established fact that a reader will be distracted by the readable content.</p>
+                      <h4 className="mb-1 mt-3 text-white">{t("signIn.carouselTitle")}</h4>
+                      <p className="pb-5">{t("signIn.carouselDesc")}</p>
                     </div>
                   </Carousel.Item>
                   <Carousel.Item>
-                    <img src={generatePath("/assets/images/login/signin1.png")} className="d-block w-100" alt="Slide 2" />
+                    <img src={generatePath("/assets/images/login/signin1.png")} className="d-block w-100" alt="" />
                     <div className="carousel-caption-container">
-                      <h4 className="mb-1 mt-3 text-white">Manage your orders</h4>
-                      <p className="pb-5">It is a long established fact that a reader will be distracted by the readable content.</p>
+                      <h4 className="mb-1 mt-3 text-white">{t("signIn.carouselTitle")}</h4>
+                      <p className="pb-5">{t("signIn.carouselDesc")}</p>
                     </div>
                   </Carousel.Item>
                   <Carousel.Item>
-                    <img src={generatePath("/assets/images/login/signin2.png")} className="d-block w-100" alt="Slide 3" />
+                    <img src={generatePath("/assets/images/login/signin2.png")} className="d-block w-100" alt="" />
                     <div className="carousel-caption-container">
-                      <h4 className="mb-1 mt-3 text-white">Manage your orders</h4>
-                      <p className="pb-5">It is a long established fact that a reader will be distracted by the readable content.</p>
+                      <h4 className="mb-1 mt-3 text-white">{t("signIn.carouselTitle")}</h4>
+                      <p className="pb-5">{t("signIn.carouselDesc")}</p>
                     </div>
                   </Carousel.Item>
                 </Carousel>
@@ -453,9 +470,9 @@ const SignIn = () => {
             </Col>
             <Col md={6} className="position-relative z-2">
               <div className="sign-in-from d-flex flex-column justify-content-center">
-                <h1 className="mb-0">Sign In</h1>
+                <h1 className="mb-0">{t("signIn.pageTitle")}</h1>
                 <Form className="mt-4" onSubmit={handleSubmit}>
-                  <p>Entrez votre email et mot de passe pour accéder à votre espace MediFollow (médecin, patient ou infirmier).</p>
+                  <p>{t("signIn.intro")}</p>
                   {error && (
                     <div className="alert alert-danger py-2" role="alert">
                       {error}
@@ -467,7 +484,7 @@ const SignIn = () => {
                     </div>
                   )}
                   <div className="a11y-toolbar mb-3">
-                    <div className="a11y-toolbar-title">Accessibilite rapide</div>
+                    <div className="a11y-toolbar-title">{t("signIn.a11yToolbarTitle")}</div>
                     <div className="a11y-toolbar-actions d-flex gap-2 flex-wrap">
                       <button
                         type="button"
@@ -476,7 +493,7 @@ const SignIn = () => {
                         data-eye-clickable
                       >
                         <i className="ri-font-size me-1"></i>
-                        {largeTextEnabled ? "Texte normal" : "Grand texte"}
+                        {largeTextEnabled ? t("signIn.largeTextDisable") : t("signIn.largeTextEnable")}
                       </button>
                       {isTtsSupported && (
                         <button
@@ -486,41 +503,46 @@ const SignIn = () => {
                           data-eye-clickable
                         >
                           <i className={`me-1 ${isReadingPage ? "ri-volume-mute-line" : "ri-volume-up-line"}`}></i>
-                          {isReadingPage ? "Arreter la lecture" : "Lire la page"}
+                          {isReadingPage ? t("signIn.stopReading") : t("signIn.readPage")}
                         </button>
                       )}
                     </div>
                     <span className="visually-hidden" aria-live="polite">
-                      {isReadingPage ? "Assistant vocal en cours de lecture." : "Assistant vocal prêt."}
+                      {isReadingPage ? t("signIn.voiceAssistantReading") : t("signIn.voiceAssistantReady")}
                     </span>
                   </div>
                   {isSpeechSupported && (
-                    <p className="text-muted small mb-2">
-                      Accessibilité : utilisez les boutons micro pour l'enregistrement manuel. Dites <strong>« stop »</strong> pour arrêter.
-                    </p>
+                    <p className="text-muted small mb-2">{t("signIn.speechHint")}</p>
                   )}
                   {isSpeechSupported && listeningField && (
                     <div className="alert alert-info py-2 small d-flex align-items-center justify-content-between" role="alert">
-                      <span>Micro actif ({listeningField === "email" ? "Email" : "Mot de passe"})</span>
+                      <span>
+                        {t("signIn.micActive", {
+                          field:
+                            listeningField === "email" ? t("signIn.fieldEmail") : t("signIn.fieldPassword"),
+                        })}
+                      </span>
                       <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={stopVoiceInput} data-eye-clickable>
-                        Arrêter micro
+                        {t("signIn.stopMic")}
                       </button>
                     </div>
                   )}
                   {handError && (
                     <div className="alert alert-warning py-2 small" role="alert">
                       {handError}
-                      <button type="button" className="btn-close btn-sm float-end" onClick={() => setHandError("")} aria-label="Fermer" />
+                      <button type="button" className="btn-close btn-sm float-end" onClick={() => setHandError("")} aria-label={t("signIn.closeAria")} />
                     </div>
                   )}
                   <div className="assist-actions d-flex gap-2 flex-wrap align-items-center mb-2">
                     {!handActive ? (
                       <button type="button" className="btn btn-sm assist-btn assist-btn-hand" onClick={startHandGesture}>
-                        <i className="ri-camera-line me-1"></i>Navigation doigts
+                        <i className="ri-camera-line me-1"></i>
+                        {t("signIn.startHandNav")}
                       </button>
                     ) : (
                       <button type="button" className="btn btn-sm assist-btn assist-btn-hand is-active" onClick={stopHandGesture}>
-                        <i className="ri-camera-off-line me-1"></i>Arreter navigation doigts
+                        <i className="ri-camera-off-line me-1"></i>
+                        {t("signIn.stopHandNav")}
                       </button>
                     )}
                     <button
@@ -531,11 +553,15 @@ const SignIn = () => {
                       data-eye-clickable
                     >
                       <i className={`me-1 ${faceCameraOn ? "ri-camera-off-line" : "ri-camera-line"}`}></i>
-                      {faceCameraOn ? "Fermer camera visage" : (faceCameraBooting ? "Ouverture..." : "Ouvrir camera visage")}
+                      {faceCameraOn
+                        ? t("signIn.closeFaceCamera")
+                        : faceCameraBooting
+                          ? t("signIn.opening")
+                          : t("signIn.openFaceCamera")}
                     </button>
                     {faceCameraOn && (
                       <span className="badge text-bg-light border align-self-center">
-                        {faceLoading ? "Analyse visage..." : "Connexion visage automatique active"}
+                        {faceLoading ? t("signIn.faceAnalyzing") : t("signIn.faceAutoLoginActive")}
                       </span>
                     )}
                   </div>
@@ -570,25 +596,25 @@ const SignIn = () => {
                             className="text-white d-flex align-items-center justify-content-center"
                             style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)" }}
                           >
-                            Initialisation camera...
+                            {t("signIn.initCamera")}
                           </div>
                         ) : null}
                       </div>
                     </div>
                   )}
                   <p className="text-muted small mb-2" style={{ fontSize: "0.75rem" }}>
-                    <strong>Navigation par doigts :</strong> Pointez avec l&apos;index devant la caméra. Le curseur suit votre doigt. Maintenez 0,8 s sur un élément pour cliquer.
+                    {t("signIn.handNavHelp")}
                   </p>
                   <div className="form-group mb-3">
                     <div className="d-flex align-items-center justify-content-between mb-1">
-                      <label htmlFor="exampleInputEmail1" className="mb-0">Email</label>
+                      <label htmlFor="exampleInputEmail1" className="mb-0">{t("signIn.email")}</label>
                     </div>
                     <div className="position-relative">
                       <Form.Control
                         type="email"
                         className="form-control pe-5"
                         id="exampleInputEmail1"
-                        placeholder="exemple@email.com"
+                        placeholder={t("signIn.emailPlaceholder")}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
@@ -600,7 +626,7 @@ const SignIn = () => {
                           className={`btn btn-sm ${listeningField === "email" ? "btn-danger" : "btn-outline-primary"}`}
                           onClick={() => listeningField === "email" ? stopVoiceInput() : startVoiceInput("email")}
                           data-eye-clickable
-                          aria-label="Micro email"
+                          aria-label={t("signIn.micEmailAria")}
                           style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", zIndex: 2 }}
                         >
                           <i className={listeningField === "email" ? "ri-mic-off-line" : "ri-mic-line"}></i>
@@ -610,8 +636,8 @@ const SignIn = () => {
                   </div>
                   <div className="form-group mb-3">
                     <div className="d-flex justify-content-between mb-1">
-                      <label htmlFor="exampleInputPassword1">Mot de passe</label>
-                      <Link to="/auth/recover-password" className="float-end">Mot de passe oublié ?</Link>
+                      <label htmlFor="exampleInputPassword1">{t("signIn.password")}</label>
+                      <Link to="/auth/recover-password" className="float-end">{t("signIn.forgotPassword")}</Link>
                     </div>
                     <div className="position-relative">
                       <Form.Control
@@ -619,7 +645,7 @@ const SignIn = () => {
                         id="exampleInputPassword1"
                         className="form-control"
                         style={{ paddingRight: isSpeechSupported ? "72px" : "40px" }}
-                        placeholder="Mot de passe"
+                        placeholder={t("signIn.passwordPlaceholder")}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -630,9 +656,9 @@ const SignIn = () => {
                           type="button"
                           className="btn btn-sm btn-outline-secondary"
                           onClick={() => setShowPassword((v) => !v)}
-                          aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                          aria-label={showPassword ? t("signIn.hidePasswordAria") : t("signIn.showPasswordAria")}
                           data-eye-clickable
-                          title={showPassword ? "Masquer" : "Afficher"}
+                          title={showPassword ? t("signIn.hidePassword") : t("signIn.showPassword")}
                         >
                           <i className={showPassword ? "ri-eye-off-line" : "ri-eye-line"}></i>
                         </button>
@@ -642,7 +668,7 @@ const SignIn = () => {
                             className={`btn btn-sm ${listeningField === "password" ? "btn-danger" : "btn-outline-primary"}`}
                             onClick={() => listeningField === "password" ? stopVoiceInput() : startVoiceInput("password")}
                             data-eye-clickable
-                            aria-label="Micro mot de passe"
+                            aria-label={t("signIn.micPasswordAria")}
                           >
                             <i className={listeningField === "password" ? "ri-mic-off-line" : "ri-mic-line"}></i>
                           </button>
@@ -657,18 +683,18 @@ const SignIn = () => {
                         id="customCheck1"
                         className="custom-control-input me-1"
                       />
-                      <label className="custom-control-label" htmlFor="customCheck1">Remember
-                        Me</label>
+                      <label className="custom-control-label" htmlFor="customCheck1">{t("signIn.rememberMe")}</label>
                     </label>
                     <button type="submit" className="btn btn-primary-subtle float-end" disabled={loading} data-eye-clickable>
-                      {loading ? "Signing in..." : "Sign In"}
+                      {loading ? t("signIn.signingIn") : t("signIn.signInButton")}
                     </button>
                   </div>
                   <div className="sign-info d-flex justify-content-between flex-column flex-lg-row align-items-center mt-3">
                     <span className="dark-color d-inline-block line-height-2">
-                      <Link to="/auth/lock-screen">Admin Login</Link>
+                      <Link to="/auth/lock-screen">{t("signIn.adminLogin")}</Link>
                       <span className="mx-2">|</span>
-                      Don&apos;t have an account? <Link to="/auth/sign-up">Sign Up</Link>
+                      {t("signIn.noAccount")}{" "}
+                      <Link to="/auth/sign-up">{t("signIn.signUp")}</Link>
                     </span>
                     <ul className="auth-social-media">
                       <li><a href="#"><i className="ri-facebook-box-line"></i></a></li>
@@ -684,15 +710,12 @@ const SignIn = () => {
       </section>
       <Modal show={showFaceNotEnrolledPopup} onHide={() => setShowFaceNotEnrolledPopup(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Visage non enregistré</Modal.Title>
+          <Modal.Title>{t("signIn.faceNotEnrolledTitle")}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          Aucun visage n&apos;est enregistré pour ce compte.
-          Enregistrez d&apos;abord votre visage dans votre profil pour utiliser la connexion visage.
-        </Modal.Body>
+        <Modal.Body>{t("signIn.faceNotEnrolledBody")}</Modal.Body>
         <Modal.Footer>
           <button type="button" className="btn btn-primary" onClick={() => setShowFaceNotEnrolledPopup(false)}>
-            Compris
+            {t("signIn.understood")}
           </button>
         </Modal.Footer>
       </Modal>
