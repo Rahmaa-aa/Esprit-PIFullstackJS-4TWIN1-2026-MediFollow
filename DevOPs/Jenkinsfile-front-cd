@@ -28,8 +28,12 @@ pipeline {
         }
         stage('Deploy to Vercel') {
             steps {
-                echo "Triggering Vercel deployment..."
-                // Ready for Phase 4 Vercel CLI Token
+                dir('Front_End/CODE-REACT') {
+                    echo "Triggering Vercel Cloud Automation..."
+                    withCredentials([string(credentialsId: 'VERCEL_TOKEN', variable: 'VERCEL_TOKEN')]) {
+                        sh 'npx vercel --prod --yes --token $VERCEL_TOKEN'
+                    }
+                }
             }
         }
     }
