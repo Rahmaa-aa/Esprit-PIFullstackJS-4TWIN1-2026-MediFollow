@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Row, Col, Badge, ListGroup, Alert, Button, Modal, Form, Spinner } from "react-bootstrap";
+import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import { nurseApi, healthLogApi } from "../../services/api";
 import SecureMessagingHubCard from "../../components/SecureMessagingHubCard";
@@ -7,6 +8,13 @@ import SecureMessagingHubCard from "../../components/SecureMessagingHubCard";
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 
 const NurseDashboard = () => {
+  const { t, i18n } = useTranslation();
+  const dateLocale = useMemo(
+    () =>
+      i18n.language?.startsWith("fr") ? "fr-FR" : i18n.language?.startsWith("ar") ? "ar-TN" : "en-US",
+    [i18n.language],
+  );
+
   const [nurseUser, setNurseUser] = useState(() => {
     try {
       const stored = localStorage.getItem("nurseUser");
@@ -57,27 +65,27 @@ const NurseDashboard = () => {
           <Card>
             <Card.Header className="d-flex justify-content-between align-items-center">
               <Card.Header.Title>
-                <h4 className="card-title mb-0">
-                  Tableau de bord Infirmier(ère) - Suivi quotidien
-                </h4>
+                <h4 className="card-title mb-0">{t("nurseDashboard.pageTitle")}</h4>
               </Card.Header.Title>
-              <Badge bg="primary">Connecté</Badge>
+              <Badge bg="primary">{t("nurseDashboard.connected")}</Badge>
             </Card.Header>
             <Card.Body>
               <Card className="border-0 shadow-sm">
                 <Card.Body className="d-flex align-items-center">
                   <img
                     src={profileImg}
-                    alt="Profil"
+                    alt={t("nurseDashboard.profileAlt")}
                     className="rounded-circle me-3"
                     style={{ width: 80, height: 80, objectFit: "cover" }}
                   />
                   <div>
                     <h5 className="mb-1">
-                      {nurseUser ? `${nurseUser.firstName || ""} ${nurseUser.lastName || ""}`.trim() || nurseUser.email : "Infirmier(ère)"}
+                      {nurseUser
+                        ? `${nurseUser.firstName || ""} ${nurseUser.lastName || ""}`.trim() || nurseUser.email
+                        : t("nurseDashboard.nurseFallback")}
                     </h5>
                     <p className="text-muted mb-0">
-                      {nurseUser?.specialty || "Infirmier(ère)"} • {nurseUser?.department || "—"}
+                      {nurseUser?.specialty || t("nurseDashboard.specialtyFallback")} • {nurseUser?.department || "—"}
                     </p>
                     <small className="text-muted">{nurseUser?.email}</small>
                   </div>
@@ -101,28 +109,28 @@ const NurseDashboard = () => {
               <Card.Header.Title>
                 <h5 className="card-title mb-0">
                   <i className="ri-heart-pulse-fill me-2 text-danger" />
-                  Alertes constantes vitales (à traiter)
+                  {t("nurseDashboard.vitalsAlertsTitle")}
                 </h5>
               </Card.Header.Title>
               <Button variant="outline-secondary" size="sm" onClick={loadPendingAlerts} disabled={pendingLoading}>
                 {pendingLoading ? <Spinner size="sm" animation="border" className="me-1" /> : <i className="ri-refresh-line me-1" />}
-                Actualiser
+                {t("nurseDashboard.refresh")}
               </Button>
             </Card.Header>
             <Card.Body>
               {!localStorage.getItem("nurseToken") && (
-                <p className="text-muted small mb-0">Connectez-vous pour voir les alertes urgentes de vos patients.</p>
+                <p className="text-muted small mb-0">{t("nurseDashboard.loginForAlerts")}</p>
               )}
               {localStorage.getItem("nurseToken") && pendingLoading && pendingAlerts.length === 0 && (
                 <div className="text-muted small">
                   <Spinner size="sm" animation="border" className="me-2" />
-                  Chargement…
+                  {t("nurseDashboard.loadingShort")}
                 </div>
               )}
               {localStorage.getItem("nurseToken") && !pendingLoading && pendingAlerts.length === 0 && (
                 <p className="text-muted small mb-0">
                   <i className="ri-checkbox-circle-line me-1 text-success" />
-                  Aucune alerte constantes ouverte pour vos patients assignés.
+                  {t("nurseDashboard.noOpenAlerts")}
                 </p>
               )}
               {pendingAlerts.length > 0 && (
@@ -133,22 +141,24 @@ const NurseDashboard = () => {
                       className="d-flex flex-wrap align-items-center justify-content-between gap-2 py-3"
                     >
                       <div>
-                        <div className="fw-semibold">{a.patientName || "Patient"}</div>
+                        <div className="fw-semibold">{a.patientName || t("nurseDashboard.patientFallback")}</div>
                         <div className="small text-muted">
-                          Score {a.riskScore ?? "—"}/100
+                          {t("nurseDashboard.scoreLabel", { score: a.riskScore ?? "—" })}
                           {a.escalationStatus === "escalated_to_doctor" ? (
                             <Badge bg="warning" text="dark" className="ms-2">
-                              Escalade médecin
+                              {t("nurseDashboard.badgeEscalatedToDoctor")}
                             </Badge>
                           ) : (
                             <Badge bg="danger" className="ms-2">
-                              Action infirmier
+                              {t("nurseDashboard.badgeNurseAction")}
                             </Badge>
                           )}
                         </div>
                         {a.recordedAt && (
                           <div className="small text-muted mt-1">
-                            Relevé : {new Date(a.recordedAt).toLocaleString("fr-FR")}
+                            {t("nurseDashboard.recordedAt", {
+                              datetime: new Date(a.recordedAt).toLocaleString(dateLocale),
+                            })}
                           </div>
                         )}
                       </div>
@@ -159,11 +169,15 @@ const NurseDashboard = () => {
                             variant="outline-danger"
                             onClick={() => {
                               setEscNote("");
-                              setEscModal({ open: true, logId: a.id, patientName: a.patientName || "Patient" });
+                              setEscModal({
+                                open: true,
+                                logId: a.id,
+                                patientName: a.patientName || t("nurseDashboard.patientFallback"),
+                              });
                             }}
                           >
                             <i className="ri-arrow-up-circle-line me-1" />
-                            Escalader au médecin
+                            {t("nurseDashboard.escalateToDoctor")}
                           </Button>
                         )}
                       </div>
@@ -172,8 +186,7 @@ const NurseDashboard = () => {
                 </ListGroup>
               )}
               <Alert variant="light" className="border mt-3 mb-0 small">
-                <strong>Rappel :</strong> répondez au patient dans la messagerie sécurisée ; en cas de doute clinique, escaladez au médecin
-                référent — il recevra une notification et un message sur le fil patient–médecin.
+                {t("nurseDashboard.reminderHint")}
               </Alert>
             </Card.Body>
           </Card>
@@ -182,23 +195,23 @@ const NurseDashboard = () => {
 
       <Modal show={escModal.open} onHide={() => !escBusy && setEscModal({ open: false, logId: null, patientName: "" })} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Escalade au médecin — {escModal.patientName}</Modal.Title>
+          <Modal.Title>{t("nurseDashboard.modalEscalateTitle", { name: escModal.patientName })}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form.Group>
-            <Form.Label>Contexte / demande (optionnel)</Form.Label>
+            <Form.Label>{t("nurseDashboard.modalEscalateLabel")}</Form.Label>
             <Form.Control
               as="textarea"
               rows={4}
               value={escNote}
               onChange={(e) => setEscNote(e.target.value)}
-              placeholder="Ex. : patient dyspnéique malgré conseils, TA élevée persistante…"
+              placeholder={t("nurseDashboard.modalEscalatePlaceholder")}
             />
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setEscModal({ open: false, logId: null, patientName: "" })} disabled={escBusy}>
-            Annuler
+            {t("nurseDashboard.cancel")}
           </Button>
           <Button
             variant="danger"
@@ -211,7 +224,7 @@ const NurseDashboard = () => {
                 setEscNote("");
                 loadPendingAlerts();
               } catch (e) {
-                window.alert(e.message || "Escalade impossible");
+                window.alert(e.message || t("nurseDashboard.escalateError"));
               } finally {
                 setEscBusy(false);
               }
@@ -219,7 +232,7 @@ const NurseDashboard = () => {
             disabled={escBusy}
           >
             {escBusy ? <Spinner size="sm" animation="border" className="me-1" /> : null}
-            Confirmer l’escalade
+            {t("nurseDashboard.confirmEscalation")}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -231,16 +244,16 @@ const NurseDashboard = () => {
               <Card.Header.Title>
                 <h5 className="card-title mb-0">
                   <i className="ri-calendar-check-line me-2"></i>
-                  Suivi quotidien
+                  {t("nurseDashboard.cardDailyTitle")}
                 </h5>
               </Card.Header.Title>
             </Card.Header>
             <Card.Body>
               <Card className="border-0 bg-primary-subtle">
                 <Card.Body>
-                  <h6 className="text-primary">Patients à surveiller aujourd'hui</h6>
+                  <h6 className="text-primary">{t("nurseDashboard.cardPatientsToday")}</h6>
                   <p className="mb-0 fs-4">—</p>
-                  <small className="text-muted">Mise à jour en cours</small>
+                  <small className="text-muted">{t("nurseDashboard.cardUpdating")}</small>
                 </Card.Body>
               </Card>
             </Card.Body>
@@ -252,16 +265,16 @@ const NurseDashboard = () => {
               <Card.Header.Title>
                 <h5 className="card-title mb-0">
                   <i className="ri-file-edit-line me-2"></i>
-                  Saisie des données
+                  {t("nurseDashboard.cardDataEntryTitle")}
                 </h5>
               </Card.Header.Title>
             </Card.Header>
             <Card.Body>
               <Card className="border-0 bg-success-subtle">
                 <Card.Body>
-                  <h6 className="text-success">Fiches à compléter</h6>
+                  <h6 className="text-success">{t("nurseDashboard.cardFormsTodo")}</h6>
                   <p className="mb-0 fs-4">—</p>
-                  <small className="text-muted">Mise à jour en cours</small>
+                  <small className="text-muted">{t("nurseDashboard.cardUpdating")}</small>
                 </Card.Body>
               </Card>
             </Card.Body>
@@ -273,16 +286,16 @@ const NurseDashboard = () => {
               <Card.Header.Title>
                 <h5 className="card-title mb-0">
                   <i className="ri-alarm-warning-line me-2"></i>
-                  Alertes suivies
+                  {t("nurseDashboard.cardAlertsTrackedTitle")}
                 </h5>
               </Card.Header.Title>
             </Card.Header>
             <Card.Body>
               <Card className="border-0 bg-warning-subtle">
                 <Card.Body>
-                  <h6 className="text-warning">Alertes constantes ouvertes</h6>
+                  <h6 className="text-warning">{t("nurseDashboard.cardOpenVitals")}</h6>
                   <p className="mb-0 fs-4">{pendingLoading ? "…" : pendingAlerts.length}</p>
-                  <small className="text-muted">Relevés urgents non clôturés par le médecin</small>
+                  <small className="text-muted">{t("nurseDashboard.cardOpenVitalsSub")}</small>
                 </Card.Body>
               </Card>
             </Card.Body>
@@ -297,21 +310,15 @@ const NurseDashboard = () => {
               <Card.Header.Title>
                 <h5 className="card-title mb-0">
                   <i className="ri-information-line me-2"></i>
-                  Rôle Infirmier(ère) - General Practitioners/Nurses
+                  {t("nurseDashboard.roleInfoTitle")}
                 </h5>
               </Card.Header.Title>
             </Card.Header>
             <Card.Body>
               <ListGroup variant="flush">
-                <ListGroup.Item>
-                  <strong>Suivi quotidien</strong> : Surveillance des patients en post-hospitalisation
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  <strong>Saisie des données</strong> : Enregistrement des données de santé et des observations
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  <strong>Suivi des alertes</strong> : Gestion et suivi des notifications et alertes patients
-                </ListGroup.Item>
+                <ListGroup.Item>{t("nurseDashboard.roleBullet1")}</ListGroup.Item>
+                <ListGroup.Item>{t("nurseDashboard.roleBullet2")}</ListGroup.Item>
+                <ListGroup.Item>{t("nurseDashboard.roleBullet3")}</ListGroup.Item>
               </ListGroup>
             </Card.Body>
           </Card>
