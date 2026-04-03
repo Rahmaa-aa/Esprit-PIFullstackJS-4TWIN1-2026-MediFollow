@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button, Col, Form, Row } from "react-bootstrap";
+import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../../services/api";
@@ -8,6 +9,7 @@ const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 const DEFAULT_PHOTO = generatePath("/assets/images/login/Admin_photo.jpeg");
 
 const AdminEditProfile = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -28,13 +30,13 @@ const AdminEditProfile = () => {
           window.location.href = "/auth/lock-screen";
           return;
         }
-        setError(err.message || "Erreur de chargement");
+        setError(err.message || t("adminEditProfile.loadError"));
       } finally {
         setLoadingData(false);
       }
     };
     fetchUser();
-  }, []);
+  }, [t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,17 +52,17 @@ const AdminEditProfile = () => {
 
     if (password || rpass) {
       if (!password || !rpass) {
-        setError("Veuillez remplir les deux champs pour changer le mot de passe.");
+        setError(t("adminEditProfile.passwordBothRequired"));
         setLoading(false);
         return;
       }
       if (password !== rpass) {
-        setError("Les mots de passe ne correspondent pas.");
+        setError(t("adminEditProfile.passwordMismatch"));
         setLoading(false);
         return;
       }
       if (password.length < 6) {
-        setError("Le mot de passe doit contenir au moins 6 caractères.");
+        setError(t("adminEditProfile.passwordMinLength"));
         setLoading(false);
         return;
       }
@@ -75,14 +77,14 @@ const AdminEditProfile = () => {
       const stored = JSON.parse(localStorage.getItem("adminUser") || "{}");
       localStorage.setItem("adminUser", JSON.stringify({ ...stored, ...updated }));
       window.dispatchEvent(new CustomEvent("admin-updated"));
-      setSaveMessage("Profil admin mis à jour avec succès.");
+      setSaveMessage(t("adminEditProfile.updateSuccess"));
       navigate("/admin/profile");
     } catch (err) {
       if (err.status === 401) {
         navigate("/auth/lock-screen");
         return;
       }
-      setError(err.message || "Erreur lors de la mise à jour");
+      setError(err.message || t("adminEditProfile.updateError"));
     } finally {
       setLoading(false);
     }
@@ -94,8 +96,10 @@ const AdminEditProfile = () => {
         <Col sm={12}>
           <Card>
             <Card.Body className="text-center py-5">
-              <div className="spinner-border text-primary" role="status" />
-              <p className="mt-3 mb-0">Chargement...</p>
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">{t("adminEditProfile.loading")}</span>
+              </div>
+              <p className="mt-3 mb-0">{t("adminEditProfile.loading")}</p>
             </Card.Body>
           </Card>
         </Col>
@@ -110,7 +114,7 @@ const AdminEditProfile = () => {
           <Card>
             <Card.Body className="text-center py-5">
               <p className="text-danger mb-3">{error}</p>
-              <Link to="/admin/dashboard" className="btn btn-primary">Retour</Link>
+              <Link to="/admin/dashboard" className="btn btn-primary">{t("adminEditProfile.backToDashboard")}</Link>
             </Card.Body>
           </Card>
         </Col>
@@ -134,7 +138,7 @@ const AdminEditProfile = () => {
           <Card.Body className="text-center">
             <img
               src={profilePreview}
-              alt="Admin"
+              alt={t("adminEditProfile.avatarAlt")}
               className="rounded-circle mb-3"
               style={{ width: "150px", height: "150px", objectFit: "cover", objectPosition: "50% 15%" }}
             />
@@ -145,7 +149,7 @@ const AdminEditProfile = () => {
                 size="sm"
                 onClick={() => document.getElementById("admin-photo-upload").click()}
               >
-                Changer la photo
+                {t("adminEditProfile.changePhoto")}
               </Button>
               <input
                 id="admin-photo-upload"
@@ -155,8 +159,8 @@ const AdminEditProfile = () => {
                 onChange={handleFileChange}
               />
             </div>
-            <p className="text-muted small mb-0">.jpg .png .jpeg</p>
-            <h4 className="mb-0 mt-2">{user?.name || "Admin"}</h4>
+            <p className="text-muted small mb-0">{t("adminEditProfile.formatsHint")}</p>
+            <h4 className="mb-0 mt-2">{user?.name || t("adminEditProfile.defaultDisplayName")}</h4>
             <p className="text-muted">{user?.email}</p>
           </Card.Body>
         </Card>
@@ -165,7 +169,7 @@ const AdminEditProfile = () => {
         <Card>
           <Card.Header>
             <Card.Header.Title>
-              <h4 className="card-title">Modifier le profil</h4>
+              <h4 className="card-title">{t("adminEditProfile.pageTitle")}</h4>
             </Card.Header.Title>
           </Card.Header>
           <Card.Body>
@@ -173,29 +177,29 @@ const AdminEditProfile = () => {
               {error && <div className="alert alert-danger">{error}</div>}
               {saveMessage && <div className="alert alert-success">{saveMessage}</div>}
               <Form.Group className="mb-3">
-                <Form.Label>Nom</Form.Label>
-                <Form.Control type="text" name="name" defaultValue={user?.name} placeholder="Nom" required />
+                <Form.Label>{t("adminEditProfile.labelName")}</Form.Label>
+                <Form.Control type="text" name="name" defaultValue={user?.name} placeholder={t("adminEditProfile.placeholderName")} required />
               </Form.Group>
               <Form.Group className="mb-3">
-                <Form.Label>Email</Form.Label>
-                <Form.Control type="email" name="email" defaultValue={user?.email} placeholder="Email" required />
+                <Form.Label>{t("adminEditProfile.labelEmail")}</Form.Label>
+                <Form.Control type="email" name="email" defaultValue={user?.email} placeholder={t("adminEditProfile.placeholderEmail")} required />
               </Form.Group>
               <hr />
-              <h5 className="mb-3">Changer le mot de passe (optionnel)</h5>
+              <h5 className="mb-3">{t("adminEditProfile.passwordSection")}</h5>
               <Form.Group className="mb-3">
-                <Form.Label>Nouveau mot de passe</Form.Label>
-                <Form.Control type="password" name="pass" placeholder="Laisser vide pour conserver" minLength={6} />
+                <Form.Label>{t("adminEditProfile.labelNewPassword")}</Form.Label>
+                <Form.Control type="password" name="pass" placeholder={t("adminEditProfile.placeholderPasswordKeep")} minLength={6} />
               </Form.Group>
               <Form.Group className="mb-3">
-                <Form.Label>Confirmer</Form.Label>
-                <Form.Control type="password" name="rpass" placeholder="Confirmer" minLength={6} />
+                <Form.Label>{t("adminEditProfile.labelConfirm")}</Form.Label>
+                <Form.Control type="password" name="rpass" placeholder={t("adminEditProfile.placeholderConfirm")} minLength={6} />
               </Form.Group>
               <div className="d-flex gap-2">
                 <Button type="button" variant="outline-danger" onClick={() => navigate("/admin/profile")}>
-                  Annuler
+                  {t("adminEditProfile.cancel")}
                 </Button>
                 <Button type="submit" className="btn btn-primary-subtle" disabled={loading}>
-                  {loading ? "Enregistrement..." : "Enregistrer"}
+                  {loading ? t("adminEditProfile.saving") : t("adminEditProfile.save")}
                 </Button>
               </div>
             </Form>
