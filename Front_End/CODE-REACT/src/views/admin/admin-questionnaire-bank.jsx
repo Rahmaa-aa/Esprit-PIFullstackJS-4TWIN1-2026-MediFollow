@@ -1,20 +1,15 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Button, Col, Container, Form, Row, Spinner, Tab, Tabs, Table } from "react-bootstrap";
+import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import { departmentApi, questionnaireApi } from "../../services/api";
 
-const QUESTION_TYPES = [
-  { value: "scale_10", label: "Échelle 0 à 10" },
-  { value: "yes_no", label: "Oui / Non" },
-  { value: "text", label: "Texte libre" },
-];
-
-function defaultQuestionRows() {
-  const t = Date.now();
+function defaultQuestionRows(t) {
+  const ts = Date.now();
   return [
-    { uid: `r-${t}-a`, label: "Comment évaluez-vous votre récupération aujourd’hui ?", type: "scale_10" },
-    { uid: `r-${t}-b`, label: "Avez-vous une douleur importante ?", type: "yes_no" },
-    { uid: `r-${t}-c`, label: "Commentaires libres", type: "text" },
+    { uid: `r-${ts}-a`, label: t("adminQuestionnaireBank.defaultQ1"), type: "scale_10" },
+    { uid: `r-${ts}-b`, label: t("adminQuestionnaireBank.defaultQ2"), type: "yes_no" },
+    { uid: `r-${ts}-c`, label: t("adminQuestionnaireBank.defaultQ3"), type: "text" },
   ];
 }
 
@@ -29,6 +24,7 @@ function defaultMilestoneRows() {
 }
 
 const AdminQuestionnaireBank = () => {
+  const { t } = useTranslation();
   const [depts, setDepts] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [protocols, setProtocols] = useState([]);
@@ -39,14 +35,23 @@ const AdminQuestionnaireBank = () => {
   const [tTitle, setTTitle] = useState("");
   const [tDept, setTDept] = useState("");
   const [tDesc, setTDesc] = useState("");
-  const [tQuestionRows, setTQuestionRows] = useState(defaultQuestionRows);
+  const [tQuestionRows, setTQuestionRows] = useState(() => defaultQuestionRows(t));
 
   const [pName, setPName] = useState("");
   const [pDept, setPDept] = useState("");
   const [pDesc, setPDesc] = useState("");
   const [pMilestoneRows, setPMilestoneRows] = useState(defaultMilestoneRows);
 
-  const load = async () => {
+  const questionTypeOptions = useMemo(
+    () => [
+      { value: "scale_10", label: t("adminQuestionnaireBank.typeScale10") },
+      { value: "yes_no", label: t("adminQuestionnaireBank.typeYesNo") },
+      { value: "text", label: t("adminQuestionnaireBank.typeText") },
+    ],
+    [t]
+  );
+
+  const load = useCallback(async () => {
     setError("");
     setLoading(true);
     try {
@@ -58,24 +63,25 @@ const AdminQuestionnaireBank = () => {
       setDepts(Array.isArray(d) ? d : []);
       setTemplates(Array.isArray(tl) ? tl : []);
       setProtocols(Array.isArray(pr) ? pr : []);
-      if (!tDept && Array.isArray(d) && d[0]?.name) setTDept(d[0].name);
-      if (!pDept && Array.isArray(d) && d[0]?.name) setPDept(d[0].name);
+      const firstDept = Array.isArray(d) && d[0]?.name ? d[0].name : "";
+      setTDept((prev) => prev || firstDept);
+      setPDept((prev) => prev || firstDept);
     } catch (e) {
-      setError(e.message || "Erreur chargement");
+      setError(e.message || t("adminQuestionnaireBank.loadError"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const deptOptions = useMemo(() => depts.map((x) => x.name).filter(Boolean), [depts]);
 
   /** Questionnaires du même département que le protocole en cours de création (listes déroulantes). */
   const templatesForProtocolDept = useMemo(
-    () => templates.filter((t) => String(t.department) === String(pDept)),
+    () => templates.filter((tpl) => String(tpl.department) === String(pDept)),
     [templates, pDept]
   );
 
@@ -95,7 +101,7 @@ const AdminQuestionnaireBank = () => {
     setMsg("");
     const questions = buildQuestionsPayload();
     if (!questions) {
-      setMsg("Ajoutez au moins une question avec un libellé.");
+      setMsg(t("adminQuestionnaireBank.msgNeedQuestion"));
       return;
     }
     try {
@@ -105,13 +111,13 @@ const AdminQuestionnaireBank = () => {
         description: tDesc || undefined,
         questions,
       });
-      setMsg("Questionnaire créé.");
+      setMsg(t("adminQuestionnaireBank.msgCreatedTemplate"));
       setTTitle("");
       setTDesc("");
-      setTQuestionRows(defaultQuestionRows());
+      setTQuestionRows(defaultQuestionRows(t));
       await load();
     } catch (err) {
-      setMsg(err.message || "Erreur");
+      setMsg(err.message || t("adminQuestionnaireBank.errorGeneric"));
     }
   };
 
@@ -149,12 +155,12 @@ const AdminQuestionnaireBank = () => {
         questionnaireTemplateId: String(row.questionnaireTemplateId).trim(),
       }));
     if (!milestones.length) {
-      setMsg("Ajoutez au moins un jalon et choisissez un questionnaire pour chaque ligne.");
+      setMsg(t("adminQuestionnaireBank.msgNeedMilestones"));
       return;
     }
     const bad = milestones.some((m) => !Number.isFinite(m.dayOffset) || m.dayOffset < 0);
     if (bad) {
-      setMsg("Vérifiez les jours (J+n) : nombres positifs ou zéro.");
+      setMsg(t("adminQuestionnaireBank.msgBadDays"));
       return;
     }
     try {
@@ -164,13 +170,13 @@ const AdminQuestionnaireBank = () => {
         description: pDesc || undefined,
         milestones,
       });
-      setMsg("Protocole créé.");
+      setMsg(t("adminQuestionnaireBank.msgCreatedProtocol"));
       setPName("");
       setPDesc("");
       setPMilestoneRows(defaultMilestoneRows());
       await load();
     } catch (err) {
-      setMsg(err.message || "Erreur");
+      setMsg(err.message || t("adminQuestionnaireBank.errorGeneric"));
     }
   };
 
@@ -187,7 +193,7 @@ const AdminQuestionnaireBank = () => {
   };
 
   const delTemplate = async (id) => {
-    if (!window.confirm("Supprimer ce questionnaire ?")) return;
+    if (!window.confirm(t("adminQuestionnaireBank.confirmDeleteTemplate"))) return;
     try {
       await questionnaireApi.adminDeleteTemplate(id);
       await load();
@@ -197,7 +203,7 @@ const AdminQuestionnaireBank = () => {
   };
 
   const delProtocol = async (id) => {
-    if (!window.confirm("Supprimer ce protocole ?")) return;
+    if (!window.confirm(t("adminQuestionnaireBank.confirmDeleteProtocol"))) return;
     try {
       await questionnaireApi.adminDeleteProtocol(id);
       await load();
@@ -211,11 +217,11 @@ const AdminQuestionnaireBank = () => {
       <Row className="mb-4">
         <Col>
           <div className="text-uppercase text-primary fw-semibold small mb-1" style={{ letterSpacing: "0.08em" }}>
-            Administration
+            {t("adminQuestionnaireBank.eyebrow")}
           </div>
-          <h3 className="fw-bold mb-2">Banque de questionnaires & protocoles</h3>
+          <h3 className="fw-bold mb-2">{t("adminQuestionnaireBank.pageTitle")}</h3>
           <p className="text-muted mb-0" style={{ maxWidth: "40rem" }}>
-            Créez des questionnaires par <strong>département</strong>, puis des <strong>protocoles</strong> (jalons J+3, J+7, …) qui référencent ces questionnaires. Les médecins assignent un protocole à la sortie du patient.
+            {t("adminQuestionnaireBank.pageLead")}
           </p>
         </Col>
       </Row>
@@ -233,23 +239,23 @@ const AdminQuestionnaireBank = () => {
 
       {loading ? (
         <div className="text-center py-5">
-          <Spinner animation="border" variant="primary" />
+          <Spinner animation="border" variant="primary" role="status" aria-label={t("adminQuestionnaireBank.loading")} />
         </div>
       ) : (
         <Tabs defaultActiveKey="templates" className="mb-3">
-          <Tab eventKey="templates" title="Questionnaires">
+          <Tab eventKey="templates" title={t("adminQuestionnaireBank.tabTemplates")}>
             <Row className="g-4 mt-1">
               <Col lg={5}>
                 <Card className="border-0 shadow-sm rounded-3">
-                  <Card.Header className="bg-primary text-white py-3 fw-semibold">Nouveau questionnaire</Card.Header>
+                  <Card.Header className="bg-primary text-white py-3 fw-semibold">{t("adminQuestionnaireBank.cardNewTemplate")}</Card.Header>
                   <Card.Body>
                     <Form onSubmit={handleCreateTemplate}>
                       <Form.Group className="mb-2">
-                        <Form.Label>Titre</Form.Label>
-                        <Form.Control value={tTitle} onChange={(e) => setTTitle(e.target.value)} required placeholder="ex. Suivi post-cardiaque" />
+                        <Form.Label>{t("adminQuestionnaireBank.fieldTitle")}</Form.Label>
+                        <Form.Control value={tTitle} onChange={(e) => setTTitle(e.target.value)} required placeholder={t("adminQuestionnaireBank.placeholderTitle")} />
                       </Form.Group>
                       <Form.Group className="mb-2">
-                        <Form.Label>Département</Form.Label>
+                        <Form.Label>{t("adminQuestionnaireBank.fieldDepartment")}</Form.Label>
                         <Form.Select value={tDept} onChange={(e) => setTDept(e.target.value)} required>
                           {deptOptions.map((n) => (
                             <option key={n} value={n}>
@@ -259,48 +265,48 @@ const AdminQuestionnaireBank = () => {
                         </Form.Select>
                       </Form.Group>
                       <Form.Group className="mb-2">
-                        <Form.Label>Description (optionnel)</Form.Label>
+                        <Form.Label>{t("adminQuestionnaireBank.descriptionOptional")}</Form.Label>
                         <Form.Control as="textarea" rows={2} value={tDesc} onChange={(e) => setTDesc(e.target.value)} />
                       </Form.Group>
 
                       <div className="d-flex justify-content-between align-items-center mb-2">
-                        <Form.Label className="mb-0">Questions</Form.Label>
+                        <Form.Label className="mb-0">{t("adminQuestionnaireBank.questionsSection")}</Form.Label>
                         <Button type="button" variant="outline-primary" size="sm" onClick={addQuestionRow}>
-                          + Ajouter une question
+                          {t("adminQuestionnaireBank.addQuestion")}
                         </Button>
                       </div>
                       <p className="small text-muted mb-3">
-                        Définissez chaque item ci-dessous : libellé affiché au patient et type de réponse (échelle, oui/non, texte). Aucun code à saisir.
+                        {t("adminQuestionnaireBank.questionsHelp")}
                       </p>
 
                       {tQuestionRows.map((row, idx) => (
                         <div key={row.uid} className="border rounded-3 p-3 mb-3 bg-light bg-opacity-50">
                           <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
-                            <span className="small text-muted fw-semibold">Question {idx + 1}</span>
+                            <span className="small text-muted fw-semibold">{t("adminQuestionnaireBank.questionHeading", { n: idx + 1 })}</span>
                             <div className="d-flex gap-1 flex-shrink-0">
-                              <Button type="button" variant="light" size="sm" title="Monter" onClick={() => moveQuestionRow(row.uid, -1)}>
+                              <Button type="button" variant="light" size="sm" title={t("adminQuestionnaireBank.moveUp")} onClick={() => moveQuestionRow(row.uid, -1)}>
                                 ↑
                               </Button>
-                              <Button type="button" variant="light" size="sm" title="Descendre" onClick={() => moveQuestionRow(row.uid, 1)}>
+                              <Button type="button" variant="light" size="sm" title={t("adminQuestionnaireBank.moveDown")} onClick={() => moveQuestionRow(row.uid, 1)}>
                                 ↓
                               </Button>
                               <Button type="button" variant="outline-danger" size="sm" onClick={() => removeQuestionRow(row.uid)}>
-                                Retirer
+                                {t("adminQuestionnaireBank.remove")}
                               </Button>
                             </div>
                           </div>
                           <Form.Group className="mb-2">
-                            <Form.Label className="small">Libellé</Form.Label>
+                            <Form.Label className="small">{t("adminQuestionnaireBank.labelField")}</Form.Label>
                             <Form.Control
                               value={row.label}
                               onChange={(e) => updateQuestionRow(row.uid, "label", e.target.value)}
-                              placeholder="Texte de la question pour le patient"
+                              placeholder={t("adminQuestionnaireBank.labelPlaceholder")}
                             />
                           </Form.Group>
                           <Form.Group className="mb-0">
-                            <Form.Label className="small">Type de réponse</Form.Label>
+                            <Form.Label className="small">{t("adminQuestionnaireBank.responseType")}</Form.Label>
                             <Form.Select value={row.type} onChange={(e) => updateQuestionRow(row.uid, "type", e.target.value)}>
-                              {QUESTION_TYPES.map((opt) => (
+                              {questionTypeOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
                                   {opt.label}
                                 </option>
@@ -311,7 +317,7 @@ const AdminQuestionnaireBank = () => {
                       ))}
 
                       <Button type="submit" variant="primary" className="mt-2">
-                        Enregistrer
+                        {t("adminQuestionnaireBank.save")}
                       </Button>
                     </Form>
                   </Card.Body>
@@ -319,29 +325,29 @@ const AdminQuestionnaireBank = () => {
               </Col>
               <Col lg={7}>
                 <Card className="border-0 shadow-sm rounded-3">
-                  <Card.Header className="py-3 fw-semibold">Liste ({templates.length})</Card.Header>
+                  <Card.Header className="py-3 fw-semibold">{t("adminQuestionnaireBank.listTitle", { count: templates.length })}</Card.Header>
                   <Card.Body className="p-0">
                     <div className="table-responsive">
                       <Table hover size="sm" className="mb-0 align-middle">
                         <thead className="bg-light">
                           <tr>
-                            <th>Titre</th>
-                            <th>Département</th>
-                            <th>Id</th>
+                            <th>{t("adminQuestionnaireBank.thTitle")}</th>
+                            <th>{t("adminQuestionnaireBank.thDepartment")}</th>
+                            <th>{t("adminQuestionnaireBank.thId")}</th>
                             <th />
                           </tr>
                         </thead>
                         <tbody>
-                          {templates.map((t) => (
-                            <tr key={t._id}>
-                              <td className="fw-medium">{t.title}</td>
-                              <td>{t.department}</td>
+                          {templates.map((tpl) => (
+                            <tr key={tpl._id}>
+                              <td className="fw-medium">{tpl.title}</td>
+                              <td>{tpl.department}</td>
                               <td>
-                                <code className="small text-break">{t._id}</code>
+                                <code className="small text-break">{tpl._id}</code>
                               </td>
                               <td className="text-end">
-                                <Button variant="outline-danger" size="sm" onClick={() => delTemplate(t._id)}>
-                                  Supprimer
+                                <Button variant="outline-danger" size="sm" onClick={() => delTemplate(tpl._id)}>
+                                  {t("adminQuestionnaireBank.delete")}
                                 </Button>
                               </td>
                             </tr>
@@ -349,26 +355,26 @@ const AdminQuestionnaireBank = () => {
                         </tbody>
                       </Table>
                     </div>
-                    {templates.length === 0 && <p className="text-muted small p-3 mb-0">Aucun questionnaire.</p>}
+                    {templates.length === 0 && <p className="text-muted small p-3 mb-0">{t("adminQuestionnaireBank.emptyTemplates")}</p>}
                   </Card.Body>
                 </Card>
               </Col>
             </Row>
           </Tab>
 
-          <Tab eventKey="protocols" title="Protocoles">
+          <Tab eventKey="protocols" title={t("adminQuestionnaireBank.tabProtocols")}>
             <Row className="g-4 mt-1">
               <Col lg={5}>
                 <Card className="border-0 shadow-sm rounded-3">
-                  <Card.Header className="bg-primary text-white py-3 fw-semibold">Nouveau protocole</Card.Header>
+                  <Card.Header className="bg-primary text-white py-3 fw-semibold">{t("adminQuestionnaireBank.cardNewProtocol")}</Card.Header>
                   <Card.Body>
                     <Form onSubmit={handleCreateProtocol}>
                       <Form.Group className="mb-2">
-                        <Form.Label>Nom</Form.Label>
-                        <Form.Control value={pName} onChange={(e) => setPName(e.target.value)} required placeholder="ex. Protocole standard cardiologie" />
+                        <Form.Label>{t("adminQuestionnaireBank.fieldName")}</Form.Label>
+                        <Form.Control value={pName} onChange={(e) => setPName(e.target.value)} required placeholder={t("adminQuestionnaireBank.placeholderProtocolName")} />
                       </Form.Group>
                       <Form.Group className="mb-2">
-                        <Form.Label>Département</Form.Label>
+                        <Form.Label>{t("adminQuestionnaireBank.fieldDepartment")}</Form.Label>
                         <Form.Select
                           value={pDept}
                           onChange={(e) => {
@@ -384,38 +390,38 @@ const AdminQuestionnaireBank = () => {
                         </Form.Select>
                       </Form.Group>
                       <Form.Group className="mb-2">
-                        <Form.Label>Description</Form.Label>
+                        <Form.Label>{t("adminQuestionnaireBank.description")}</Form.Label>
                         <Form.Control as="textarea" rows={2} value={pDesc} onChange={(e) => setPDesc(e.target.value)} />
                       </Form.Group>
 
                       <div className="d-flex justify-content-between align-items-center mb-2">
-                        <Form.Label className="mb-0">Jalons (après la sortie)</Form.Label>
+                        <Form.Label className="mb-0">{t("adminQuestionnaireBank.milestonesSection")}</Form.Label>
                         <Button type="button" variant="outline-primary" size="sm" onClick={addMilestoneRow}>
-                          + Ajouter un jalon
+                          {t("adminQuestionnaireBank.addMilestone")}
                         </Button>
                       </div>
                       <p className="small text-muted mb-3">
-                        Pour chaque ligne : nombre de jours après la sortie (ex. 3 pour J+3) et le questionnaire à envoyer, choisi dans la liste des questionnaires de ce département.
+                        {t("adminQuestionnaireBank.milestonesHelp")}
                       </p>
 
                       {templatesForProtocolDept.length === 0 && (
                         <Alert variant="light" className="border py-2 small">
-                          Aucun questionnaire enregistré pour « {pDept} ». Créez d’abord des questionnaires dans l’onglet Questionnaires.
+                          {t("adminQuestionnaireBank.noTemplatesForDept", { dept: pDept })}
                         </Alert>
                       )}
 
                       {pMilestoneRows.map((row, idx) => (
                         <div key={row.uid} className="border rounded-3 p-3 mb-3 bg-light bg-opacity-50">
                           <div className="d-flex justify-content-between align-items-center mb-2">
-                            <span className="small text-muted fw-semibold">Jalon {idx + 1}</span>
+                            <span className="small text-muted fw-semibold">{t("adminQuestionnaireBank.milestoneHeading", { n: idx + 1 })}</span>
                             <Button type="button" variant="outline-danger" size="sm" onClick={() => removeMilestoneRow(row.uid)}>
-                              Retirer
+                              {t("adminQuestionnaireBank.remove")}
                             </Button>
                           </div>
                           <Row className="g-2">
                             <Col sm={4}>
                               <Form.Group>
-                                <Form.Label className="small">Jour (J+n)</Form.Label>
+                                <Form.Label className="small">{t("adminQuestionnaireBank.dayLabel")}</Form.Label>
                                 <Form.Control
                                   type="number"
                                   min={0}
@@ -426,15 +432,15 @@ const AdminQuestionnaireBank = () => {
                             </Col>
                             <Col sm={8}>
                               <Form.Group>
-                                <Form.Label className="small">Questionnaire</Form.Label>
+                                <Form.Label className="small">{t("adminQuestionnaireBank.questionnaireField")}</Form.Label>
                                 <Form.Select
                                   value={row.questionnaireTemplateId}
                                   onChange={(e) => updateMilestoneRow(row.uid, "questionnaireTemplateId", e.target.value)}
                                 >
-                                  <option value="">— Choisir —</option>
-                                  {templatesForProtocolDept.map((t) => (
-                                    <option key={t._id} value={t._id}>
-                                      {t.title}
+                                  <option value="">{t("adminQuestionnaireBank.choosePlaceholder")}</option>
+                                  {templatesForProtocolDept.map((tpl) => (
+                                    <option key={tpl._id} value={tpl._id}>
+                                      {tpl.title}
                                     </option>
                                   ))}
                                 </Form.Select>
@@ -445,7 +451,7 @@ const AdminQuestionnaireBank = () => {
                       ))}
 
                       <Button type="submit" variant="primary" className="mt-2" disabled={templatesForProtocolDept.length === 0}>
-                        Enregistrer
+                        {t("adminQuestionnaireBank.save")}
                       </Button>
                     </Form>
                   </Card.Body>
@@ -453,15 +459,15 @@ const AdminQuestionnaireBank = () => {
               </Col>
               <Col lg={7}>
                 <Card className="border-0 shadow-sm rounded-3">
-                  <Card.Header className="py-3 fw-semibold">Liste ({protocols.length})</Card.Header>
+                  <Card.Header className="py-3 fw-semibold">{t("adminQuestionnaireBank.listTitle", { count: protocols.length })}</Card.Header>
                   <Card.Body className="p-0">
                     <div className="table-responsive">
                       <Table hover size="sm" className="mb-0 align-middle">
                         <thead className="bg-light">
                           <tr>
-                            <th>Nom</th>
-                            <th>Département</th>
-                            <th>Jalons</th>
+                            <th>{t("adminQuestionnaireBank.thName")}</th>
+                            <th>{t("adminQuestionnaireBank.thDepartment")}</th>
+                            <th>{t("adminQuestionnaireBank.thMilestones")}</th>
                             <th />
                           </tr>
                         </thead>
@@ -470,10 +476,12 @@ const AdminQuestionnaireBank = () => {
                             <tr key={p._id}>
                               <td className="fw-medium">{p.name}</td>
                               <td>{p.department}</td>
-                              <td className="small">{(p.milestones || []).map((m) => `J+${m.dayOffset}`).join(", ") || "—"}</td>
+                              <td className="small">
+                                {(p.milestones || []).map((m) => t("adminQuestionnaireBank.milestoneDay", { n: m.dayOffset })).join(", ") || "—"}
+                              </td>
                               <td className="text-end">
                                 <Button variant="outline-danger" size="sm" onClick={() => delProtocol(p._id)}>
-                                  Supprimer
+                                  {t("adminQuestionnaireBank.delete")}
                                 </Button>
                               </td>
                             </tr>
