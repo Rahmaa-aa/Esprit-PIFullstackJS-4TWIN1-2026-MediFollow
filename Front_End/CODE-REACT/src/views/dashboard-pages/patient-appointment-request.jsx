@@ -1,15 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Table } from "react-bootstrap";
+import { useTranslation } from "react-i18next";
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from "react-bootstrap";
 import { appointmentApi, patientApi, doctorApi } from "../../services/api";
-
-const TYPES = [
-  { value: "checkup", label: "Consultation de suivi" },
-  { value: "lab", label: "Analyses" },
-  { value: "specialist", label: "Spécialiste" },
-  { value: "imaging", label: "Imagerie" },
-  { value: "physiotherapy", label: "Rééducation" },
-];
 
 function normalizePid(raw) {
   if (raw == null) return undefined;
@@ -18,7 +11,20 @@ function normalizePid(raw) {
 }
 
 const PatientAppointmentRequest = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const appointmentTypes = useMemo(
+    () => [
+      { value: "checkup", label: t("patientAppointmentRequest.typeCheckup") },
+      { value: "lab", label: t("patientAppointmentRequest.typeLab") },
+      { value: "specialist", label: t("patientAppointmentRequest.typeSpecialist") },
+      { value: "imaging", label: t("patientAppointmentRequest.typeImaging") },
+      { value: "physiotherapy", label: t("patientAppointmentRequest.typePhysiotherapy") },
+    ],
+    [t],
+  );
+
   const [patientUser, setPatientUser] = useState(() => {
     try {
       const s = localStorage.getItem("patientUser");
@@ -69,7 +75,7 @@ const PatientAppointmentRequest = () => {
         setMyAppointments(Array.isArray(all) ? all : []);
       } catch (e) {
         console.error(e);
-        setError("Impossible de charger les informations.");
+        setError(t("patientAppointmentRequest.loadError"));
       } finally {
         setLoadingDoctor(false);
       }
@@ -88,7 +94,11 @@ const PatientAppointmentRequest = () => {
     setSuggestedSlots([]);
     setSlotErrorCode("");
     try {
-      const doctorName = doctor.lastName ? `Dr. ${doctor.firstName || ""} ${doctor.lastName}`.trim() : doctor.firstName || "Médecin";
+      const doctorName = doctor.lastName
+        ? t("patientAppointmentRequest.doctorDisplay", {
+            name: `${doctor.firstName || ""} ${doctor.lastName}`.trim(),
+          })
+        : doctor.firstName || t("patientAppointmentRequest.doctorFallback");
       await appointmentApi.create({
         patientId: pid,
         doctorId: String(doctor._id || doctor.id),
@@ -113,10 +123,10 @@ const PatientAppointmentRequest = () => {
       setSlotErrorCode(code);
       if (code === "SLOT_UNAVAILABLE") {
         setSuggestedSlots(slots);
-        setError(err.message || "Ce créneau n’est pas disponible.");
+        setError(err.message || t("patientAppointmentRequest.slotUnavailable"));
       } else {
         setSuggestedSlots([]);
-        setError(err.message || "Envoi impossible. Réessayez.");
+        setError(err.message || t("patientAppointmentRequest.sendFailed"));
       }
     } finally {
       setSaving(false);
@@ -131,30 +141,24 @@ const PatientAppointmentRequest = () => {
         <Col>
           <Link to="/dashboard-pages/patient-dashboard" className="text-decoration-none small d-inline-flex align-items-center gap-1">
             <i className="ri-arrow-left-line"></i>
-            Retour au tableau de bord
+            {t("patientAppointmentRequest.backToDashboard")}
           </Link>
           <h4 className="text-primary fw-bold mt-2 mb-0">
             <i className="ri-calendar-schedule-line me-2"></i>
-            Demande de rendez-vous
+            {t("patientAppointmentRequest.title")}
           </h4>
-          <p className="text-muted small mb-0 mt-1">
-            Indiquez la date et l&apos;heure souhaitées avec votre médecin référent. L&apos;administration validera ou vous
-            proposera un autre créneau selon la disponibilité.
-          </p>
+          <p className="text-muted small mb-0 mt-1">{t("patientAppointmentRequest.intro")}</p>
         </Col>
       </Row>
 
       {loadingDoctor && (
         <div className="text-center py-5">
-          <Spinner animation="border" variant="primary" />
+          <Spinner animation="border" variant="primary" aria-hidden="true" />
         </div>
       )}
 
       {!loadingDoctor && !doctor && (
-        <Alert variant="warning">
-          Aucun médecin référent n&apos;est assigné à votre dossier. Contactez l&apos;administration pour associer un
-          médecin avant de demander un rendez-vous.
-        </Alert>
+        <Alert variant="warning">{t("patientAppointmentRequest.noDoctorWarning")}</Alert>
       )}
 
       {!loadingDoctor && doctor && (
@@ -174,9 +178,11 @@ const PatientAppointmentRequest = () => {
                     <i className="ri-stethoscope-line fs-4" />
                   </div>
                   <div>
-                    <h6 className="mb-0 fw-bold text-primary">Médecin référent</h6>
+                    <h6 className="mb-0 fw-bold text-primary">{t("patientAppointmentRequest.referringDoctor")}</h6>
                     <span className="text-dark fw-semibold">
-                      Dr. {doctor.firstName} {doctor.lastName}
+                      {t("patientAppointmentRequest.doctorDisplay", {
+                        name: `${doctor.firstName || ""} ${doctor.lastName || ""}`.trim(),
+                      })}
                     </span>
                     {doctor.specialty && <div className="text-muted small">{doctor.specialty}</div>}
                   </div>
@@ -185,14 +191,12 @@ const PatientAppointmentRequest = () => {
                 {error && <Alert variant="danger">{error}</Alert>}
                 {slotErrorCode === "SLOT_UNAVAILABLE" && suggestedSlots.length === 0 && error && (
                   <Alert variant="warning" className="mb-3">
-                    Aucun autre créneau libre n’a été trouvé pour les trois prochains mois enregistrés. Demandez au médecin
-                    de remplir le calendrier (menu Calendrier RDV) pour ce mois, et choisissez une heure identique à une
-                    ligne du calendrier (ex. 11:00).
+                    {t("patientAppointmentRequest.slotUnavailableNoAlternatives")}
                   </Alert>
                 )}
                 {suggestedSlots.length > 0 && (
                   <Alert variant="info" className="mb-3">
-                    <div className="fw-semibold mb-2">Créneaux libres proposés — choisissez-en un ou modifiez votre demande :</div>
+                    <div className="fw-semibold mb-2">{t("patientAppointmentRequest.suggestedSlotsTitle")}</div>
                     <div className="d-flex flex-wrap gap-2">
                       {suggestedSlots.map((s, i) => (
                         <Button
@@ -207,7 +211,7 @@ const PatientAppointmentRequest = () => {
                             setError("");
                           }}
                         >
-                          {s.date} à {s.time}
+                          {t("patientAppointmentRequest.slotButton", { date: s.date, time: s.time })}
                         </Button>
                       ))}
                     </div>
@@ -221,37 +225,37 @@ const PatientAppointmentRequest = () => {
                         setError("");
                       }}
                     >
-                      Fermer les suggestions
+                      {t("patientAppointmentRequest.slotsClose")}
                     </Button>
                   </Alert>
                 )}
-                {success && <Alert variant="success">Demande envoyée. Vous serez notifié après validation.</Alert>}
+                {success && <Alert variant="success">{t("patientAppointmentRequest.successAlert")}</Alert>}
 
                 <Form onSubmit={handleSubmit}>
                   <Form.Group className="mb-3">
-                    <Form.Label className="small fw-bold">Motif / titre *</Form.Label>
+                    <Form.Label className="small fw-bold">{t("patientAppointmentRequest.fieldTitle")}</Form.Label>
                     <Form.Control
                       required
-                      placeholder="Ex. Suivi post-opératoire"
+                      placeholder={t("patientAppointmentRequest.placeholderTitle")}
                       value={form.title}
                       onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                     />
                   </Form.Group>
                   <Row className="g-2 mb-3">
                     <Col md={6}>
-                      <Form.Label className="small fw-bold">Type</Form.Label>
+                      <Form.Label className="small fw-bold">{t("patientAppointmentRequest.fieldType")}</Form.Label>
                       <Form.Select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
-                        {TYPES.map((t) => (
-                          <option key={t.value} value={t.value}>
-                            {t.label}
+                        {appointmentTypes.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
                           </option>
                         ))}
                       </Form.Select>
                     </Col>
                     <Col md={6}>
-                      <Form.Label className="small fw-bold">Lieu (optionnel)</Form.Label>
+                      <Form.Label className="small fw-bold">{t("patientAppointmentRequest.fieldLocationOptional")}</Form.Label>
                       <Form.Control
-                        placeholder="Cabinet, téléconsultation…"
+                        placeholder={t("patientAppointmentRequest.placeholderLocation")}
                         value={form.location}
                         onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
                       />
@@ -259,7 +263,7 @@ const PatientAppointmentRequest = () => {
                   </Row>
                   <Row className="g-2 mb-3">
                     <Col md={6}>
-                      <Form.Label className="small fw-bold">Date souhaitée *</Form.Label>
+                      <Form.Label className="small fw-bold">{t("patientAppointmentRequest.fieldDate")}</Form.Label>
                       <Form.Control
                         type="date"
                         required
@@ -268,22 +272,22 @@ const PatientAppointmentRequest = () => {
                       />
                     </Col>
                     <Col md={6}>
-                      <Form.Label className="small fw-bold">Heure souhaitée *</Form.Label>
+                      <Form.Label className="small fw-bold">{t("patientAppointmentRequest.fieldTime")}</Form.Label>
                       <Form.Control
                         type="time"
                         required
                         value={form.time}
                         onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
                       />
-                      <Form.Text className="text-muted">Doit correspondre à un créneau ouvert par votre médecin.</Form.Text>
+                      <Form.Text className="text-muted">{t("patientAppointmentRequest.timeHelp")}</Form.Text>
                     </Col>
                   </Row>
                   <Form.Group className="mb-4">
-                    <Form.Label className="small fw-bold">Message pour l&apos;équipe (optionnel)</Form.Label>
+                    <Form.Label className="small fw-bold">{t("patientAppointmentRequest.fieldMessage")}</Form.Label>
                     <Form.Control
                       as="textarea"
                       rows={3}
-                      placeholder="Précisions sur votre demande…"
+                      placeholder={t("patientAppointmentRequest.placeholderMessage")}
                       value={form.patientMessage}
                       onChange={(e) => setForm((f) => ({ ...f, patientMessage: e.target.value }))}
                     />
@@ -291,13 +295,13 @@ const PatientAppointmentRequest = () => {
                   <Button type="submit" variant="primary" disabled={saving} className="px-4">
                     {saving ? (
                       <>
-                        <Spinner size="sm" className="me-2" />
-                        Envoi…
+                        <Spinner size="sm" className="me-2" aria-hidden="true" />
+                        {t("patientAppointmentRequest.sending")}
                       </>
                     ) : (
                       <>
                         <i className="ri-send-plane-fill me-2"></i>
-                        Envoyer la demande
+                        {t("patientAppointmentRequest.submitRequest")}
                       </>
                     )}
                   </Button>
@@ -311,10 +315,10 @@ const PatientAppointmentRequest = () => {
               <Card.Body className="p-4">
                 <h6 className="fw-bold text-primary mb-3">
                   <i className="ri-time-line me-2"></i>
-                  Demandes en attente de validation
+                  {t("patientAppointmentRequest.pendingSectionTitle")}
                 </h6>
                 {pendingList.length === 0 ? (
-                  <p className="text-muted small mb-0">Aucune demande en cours.</p>
+                  <p className="text-muted small mb-0">{t("patientAppointmentRequest.pendingEmpty")}</p>
                 ) : (
                   <div className="d-flex flex-column gap-3">
                     {pendingList.map((a) => (
@@ -325,10 +329,13 @@ const PatientAppointmentRequest = () => {
                       >
                         <div className="fw-semibold small">{a.title}</div>
                         <div className="text-muted" style={{ fontSize: "0.8rem" }}>
-                          Souhait : {a.requestedDate || a.date}{" "}
-                          {a.requestedTime || a.time ? `à ${a.requestedTime || a.time}` : ""}
+                          {t("patientAppointmentRequest.requestedPrefix")}{" "}
+                          {a.requestedDate || a.date}
+                          {a.requestedTime || a.time
+                            ? ` ${t("patientAppointmentRequest.atTime", { time: a.requestedTime || a.time })}`
+                            : ""}
                         </div>
-                        <span className="badge bg-warning text-dark mt-2">En attente</span>
+                        <span className="badge bg-warning text-dark mt-2">{t("patientAppointmentRequest.badgePending")}</span>
                       </div>
                     ))}
                   </div>
