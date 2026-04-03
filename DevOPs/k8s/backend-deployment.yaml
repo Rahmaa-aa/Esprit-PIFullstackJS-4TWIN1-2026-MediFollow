@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medifollow-backend-deployment
+  labels:
+    app: medifollow-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: medifollow-backend
+  template:
+    metadata:
+      labels:
+        app: medifollow-backend
+    spec:
+      containers:
+      - name: medifollow-backend
+        # This is the exact name Jenkins pushes to DockerHub in the Jenkinsfile-back-cd
+        image: medifollow-back:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - secretRef:
+            name: medifollow-secrets

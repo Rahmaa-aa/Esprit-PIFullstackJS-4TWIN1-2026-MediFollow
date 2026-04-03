@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Checkout Repository') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build Docker Image (Node)') {
+            steps {
+                dir('backend') {
+                    echo "Building Backend Docker Image..."
+                    sh 'docker build -t medifollow-back:latest .'
+                }
+            }
+        }
+        stage('Push to DockerHub') {
+            steps {
+                echo "Pushing backend to DockerHub..."
+                // Ready for Phase 4 credentials
+            }
+        }
+        stage('Deploy to Production (Render)') {
+            steps {
+                echo "Triggering Render via Webhook..."
+            }
+        }
+        stage('Deploy to Staging (Kubeadm)') {
+            steps {
+                echo "Applying Kubernetes YAML to local Kubeadm cluster..."
+                // Ready for Phase 3 K8s YAML deployment
+            }
+        }
+    }
+}

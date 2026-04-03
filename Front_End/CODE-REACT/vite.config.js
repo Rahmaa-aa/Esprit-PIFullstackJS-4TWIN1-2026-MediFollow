@@ -23,8 +23,12 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      outDir: "build",
+      outDir: "dist",
       minify: true,
+    },
+    test: {
+      environment: "jsdom",
+      globals: true,
     },
   };
 });

@@ -40,3 +40,6 @@ backend/dist/
 
 # HTML template (static assets not needed)
 Front_End/CODE-REACT/hospital-website-template/
+
+# Vagrant specific
+.vagrant/

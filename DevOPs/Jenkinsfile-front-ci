@@ -1,0 +1,37 @@
+pipeline {
+    agent any
+    
+    // This tells Jenkins to use the NodeJS tool we configured earlier
+    tools {
+        nodejs 'Node'
+    }
+    
+    stages {
+        stage('Checkout Repository') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Install Front-End Dependencies') {
+            steps {
+                dir('Front_End/CODE-REACT') {
+                    sh 'npm install'
+                }
+            }
+        }
+        stage('Run React Unit Tests') {
+            steps {
+                dir('Front_End/CODE-REACT') {
+                    sh 'npm run test'
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            // Automatically trigger the Frontend CD pipeline when CI passes!
+            build job: 'MediFollow-Front-CD', wait: false
+        }
+    }
+}

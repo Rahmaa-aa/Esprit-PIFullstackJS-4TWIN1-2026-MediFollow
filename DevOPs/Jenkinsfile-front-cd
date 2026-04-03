@@ -1,0 +1,31 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Checkout Repository') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build Docker Image (Nginx)') {
+            steps {
+                dir('Front_End/CODE-REACT') {
+                    echo "Building Vercel/Nginx Docker Image..."
+                    sh 'docker build -t medifollow-front:latest .'
+                }
+            }
+        }
+        stage('Push to DockerHub') {
+            steps {
+                echo "Pushing frontend to DockerHub..."
+                // Ready for Phase 4 Docker credentials
+            }
+        }
+        stage('Deploy to Vercel') {
+            steps {
+                echo "Triggering Vercel deployment..."
+                // Ready for Phase 4 Vercel CLI Token
+            }
+        }
+    }
+}

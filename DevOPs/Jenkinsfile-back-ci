@@ -1,0 +1,42 @@
+pipeline {
+    agent any
+    
+    tools {
+        nodejs 'Node'
+    }
+    
+    stages {
+        stage('Checkout Repository') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Install Back-End Dependencies') {
+            steps {
+                dir('backend') {
+                    sh 'npm install'
+                }
+            }
+        }
+        stage('Run NestJS Unit Tests') {
+            steps {
+                dir('backend') {
+                    sh 'npm run test'
+                }
+            }
+        }
+        stage('SonarQube Security Scan') {
+            steps {
+                echo "Running Code Quality Checks..."
+                // Ready for Phase 4 Sonar Token
+            }
+        }
+    }
+    
+    post {
+        success {
+            // Automatically trigger the Backend CD pipeline when CI passes!
+            build job: 'MediFollow-Back-CD', wait: false
+        }
+    }
+}
