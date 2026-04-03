@@ -401,6 +401,43 @@
       "asNeeded": "As needed"
     }
   },
+  "doctorAvailabilityCalendar": {
+    "loginHint": "Sign in as a doctor.",
+    "back": "Back",
+    "title": "Availability calendar",
+    "intro": "Appointments confirmed by administration appear automatically on each day. Click a day to edit your availability slots (from … to …), split into 30-minute slots for new requests.",
+    "monthLabel": "Month",
+    "saveMonth": "Save month",
+    "saving": "Saving…",
+    "loadError": "Could not load.",
+    "saveErrorGeneric": "Could not save.",
+    "saveErrorAuthHint": "{{msg}} If you are also logged in as a patient, sign out the patient or use a private window for the doctor account.",
+    "needAtLeastOneSlot": "Add at least one time range on a day (click a day on the calendar) then save.",
+    "saveSuccess": "Availability saved.",
+    "saveSuccessSummary": "{{count}} day(s) with time ranges saved.",
+    "weekdaysShort": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "moreAppointments": "+{{count}} appts",
+    "slotLabel": "slot",
+    "slotsLabel": "slots",
+    "rdvBadge": "{{count}} appts",
+    "modalTitle": "Time ranges — {{date}}",
+    "confirmedAppointmentsTitle": "Confirmed appointments (administration)",
+    "modalHelp": "Enter one or more continuous ranges (e.g. 09:00 → 12:00). The end is exclusive: the last slot starts 30 minutes before the end time.",
+    "noSlotsClosed": "No slots — this day is closed.",
+    "from": "From",
+    "to": "To",
+    "addRange": "Add a time range",
+    "close": "Close",
+    "fallbackPatient": "Patient"
+  },
   "nurseProfile": {
     "loadError": "Nurse not found.",
     "loading": "Loading…",

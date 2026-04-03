@@ -401,6 +401,43 @@
       "asNeeded": "Si besoin"
     }
   },
+  "doctorAvailabilityCalendar": {
+    "loginHint": "Connectez-vous en tant que médecin.",
+    "back": "Retour",
+    "title": "Calendrier de disponibilités",
+    "intro": "Les rendez-vous validés par l'administration s'affichent automatiquement sur chaque jour. Cliquez un jour pour modifier vos plages de disponibilité (de … à …), découpées en créneaux de 30 minutes pour les nouvelles demandes.",
+    "monthLabel": "Mois",
+    "saveMonth": "Enregistrer le mois",
+    "saving": "Enregistrement…",
+    "loadError": "Chargement impossible.",
+    "saveErrorGeneric": "Enregistrement impossible.",
+    "saveErrorAuthHint": "{{msg}} Si vous êtes aussi connecté comme patient, déconnectez le patient ou utilisez une fenêtre privée pour le compte médecin.",
+    "needAtLeastOneSlot": "Ajoutez au moins une plage horaire sur un jour (cliquez un jour du calendrier) puis enregistrez.",
+    "saveSuccess": "Disponibilités enregistrées.",
+    "saveSuccessSummary": "{{count}} jour(s) avec plages enregistré(s).",
+    "weekdaysShort": {
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mer",
+      "thu": "Jeu",
+      "fri": "Ven",
+      "sat": "Sam",
+      "sun": "Dim"
+    },
+    "moreAppointments": "+{{count}} RDV",
+    "slotLabel": "plage",
+    "slotsLabel": "plages",
+    "rdvBadge": "{{count}} RDV",
+    "modalTitle": "Plages du {{date}}",
+    "confirmedAppointmentsTitle": "Rendez-vous confirmés (administration)",
+    "modalHelp": "Indiquez une ou plusieurs plages continues (ex. 09:00 → 12:00). La fin est exclusive : le dernier créneau commence 30 min avant l'heure de fin.",
+    "noSlotsClosed": "Aucune plage — ce jour est considéré comme fermé.",
+    "from": "De",
+    "to": "À",
+    "addRange": "Ajouter une plage",
+    "close": "Fermer",
+    "fallbackPatient": "Patient"
+  },
   "nurseProfile": {
     "loadError": "Infirmier(ère) introuvable.",
     "loading": "Chargement…",

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, Col, Container, Form, Row, Button, Alert, Spinner, Modal } from "react-bootstrap";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { doctorAvailabilityApi, appointmentApi } from "../../services/api";
 
 function daysInMonth(yearMonth) {
@@ -78,19 +79,19 @@ function calendarCells(yearMonth) {
   return cells;
 }
 
-const WEEK_DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+const WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
 const emptyRange = () => ({ from: "09:00", to: "12:00" });
 
-function patientLabel(p) {
+function patientLabel(p, fallbackPatient) {
   if (p && typeof p === "object") {
-    return `${p.firstName || ""} ${p.lastName || ""}`.trim() || p.email || "Patient";
+    return `${p.firstName || ""} ${p.lastName || ""}`.trim() || p.email || fallbackPatient;
   }
-  return "Patient";
+  return fallbackPatient;
 }
 
 /** Regroupe les RDV API par date YYYY-MM-DD pour le mois affiché. */
-function groupAppointmentsByDate(rows, ds) {
+function groupAppointmentsByDate(rows, ds, fallbackPatient) {
   const map = {};
   ds.forEach((d) => {
     map[d] = [];
@@ -103,13 +104,14 @@ function groupAppointmentsByDate(rows, ds) {
       _id: row._id,
       title: row.title || "",
       time: row.time || "",
-      patientLabel: patientLabel(row.patientId),
+      patientLabel: patientLabel(row.patientId, fallbackPatient),
     });
   });
   return map;
 }
 
 const DoctorAvailabilityCalendar = () => {
+  const { t, i18n } = useTranslation();
   const [doctorUser] = useState(() => {
     try {
       const s = localStorage.getItem("doctorUser");
@@ -135,6 +137,25 @@ const DoctorAvailabilityCalendar = () => {
 
   const dates = useMemo(() => monthDates(yearMonth), [yearMonth]);
   const cells = useMemo(() => calendarCells(yearMonth), [yearMonth]);
+
+  const fallbackPatient = t("doctorAvailabilityCalendar.fallbackPatient");
+
+  const modalDateFormatted = useMemo(() => {
+    if (!modalDate) return "";
+    const y = modalDate.slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(y)) return modalDate;
+    try {
+      const loc = i18n.language?.startsWith("ar") ? "ar-TN" : i18n.language?.startsWith("fr") ? "fr-FR" : "en-US";
+      return new Date(`${y}T12:00:00`).toLocaleDateString(loc, {
+        weekday: "short",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch {
+      return y.split("-").reverse().join("/");
+    }
+  }, [modalDate, i18n.language]);
 
   const localToday = useMemo(() => {
     const d = new Date();
@@ -176,10 +197,10 @@ const DoctorAvailabilityCalendar = () => {
         ]);
         if (!cancelled) {
           loadMonthIntoState(raw, ds);
-          setAppointmentsByDate(groupAppointmentsByDate(appts, ds));
+          setAppointmentsByDate(groupAppointmentsByDate(appts, ds, fallbackPatient));
         }
       } catch (e) {
-        if (!cancelled) setError(e.message || "Chargement impossible.");
+        if (!cancelled) setError(e.message || t("doctorAvailabilityCalendar.loadError"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -187,7 +208,7 @@ const DoctorAvailabilityCalendar = () => {
     return () => {
       cancelled = true;
     };
-  }, [doctorUser, yearMonth, loadMonthIntoState]);
+  }, [doctorUser, yearMonth, loadMonthIntoState, t, fallbackPatient]);
 
   const shiftMonth = (delta) => {
     const [y, m] = yearMonth.split("-").map(Number);
@@ -238,29 +259,25 @@ const DoctorAvailabilityCalendar = () => {
         if (ranges.length) slots.push({ date: d, ranges });
       });
       if (slots.length === 0) {
-        setError(
-          "Ajoutez au moins une plage horaire sur un jour (cliquez un jour du calendrier) puis enregistrez."
-        );
+        setError(t("doctorAvailabilityCalendar.needAtLeastOneSlot"));
         setSaving(false);
         return;
       }
       await doctorAvailabilityApi.saveMyMonth(yearMonth, slots);
       setSuccess(true);
-      setSavedSummary(`${slots.length} jour(s) avec plages enregistré(s).`);
+      setSavedSummary(t("doctorAvailabilityCalendar.saveSuccessSummary", { count: slots.length }));
       const ds = monthDates(yearMonth);
       const [raw, appts] = await Promise.all([
         doctorAvailabilityApi.getMyMonth(yearMonth),
         appointmentApi.getConfirmedForDoctorMonth(yearMonth).catch(() => []),
       ]);
       loadMonthIntoState(raw, ds);
-      setAppointmentsByDate(groupAppointmentsByDate(appts, ds));
+      setAppointmentsByDate(groupAppointmentsByDate(appts, ds, fallbackPatient));
       setModalDate(null);
     } catch (err) {
-      const msg = err.message || "Enregistrement impossible.";
+      const msg = err.message || t("doctorAvailabilityCalendar.saveErrorGeneric");
       if (err.status === 401 || err.status === 403) {
-        setError(
-          `${msg} Si vous êtes aussi connecté comme patient, déconnectez le patient ou utilisez une fenêtre privée pour le compte médecin.`
-        );
+        setError(t("doctorAvailabilityCalendar.saveErrorAuthHint", { msg }));
       } else {
         setError(msg);
       }
@@ -274,10 +291,10 @@ const DoctorAvailabilityCalendar = () => {
   if (!doctorUser) {
     return (
       <Container className="py-5">
-        <p className="text-muted text-center">Connectez-vous en tant que médecin.</p>
+        <p className="text-muted text-center">{t("doctorAvailabilityCalendar.loginHint")}</p>
         <div className="text-center">
           <Link to="/auth/sign-in" className="btn btn-primary">
-            Connexion
+            {t("doctorMyPatients.signIn")}
           </Link>
         </div>
       </Container>
@@ -290,17 +307,13 @@ const DoctorAvailabilityCalendar = () => {
         <Col>
           <Link to="/dashboard" className="text-decoration-none small d-inline-flex align-items-center gap-1">
             <i className="ri-arrow-left-line"></i>
-            Retour
+            {t("doctorAvailabilityCalendar.back")}
           </Link>
           <h4 className="text-primary fw-bold mt-2 mb-0">
             <i className="ri-calendar-2-line me-2"></i>
-            Calendrier de disponibilités
+            {t("doctorAvailabilityCalendar.title")}
           </h4>
-          <p className="text-muted small mb-0 mt-1">
-            Les <strong>rendez-vous validés par l&apos;administration</strong> s&apos;affichent automatiquement sur chaque
-            jour. Cliquez un jour pour modifier vos <strong>plages de disponibilité</strong> (de … à …), découpées en
-            créneaux de 30 minutes pour les nouvelles demandes.
-          </p>
+          <p className="text-muted small mb-0 mt-1">{t("doctorAvailabilityCalendar.intro")}</p>
         </Col>
       </Row>
 
@@ -319,7 +332,7 @@ const DoctorAvailabilityCalendar = () => {
                     </Button>
                   </Col>
                   <Col md={4}>
-                    <Form.Label className="small fw-bold">Mois</Form.Label>
+                    <Form.Label className="small fw-bold">{t("doctorAvailabilityCalendar.monthLabel")}</Form.Label>
                     <Form.Control type="month" value={yearMonth} onChange={(e) => setYearMonth(e.target.value)} />
                   </Col>
                   <Col md="auto">
@@ -327,12 +340,12 @@ const DoctorAvailabilityCalendar = () => {
                       {saving ? (
                         <>
                           <Spinner size="sm" className="me-2" />
-                          Enregistrement…
+                          {t("doctorAvailabilityCalendar.saving")}
                         </>
                       ) : (
                         <>
                           <i className="ri-save-line me-2"></i>
-                          Enregistrer le mois
+                          {t("doctorAvailabilityCalendar.saveMonth")}
                         </>
                       )}
                     </Button>
@@ -342,7 +355,7 @@ const DoctorAvailabilityCalendar = () => {
                 {error && <Alert variant="danger">{error}</Alert>}
                 {success && (
                   <Alert variant="success">
-                    Disponibilités enregistrées. {savedSummary}
+                    {t("doctorAvailabilityCalendar.saveSuccess")} {savedSummary}
                   </Alert>
                 )}
 
@@ -356,9 +369,9 @@ const DoctorAvailabilityCalendar = () => {
                       className="d-grid text-center small fw-semibold text-muted mb-2"
                       style={{ gridTemplateColumns: "repeat(7, 1fr)", gap: "6px" }}
                     >
-                      {WEEK_DAYS.map((w) => (
-                        <div key={w} className="py-2">
-                          {w}
+                      {WEEKDAY_KEYS.map((k) => (
+                        <div key={k} className="py-2">
+                          {t(`doctorAvailabilityCalendar.weekdaysShort.${k}`)}
                         </div>
                       ))}
                     </div>
@@ -417,7 +430,9 @@ const DoctorAvailabilityCalendar = () => {
                                   </div>
                                 ))}
                                 {rdv.length > 2 && (
-                                  <div className="text-muted">+{rdv.length - 2} RDV</div>
+                                  <div className="text-muted">
+                                    {t("doctorAvailabilityCalendar.moreAppointments", { count: rdv.length - 2 })}
+                                  </div>
                                 )}
                               </div>
                               <div className="d-flex flex-wrap gap-1 mt-auto pt-1">
@@ -429,12 +444,15 @@ const DoctorAvailabilityCalendar = () => {
                                       background: "linear-gradient(135deg, #089bab, #0d9488)",
                                     }}
                                   >
-                                    {nPlages} plage{nPlages > 1 ? "s" : ""}
+                                    {nPlages}{" "}
+                                    {nPlages === 1
+                                      ? t("doctorAvailabilityCalendar.slotLabel")
+                                      : t("doctorAvailabilityCalendar.slotsLabel")}
                                   </span>
                                 )}
                                 {hasRdv && (
                                   <span className="badge bg-warning text-dark rounded-pill" style={{ fontSize: "0.6rem" }}>
-                                    {rdv.length} RDV
+                                    {t("doctorAvailabilityCalendar.rdvBadge", { count: rdv.length })}
                                   </span>
                                 )}
                               </div>
@@ -455,7 +473,7 @@ const DoctorAvailabilityCalendar = () => {
         <Modal.Header closeButton className="border-0">
           <Modal.Title className="text-primary fs-6">
             <i className="ri-time-line me-2"></i>
-            Plages du {modalDate ? modalDate.split("-").reverse().join("/") : ""}
+            {t("doctorAvailabilityCalendar.modalTitle", { date: modalDateFormatted })}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -463,7 +481,7 @@ const DoctorAvailabilityCalendar = () => {
             <div className="mb-4 p-3 rounded-3 border" style={{ background: "#fffbeb", borderColor: "#fcd34d" }}>
               <div className="small fw-bold text-dark mb-2">
                 <i className="ri-calendar-check-line me-1"></i>
-                Rendez-vous confirmés (administration)
+                {t("doctorAvailabilityCalendar.confirmedAppointmentsTitle")}
               </div>
               <ul className="list-unstyled mb-0 small">
                 {modalAppointments.map((a) => (
@@ -475,17 +493,14 @@ const DoctorAvailabilityCalendar = () => {
               </ul>
             </div>
           )}
-          <p className="small text-muted mb-3">
-            Indiquez une ou plusieurs plages continues (ex. 09:00 → 12:00). La fin est exclusive : le dernier créneau
-            commence 30 min avant l&apos;heure de fin.
-          </p>
+          <p className="small text-muted mb-3">{t("doctorAvailabilityCalendar.modalHelp")}</p>
           {rangesForModal.length === 0 ? (
-            <p className="text-muted small">Aucune plage — ce jour est considéré comme fermé.</p>
+            <p className="text-muted small">{t("doctorAvailabilityCalendar.noSlotsClosed")}</p>
           ) : (
             rangesForModal.map((r, i) => (
               <Row key={i} className="g-2 align-items-end mb-3">
                 <Col xs={5} md={4}>
-                  <Form.Label className="small fw-bold">De</Form.Label>
+                  <Form.Label className="small fw-bold">{t("doctorAvailabilityCalendar.from")}</Form.Label>
                   <Form.Control
                     type="time"
                     step={1800}
@@ -494,7 +509,7 @@ const DoctorAvailabilityCalendar = () => {
                   />
                 </Col>
                 <Col xs={5} md={4}>
-                  <Form.Label className="small fw-bold">À</Form.Label>
+                  <Form.Label className="small fw-bold">{t("doctorAvailabilityCalendar.to")}</Form.Label>
                   <Form.Control
                     type="time"
                     step={1800}
@@ -512,12 +527,12 @@ const DoctorAvailabilityCalendar = () => {
           )}
           <Button type="button" variant="outline-primary" size="sm" onClick={addModalRange}>
             <i className="ri-add-line me-1"></i>
-            Ajouter une plage
+            {t("doctorAvailabilityCalendar.addRange")}
           </Button>
         </Modal.Body>
         <Modal.Footer className="border-0">
           <Button variant="secondary" onClick={() => setModalDate(null)}>
-            Fermer
+            {t("doctorAvailabilityCalendar.close")}
           </Button>
         </Modal.Footer>
       </Modal>
