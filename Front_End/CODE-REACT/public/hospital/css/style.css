@@ -123,6 +123,17 @@
     transform: rotate(15deg);
 }
 
+/* Landing MediFollow — ovale un peu plus grand pour accueillir les grosses icônes */
+.hospital-home .service-item .service-icon {
+    width: 175px;
+    height: 118px;
+}
+
+.hospital-home .service-item .service-icon .landing-feature-icon {
+    font-size: clamp(3rem, 5vw, 4.25rem);
+    line-height: 1;
+}
+
 .service-item a.btn {
     position: absolute;
     width: 60px;
@@ -293,4 +304,221 @@
     color: var(--primary) !important;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
     border-bottom-color: var(--primary) !important;
+}
+
+/* About page — hero secondaire (même voile / couleurs que l’accueil) */
+.hospital-home .hero-header.landing-hero.about-page-hero {
+    min-height: 340px;
+    margin-bottom: 0;
+}
+
+@media (min-width: 992px) {
+    .hospital-home .hero-header.landing-hero.about-page-hero {
+        min-height: 380px;
+    }
+}
+
+.hospital-home .about-page-hero h1.display-3 {
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.hospital-home .about-page-hero .lead.text-white {
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55), 0 2px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* Cartes mission : même ovale primary, hauteur fluide (sans bouton flottant) */
+.hospital-home .about-mission-item.service-item {
+    height: auto;
+    min-height: 300px;
+    padding-bottom: 2rem;
+}
+
+.hospital-home .about-mission-item.service-item .service-icon {
+    width: 150px;
+    height: 100px;
+}
+
+.hospital-home .about-mission-item .about-mission-icon {
+    font-size: clamp(2.25rem, 4vw, 3rem);
+    line-height: 1;
+}
+
+/* About — fusion principes + engagements sur fond clair */
+.hospital-home .about-engage-in-light {
+    border-top: 1px solid rgba(53, 79, 142, 0.12);
+}
+
+/* About — principes : cartes blanches, icônes ovales comme la landing */
+.hospital-home .about-values-section {
+    background-color: var(--light);
+}
+
+.hospital-home .about-value-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1.25rem rgba(29, 42, 77, 0.08);
+    border: 1px solid rgba(53, 79, 142, 0.08);
+    padding: 2rem 1.5rem 2.25rem;
+    height: 100%;
+    transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+@media (min-width: 992px) {
+    .hospital-home .about-value-card {
+        padding: 2.5rem 1.75rem 2.5rem;
+    }
+}
+
+.hospital-home .about-value-card:hover {
+    box-shadow: 0 0.75rem 1.75rem rgba(29, 42, 77, 0.12);
+    transform: translateY(-2px);
+}
+
+.hospital-home .about-value-card .service-icon {
+    width: 150px;
+    height: 100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.hospital-home .about-value-card .about-value-icon {
+    font-size: clamp(2.5rem, 4.5vw, 3.25rem);
+    line-height: 1;
+}
+
+.hospital-home .about-value-card .about-value-title {
+    color: var(--dark);
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.35;
+}
+
+.hospital-home .about-value-card .about-value-text {
+    color: #5a6578;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 0;
+}
+
+/* About — engagements (fond clair, même section que principes) */
+.hospital-home .about-engage-grid {
+    --engage-gap: 1.25rem;
+}
+
+.hospital-home .about-engage-card--light {
+    background: #fff;
+    border: 1px solid rgba(53, 79, 142, 0.1);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.35rem 1rem rgba(29, 42, 77, 0.06);
+    padding: 1.5rem 1rem;
+    min-height: 132px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+
+@media (min-width: 768px) {
+    .hospital-home .about-engage-card--light {
+        padding: 1.75rem 1.25rem;
+        min-height: 148px;
+    }
+}
+
+.hospital-home .about-engage-card--light:hover {
+    box-shadow: 0 0.5rem 1.25rem rgba(29, 42, 77, 0.1);
+    border-color: rgba(19, 197, 221, 0.35);
+    transform: translateY(-2px);
+}
+
+.hospital-home .about-engage-card-icon--light {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 50%;
+    background: rgba(19, 197, 221, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.45rem;
+    margin-bottom: 0.85rem;
+    flex-shrink: 0;
+}
+
+.hospital-home .about-engage-card-icon--light i {
+    color: var(--primary);
+}
+
+.hospital-home .about-engage-card-text--light {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--dark);
+    margin: 0;
+    max-width: 15rem;
+}
+
+@media (min-width: 992px) {
+    .hospital-home .about-engage-card-text--light {
+        font-size: 0.95rem;
+        max-width: none;
+    }
+}
+
+/* About — CTA bas : boutons équilibrés sur le cyan */
+.hospital-home .about-cta-bar .about-cta-lead {
+    max-width: 36rem;
+}
+
+.hospital-home .about-cta-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+}
+
+@media (min-width: 576px) {
+    .hospital-home .about-cta-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+@media (min-width: 992px) {
+    .hospital-home .about-cta-actions {
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        min-width: 220px;
+    }
+}
+
+.hospital-home .about-cta-btn-home {
+    background: #fff !important;
+    color: var(--dark) !important;
+    border: 2px solid #fff !important;
+    font-weight: 700 !important;
+    padding: 0.65rem 1.75rem !important;
+    box-shadow: 0 4px 14px rgba(29, 42, 77, 0.15);
+}
+
+.hospital-home .about-cta-btn-home:hover {
+    background: var(--light) !important;
+    color: var(--dark) !important;
+    border-color: var(--light) !important;
+}
+
+.hospital-home .about-cta-btn-signin {
+    border-width: 2px !important;
+    font-weight: 700 !important;
+    padding: 0.65rem 1.75rem !important;
+    color: #fff !important;
+}
+
+.hospital-home .about-cta-btn-signin:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #fff !important;
 }

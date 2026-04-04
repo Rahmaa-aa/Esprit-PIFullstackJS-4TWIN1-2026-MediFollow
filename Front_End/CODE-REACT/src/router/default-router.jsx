@@ -137,6 +137,7 @@ import PrivacySetting from "../views/extra-pages/privacy-setting"
 import TermsOfService from "../views/extra-pages/terms-of-service"
 import BlankLayout from "../layouts/blank-layout"
 import Home from "../views/home"
+import About from "../views/about"
 import SignIn from "../views/auth/sign-in"
 import ConformMail from "../views/auth/confirm-mail"
 import SignUp from "../views/auth/sign-up"
@@ -620,6 +621,10 @@ export const BlankLayoutRouter = [
       {
         path: '/',
         element: <Home />
+      },
+      {
+        path: '/about',
+        element: <About />
       },
       //  ------ Auth Route ------ 
       {
