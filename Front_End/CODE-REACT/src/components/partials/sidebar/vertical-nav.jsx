@@ -474,6 +474,12 @@ const VerticalNav = () => {
                                 <span className="item-name">{t("sidebar.auditorDashboard")}</span>
                             </Link>
                         </Nav.Item>
+                        <Nav.Item as="li">
+                            <Link to="/auditor/logs" className={`nav-link ${location.pathname === "/auditor/logs" ? "active" : ""}`}>
+                                <i className="ri-file-list-3-line"></i>
+                                <span className="item-name">{t("sidebar.auditorLogs")}</span>
+                            </Link>
+                        </Nav.Item>
                     </>
                 )}
                 {adminUser && !isAuditor && (
@@ -1222,6 +1228,12 @@ const VerticalNav = () => {
                             <Link to="/auditor/dashboard" className={`nav-link ${location.pathname === "/auditor/dashboard" ? "active" : ""}`}>
                                 <i className="ri-bar-chart-box-fill"></i>
                                 <span className="item-name">{t("sidebar.auditorDashboard")}</span>
+                            </Link>
+                        </Nav.Item>
+                        <Nav.Item as="li">
+                            <Link to="/auditor/logs" className={`nav-link ${location.pathname === "/auditor/logs" ? "active" : ""}`}>
+                                <i className="ri-file-list-3-line"></i>
+                                <span className="item-name">{t("sidebar.auditorLogs")}</span>
                             </Link>
                         </Nav.Item>
                         <Nav.Item as="li">

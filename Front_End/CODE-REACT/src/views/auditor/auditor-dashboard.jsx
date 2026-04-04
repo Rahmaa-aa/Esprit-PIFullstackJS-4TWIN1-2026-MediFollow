@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Row, Col, Table, Spinner } from "react-bootstrap";
 import { useTranslation } from "react-i18next";
 import {
@@ -43,11 +44,28 @@ function categoryColor(cat) {
   return CATEGORY_COLORS[cat] || CATEGORY_COLORS.other;
 }
 
+function labelRole(t, role) {
+  if (!role) return t("auditorLogs.noValue");
+  return t(`auditorLogs.roleLabels.${role}`, { defaultValue: role });
+}
+
+function labelCategory(t, cat) {
+  if (!cat) return t("auditorLogs.noValue");
+  return t(`auditorDashboard.categoryLabels.${cat}`, { defaultValue: cat });
+}
+
 const AuditorDashboard = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
+
+  const dateLocale = useMemo(() => {
+    const l = (i18n.language || "en").split("-")[0];
+    if (l === "fr") return "fr-FR";
+    if (l === "ar") return "ar-SA";
+    return "en-US";
+  }, [i18n.language]);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,7 +74,7 @@ const AuditorDashboard = () => {
         const res = await auditorApi.getDashboard();
         if (!cancelled) setData(res);
       } catch (e) {
-        if (!cancelled) setError(e.message || "Error");
+        if (!cancelled) setError(e.message || t("auditorDashboard.errorGeneric"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -64,7 +82,7 @@ const AuditorDashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const lineChartData = useMemo(() => {
     const series = data?.charts?.activityOverTime || [];
@@ -116,7 +134,7 @@ const AuditorDashboard = () => {
   const doughnutData = useMemo(() => {
     const dist = data?.charts?.actionsDistribution || [];
     return {
-      labels: dist.map((d) => d.category),
+      labels: dist.map((d) => labelCategory(t, d.category)),
       datasets: [
         {
           data: dist.map((d) => d.count),
@@ -126,7 +144,7 @@ const AuditorDashboard = () => {
         },
       ],
     };
-  }, [data]);
+  }, [data, t]);
 
   const doughnutOptions = useMemo(
     () => ({
@@ -135,7 +153,7 @@ const AuditorDashboard = () => {
       cutout: "62%",
       plugins: {
         legend: {
-          position: "right",
+          position: i18n.dir() === "rtl" ? "left" : "right",
           labels: {
             boxWidth: 12,
             padding: 14,
@@ -150,21 +168,21 @@ const AuditorDashboard = () => {
         },
       },
     }),
-    []
+    [i18n]
   );
 
   const kpis = data?.kpis || {};
   const recent = data?.recentLogs || [];
 
   const formatTime = (iso) => {
-    if (!iso) return "—";
+    if (!iso) return t("auditorLogs.noValue");
     try {
-      return new Date(iso).toLocaleString(undefined, {
+      return new Date(iso).toLocaleString(dateLocale, {
         dateStyle: "medium",
         timeStyle: "short",
       });
     } catch {
-      return "—";
+      return t("auditorLogs.noValue");
     }
   };
 
@@ -175,18 +193,23 @@ const AuditorDashboard = () => {
       );
     }
     if (sev === "critical") {
-      return <span className="auditor-badge auditor-badge--crit">{sev}</span>;
+      return (
+        <span className="auditor-badge auditor-badge--crit">{t("auditorDashboard.severityCritical")}</span>
+      );
     }
     if (sev === "warning") {
-      return <span className="auditor-badge auditor-badge--warn">{sev}</span>;
+      return (
+        <span className="auditor-badge auditor-badge--warn">{t("auditorDashboard.severityWarning")}</span>
+      );
     }
-    return <span className="auditor-badge auditor-badge--ok">info</span>;
+    return <span className="auditor-badge auditor-badge--ok">{t("auditorDashboard.severityInfo")}</span>;
   };
 
   if (loading) {
     return (
-      <div className="auditor-dash d-flex justify-content-center align-items-center py-5">
-        <Spinner animation="border" style={{ color: "#635bff" }} />
+      <div className="auditor-dash d-flex flex-column justify-content-center align-items-center gap-3 py-5">
+        <Spinner animation="border" className="text-primary" role="status" />
+        <span className="text-muted">{t("auditorDashboard.loading")}</span>
       </div>
     );
   }
@@ -201,9 +224,14 @@ const AuditorDashboard = () => {
 
   return (
     <div className="auditor-dash">
-      <header className="auditor-dash__header">
-        <h1 className="auditor-dash__title">{t("auditorDashboard.pageTitle")}</h1>
-        <p className="auditor-dash__subtitle">{t("auditorDashboard.subtitle")}</p>
+      <header className="auditor-dash__header d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div>
+          <h1 className="auditor-dash__title">{t("auditorDashboard.pageTitle")}</h1>
+          <p className="auditor-dash__subtitle mb-0">{t("auditorDashboard.subtitle")}</p>
+        </div>
+        <Link to="/auditor/logs" className="btn btn-sm btn-outline-primary">
+          {t("auditorDashboard.linkToLogs")}
+        </Link>
       </header>
 
       <Row className="g-3 mb-4">
@@ -307,13 +335,15 @@ const AuditorDashboard = () => {
             {recent.map((row) => (
               <tr key={row.id}>
                 <td className="text-nowrap">{formatTime(row.createdAt)}</td>
-                <td>{row.actorEmail || "—"}</td>
-                <td>{row.actorRole || "—"}</td>
+                <td>{row.actorEmail || t("auditorLogs.noValue")}</td>
+                <td>{labelRole(t, row.actorRole)}</td>
                 <td>
-                  <span title={row.action}>{row.action?.length > 48 ? `${row.action.slice(0, 48)}…` : row.action}</span>
+                  <span title={row.action}>
+                    {row.action?.length > 48 ? `${row.action.slice(0, 48)}…` : row.action || t("auditorLogs.noValue")}
+                  </span>
                 </td>
-                <td>{row.category || "—"}</td>
-                <td>{row.statusCode ?? "—"}</td>
+                <td>{labelCategory(t, row.category)}</td>
+                <td>{row.statusCode ?? t("auditorLogs.noValue")}</td>
                 <td>{severityBadge(row.severity, row.suspicious)}</td>
               </tr>
             ))}
