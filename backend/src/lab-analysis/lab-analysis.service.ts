@@ -14,6 +14,7 @@ import {
   type ComparedParameter,
   type ConditionHint,
 } from './lab-structured-analysis';
+import { NotificationService } from '../notification/notification.service';
 
 export type AnomalyStrength = 'strong' | 'approximate' | 'none';
 
@@ -310,6 +311,7 @@ export class LabAnalysisService {
   constructor(
     @InjectModel(LabAnalysisRecord.name)
     private recordModel: Model<LabAnalysisRecordDocument>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async analyzeImageBuffer(
@@ -369,6 +371,19 @@ export class LabAnalysisService {
             }
           : null,
     });
+
+    if (outcome.status === 'anomaly') {
+      try {
+        await this.notificationService.notifyCareTeamLabAnalysisAnomaly({
+          patientId: new Types.ObjectId(patientId),
+          labAnalysisRecordId: record._id as Types.ObjectId,
+          classificationConfidence: outcome.classificationConfidence,
+          anomalyStrength: outcome.anomalyStrength,
+        });
+      } catch (e) {
+        this.logger.warn(`Notification équipe soignante (analyse lab) échouée: ${String(e)}`);
+      }
+    }
 
     return { record, outcome };
   }

@@ -1865,7 +1865,8 @@
       "appointmentReminder": "تذكير موعد",
       "messaging": "المراسلة",
       "internalMail": "البريد الداخلي",
-      "patientAlert": "تنبيه مريض"
+      "patientAlert": "تنبيه مريض",
+      "labAnalysisAnomaly": "تحاليل — احتمال شذوذ"
     },
     "pageTitle": "الإشعارات",
     "pageSubtitle": "اطّلع على التنبيهات والرسائل والمواعيد. صفِّ حسب الحالة أو النوع.",

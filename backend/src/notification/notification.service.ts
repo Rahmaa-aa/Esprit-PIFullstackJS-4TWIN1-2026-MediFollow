@@ -79,6 +79,79 @@ export class NotificationService {
     }
   }
 
+  /**
+   * Analyse photo de bilan avec statut « anomalie » : notifie l’équipe soignante
+   * (médecin référent et infirmier assigné, sans doublon si le même id apparaît deux fois).
+   */
+  async notifyCareTeamLabAnalysisAnomaly(params: {
+    patientId: Types.ObjectId;
+    labAnalysisRecordId: Types.ObjectId;
+    classificationConfidence: number;
+    anomalyStrength?: string;
+  }) {
+    const patient = await this.patientModel
+      .findById(params.patientId)
+      .select('firstName lastName email doctorId nurseId')
+      .lean()
+      .exec();
+    if (!patient) return;
+
+    const p = patient as {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      doctorId?: string;
+      nurseId?: string;
+    };
+    const patientName =
+      `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.email || 'Patient';
+    const recordIdStr = String(params.labAnalysisRecordId);
+    const title = `Analyse de bilan — signal à surveiller · ${patientName}`;
+    const body = `Photo d’analyses avec résultat « anomalie possible » (confiance ${params.classificationConfidence}%). À examiner dans le dossier patient.`;
+
+    const meta: Record<string, unknown> = {
+      kind: 'lab_analysis_anomaly',
+      patientName,
+      labAnalysisRecordId: recordIdStr,
+      classificationConfidence: params.classificationConfidence,
+      anomalyStrength: params.anomalyStrength ?? 'none',
+    };
+
+    const notifiedRecipientIds = new Set<string>();
+
+    const sendTo = async (recipientId: string | undefined, recipientRole: 'doctor' | 'nurse') => {
+      if (recipientId == null || !String(recipientId).trim()) return;
+      const rid = String(recipientId);
+      if (notifiedRecipientIds.has(rid)) return;
+      notifiedRecipientIds.add(rid);
+
+      const dup = await this.notificationModel
+        .findOne({
+          recipientId: rid,
+          recipientRole,
+          type: 'lab_analysis_anomaly',
+          'meta.labAnalysisRecordId': recordIdStr,
+        })
+        .exec();
+      if (dup) return;
+
+      await this.notificationModel.create({
+        recipientId: rid,
+        recipientRole,
+        type: 'lab_analysis_anomaly',
+        title,
+        body,
+        patientId: params.patientId,
+        patientName,
+        read: false,
+        meta,
+      });
+    };
+
+    await sendTo(p.nurseId, 'nurse');
+    await sendTo(p.doctorId, 'doctor');
+  }
+
   /** Escalade infirmier → médecin (messagerie + notification médecin). */
   async notifyDoctorVitalEscalation(params: {
     doctorId: string;
