@@ -1,14 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { Carousel, Container, Row, Col, Form, Modal } from "react-bootstrap";
+import { Container, Row, Col, Form, Modal } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { authApi } from "../../services/api";
 import { useHandGesture } from "../../context/HandGestureContext";
 import { captureFaceDescriptor } from "../../services/face-auth";
-
-const generatePath = (path) => {
-  return window.origin + import.meta.env.BASE_URL + path;
-};
+import { generatePath } from "../landing/landingPaths";
+import AuthCarouselMedifollow from "../../components/auth/AuthCarouselMedifollow";
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const SpeechSynthesis = window.speechSynthesis;
@@ -441,31 +439,12 @@ const SignIn = () => {
             <Col md={6} className="text-center z-2">
               <div className="sign-in-detail text-white">
                 <Link to="/" className="sign-in-logo mb-2">
-                  <img src={generatePath("/assets/images/logosite.png")} className="img-fluid" alt={t("signIn.logoAlt")} style={{ maxWidth: "320px", maxHeight: "100px", objectFit: "contain" }} />
+                  <img src={generatePath("assets/images/logosite.png")} className="img-fluid" alt={t("signIn.logoAlt")} style={{ maxWidth: "320px", maxHeight: "100px", objectFit: "contain" }} />
                 </Link>
-                <Carousel id="carouselExampleCaptions" interval={4000} controls={false}>
-                  <Carousel.Item>
-                    <img src={generatePath("/assets/images/login/image_signin_signup.png")} className="d-block w-100" alt="" />
-                    <div className="carousel-caption-container">
-                      <h4 className="mb-1 mt-3 text-white">{t("signIn.carouselTitle")}</h4>
-                      <p className="pb-5">{t("signIn.carouselDesc")}</p>
-                    </div>
-                  </Carousel.Item>
-                  <Carousel.Item>
-                    <img src={generatePath("/assets/images/login/signin1.png")} className="d-block w-100" alt="" />
-                    <div className="carousel-caption-container">
-                      <h4 className="mb-1 mt-3 text-white">{t("signIn.carouselTitle")}</h4>
-                      <p className="pb-5">{t("signIn.carouselDesc")}</p>
-                    </div>
-                  </Carousel.Item>
-                  <Carousel.Item>
-                    <img src={generatePath("/assets/images/login/signin2.png")} className="d-block w-100" alt="" />
-                    <div className="carousel-caption-container">
-                      <h4 className="mb-1 mt-3 text-white">{t("signIn.carouselTitle")}</h4>
-                      <p className="pb-5">{t("signIn.carouselDesc")}</p>
-                    </div>
-                  </Carousel.Item>
-                </Carousel>
+                <AuthCarouselMedifollow
+                  interval={4000}
+                  captionKeys={{ titleKey: "signIn.carouselTitle", descKey: "signIn.carouselDesc" }}
+                />
               </div>
             </Col>
             <Col md={6} className="position-relative z-2">

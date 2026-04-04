@@ -2559,5 +2559,22 @@
     "introLead": "Chaque module s’articule avec les autres pour que patients et équipes partagent les mêmes informations, au bon moment.",
     "ctaTitle": "Utiliser la plateforme",
     "ctaLead": "Connectez-vous avec les identifiants fournis par le CHU, ou revenez à l’accueil pour parcourir le site."
+  },
+  "contactPage": {
+    "heroKicker": "Contact",
+    "heroTitle": "Nous joindre",
+    "heroLead": "Questions sur MediFollow, accès à la plateforme ou orientation vers un service du CHU Abdelhamid Ben Badis de Constantine.",
+    "introKicker": "Coordonnées",
+    "introTitle": "Une question ? Un rendez-vous administratif ?",
+    "introLead": "Utilisez l’adresse, le courriel ou le téléphone ci-dessous selon votre demande. Pour les sujets cliniques urgents, passez par les circuits habituels du CHU.",
+    "addressTitle": "Adresse",
+    "emailTitle": "Courriel",
+    "phoneTitle": "Téléphone",
+    "hoursTitle": "Suivi administratif & accès MediFollow",
+    "hoursText": "Les demandes liées à l’application et aux comptes utilisateurs sont traitées par les services habilités du CHU, selon leurs horaires d’ouverture.",
+    "accountHint": "Les comptes patient et professionnels sont créés et gérés par l’administration du CHU ; MediFollow ne délivre pas d’identifiants en direct depuis cette page.",
+    "emergencyNote": "En cas d’urgence médicale, ne vous fiez pas uniquement à la messagerie de l’application : contactez les secours ou les urgences du CHU.",
+    "ctaTitle": "Espace sécurisé",
+    "ctaLead": "Si vous disposez déjà d’un identifiant, connectez-vous pour accéder à MediFollow."
   }
 }

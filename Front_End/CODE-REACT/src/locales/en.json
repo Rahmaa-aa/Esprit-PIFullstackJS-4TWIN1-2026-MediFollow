@@ -2559,5 +2559,22 @@
     "introLead": "Each module connects with the others so patients and teams share the same information when it matters.",
     "ctaTitle": "Start using the platform",
     "ctaLead": "Sign in with credentials issued by the hospital, or return home to browse the site."
+  },
+  "contactPage": {
+    "heroKicker": "Contact",
+    "heroTitle": "Get in touch",
+    "heroLead": "Questions about MediFollow, platform access, or help reaching the right department at CHU Abdelhamid Ben Badis, Constantine.",
+    "introKicker": "Details",
+    "introTitle": "Questions or admin requests?",
+    "introLead": "Use the address, email, or phone below as appropriate. For urgent clinical matters, follow the hospital’s usual pathways.",
+    "addressTitle": "Address",
+    "emailTitle": "Email",
+    "phoneTitle": "Phone",
+    "hoursTitle": "Admin & MediFollow access",
+    "hoursText": "Requests about the app and user accounts are handled by authorized hospital services during their opening hours.",
+    "accountHint": "Patient and staff accounts are issued by the hospital administration; MediFollow does not create credentials from this page.",
+    "emergencyNote": "In a medical emergency, do not rely only on in-app messaging: contact emergency services or the hospital emergency department.",
+    "ctaTitle": "Secure access",
+    "ctaLead": "If you already have credentials, sign in to use MediFollow."
   }
 }

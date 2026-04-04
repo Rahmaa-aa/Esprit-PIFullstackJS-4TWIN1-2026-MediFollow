@@ -522,3 +522,61 @@
     background: rgba(255, 255, 255, 0.12) !important;
     color: #fff !important;
 }
+
+/* Page Contact — cartes coordonnées */
+.hospital-home .contact-info-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(53, 79, 142, 0.1);
+    box-shadow: 0 0.35rem 1rem rgba(29, 42, 77, 0.06);
+    padding: 2rem 1.5rem;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.hospital-home .contact-info-card:hover {
+    box-shadow: 0 0.5rem 1.25rem rgba(29, 42, 77, 0.1);
+    transform: translateY(-2px);
+}
+
+.hospital-home .contact-info-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    background: rgba(19, 197, 221, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    color: var(--primary);
+    margin-bottom: 1.1rem;
+}
+
+.hospital-home .contact-info-card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 0.65rem;
+}
+
+.hospital-home .contact-info-card-body {
+    color: #5a6578;
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.hospital-home .contact-info-card-link {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+    word-break: break-word;
+}
+
+.hospital-home .contact-info-card-link:hover {
+    color: var(--secondary);
+    text-decoration: underline;
+}
+
+.hospital-home .contact-emergency-alert {
+    background: rgba(239, 245, 249, 0.95) !important;
+    color: var(--dark);
+}

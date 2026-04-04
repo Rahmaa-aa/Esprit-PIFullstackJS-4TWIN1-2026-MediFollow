@@ -11,8 +11,8 @@ import {
 } from "../../views/landing/landingPaths";
 
 /**
- * En-tête + pied de page communs aux pages publiques (accueil, à propos, fonctionnalités).
- * @param {"home" | "about" | "features"} navActive
+ * En-tête + pied de page communs aux pages publiques (accueil, à propos, fonctionnalités, contact).
+ * @param {"home" | "about" | "features" | "contact"} navActive
  */
 export default function LandingShell({ navActive = "home", children }) {
   const { t, i18n } = useTranslation();
@@ -113,7 +113,7 @@ export default function LandingShell({ navActive = "home", children }) {
                 <Nav.Link as={Link} to="/features" className={navActive === "features" ? "active" : ""}>
                   {t("landing.navFeatures")}
                 </Nav.Link>
-                <Nav.Link as={Link} to="/#contact">
+                <Nav.Link as={Link} to="/contact" className={navActive === "contact" ? "active" : ""}>
                   {t("landing.navContact")}
                 </Nav.Link>
                 <Dropdown as={Nav.Item} className="d-lg-flex align-items-lg-center" autoClose="inside">
@@ -200,6 +200,10 @@ export default function LandingShell({ navActive = "home", children }) {
                 <Link to="/features" className="text-light mb-2 text-decoration-none">
                   <i className="fas fa-angle-right me-2" aria-hidden />
                   {t("landing.navFeatures")}
+                </Link>
+                <Link to="/contact" className="text-light mb-2 text-decoration-none">
+                  <i className="fas fa-angle-right me-2" aria-hidden />
+                  {t("landing.navContact")}
                 </Link>
                 <Link to="/auth/sign-in" className="text-light text-decoration-none">
                   <i className="fas fa-angle-right me-2" aria-hidden />
