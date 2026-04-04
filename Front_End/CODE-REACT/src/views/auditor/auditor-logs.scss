@@ -1,0 +1,99 @@
+.auditor-logs {
+  --al-bg: #f6f9fc;
+  --al-border: #e6ebf1;
+  --al-text: #0a2540;
+  --al-muted: #425466;
+  --al-radius: 12px;
+  --al-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04);
+
+  background: var(--al-bg);
+  margin: -1.5rem -1.5rem 0;
+  padding: 1.75rem 1.5rem 2.5rem;
+  min-height: calc(100vh - 120px);
+}
+
+.auditor-logs__title {
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--al-text);
+  margin: 0 0 0.35rem;
+}
+
+.auditor-logs__subtitle {
+  margin: 0 0 1.5rem;
+  font-size: 0.9375rem;
+  color: var(--al-muted);
+  max-width: 44rem;
+}
+
+.auditor-logs__filters {
+  background: #fff;
+  border: 1px solid var(--al-border);
+  border-radius: var(--al-radius);
+  padding: 1.25rem 1.35rem;
+  box-shadow: var(--al-shadow);
+  margin-bottom: 1.25rem;
+}
+
+.auditor-logs__table-card {
+  background: #fff;
+  border: 1px solid var(--al-border);
+  border-radius: var(--al-radius);
+  box-shadow: var(--al-shadow);
+  overflow: hidden;
+}
+
+.auditor-logs__table {
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+.auditor-logs__table thead th {
+  font-weight: 600;
+  color: var(--al-muted);
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--al-border) !important;
+  padding: 0.75rem 0.85rem;
+  background: #fafbfc;
+  white-space: nowrap;
+}
+
+.auditor-logs__table tbody td {
+  padding: 0.65rem 0.85rem;
+  vertical-align: middle;
+  border-color: #f0f3f7 !important;
+}
+
+.auditor-logs__row--danger {
+  background: rgba(229, 57, 53, 0.06) !important;
+}
+
+.auditor-logs__row--warning {
+  background: rgba(255, 152, 0, 0.1) !important;
+}
+
+.auditor-logs__row--neutral:hover {
+  background: #fafbfc;
+}
+
+.auditor-logs__json {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  background: #0a2540;
+  color: #e6edf3;
+  border-radius: 8px;
+  padding: 1rem;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.auditor-logs__badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}

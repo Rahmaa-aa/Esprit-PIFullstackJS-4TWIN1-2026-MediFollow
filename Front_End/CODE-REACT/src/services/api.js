@@ -602,8 +602,18 @@ export const departmentApi = {
 };
 
 /** Tableau de bord audit (JWT auditeur ou super admin). */
+/** Toujours adminToken : l’auditeur et le super admin partagent cette session (pas getValidToken qui peut envoyer patient/doctor). */
 export const auditorApi = {
-  getDashboard: () => api.get("/audit/dashboard"),
+  getDashboard: () => api.getWithAdminToken("/audit/dashboard"),
+  getLogs: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v != null && v !== "") q.set(k, String(v));
+    });
+    const qs = q.toString();
+    return api.getWithAdminToken(`/audit/logs${qs ? `?${qs}` : ""}`);
+  },
+  getLogById: (id) => api.getWithAdminToken(`/audit/logs/item/${encodeURIComponent(id)}`),
 };
 
 export const superAdminApi = {

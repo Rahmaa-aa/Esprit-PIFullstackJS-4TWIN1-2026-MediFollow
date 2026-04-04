@@ -125,6 +125,8 @@ import EditCareCoordinator from "../views/super-admin/edit-care-coordinator"
 import ViewCareCoordinator from "../views/super-admin/view-care-coordinator"
 import SuperAdminProfile from "../views/super-admin/super-admin-profile"
 import AuditorDashboard from "../views/auditor/auditor-dashboard"
+import AuditorLogsPage from "../views/auditor/auditor-logs"
+import AuditorSessionGuard from "../components/routing/auditor-session-guard"
 import CommingSoon from "../views/extra-pages/pages-comingsoon"
 import Error404 from "../views/extra-pages/pages-error-404"
 import Error500 from "../views/extra-pages/pages-error-500"
@@ -590,7 +592,19 @@ export const DefaultRoute = [
       },
       {
         path: '/auditor/dashboard',
-        element: <AuditorDashboard />
+        element: (
+          <AuditorSessionGuard>
+            <AuditorDashboard />
+          </AuditorSessionGuard>
+        )
+      },
+      {
+        path: '/auditor/logs',
+        element: (
+          <AuditorSessionGuard>
+            <AuditorLogsPage />
+          </AuditorSessionGuard>
+        )
       },
       {
         path: '/extra-pages/pages-pricing',
