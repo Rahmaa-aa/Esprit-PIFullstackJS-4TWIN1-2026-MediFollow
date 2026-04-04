@@ -44,6 +44,17 @@ export class DepartmentController {
     return this.departmentService.getUsersByDepartment(department || '');
   }
 
+  /** Statistiques agrégées pour le tableau de bord coordinateur. */
+  @UseGuards(JwtAuthGuard)
+  @Get('coordinator/dashboard-stats')
+  async coordinatorDashboardStats(@Req() req: { user?: { id?: unknown; role?: string; department?: string } }) {
+    const user = req.user;
+    if (!user || user.role !== 'carecoordinator') {
+      throw new ForbiddenException('Accès réservé aux coordinateurs de soins');
+    }
+    return this.careCoordinatorFollowup.getDashboardStats(user as any);
+  }
+
   /** Patients du même département + scores de suivi (7 jours). */
   @UseGuards(JwtAuthGuard)
   @Get('coordinator/my-patients')

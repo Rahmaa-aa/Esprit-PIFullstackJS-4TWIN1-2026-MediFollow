@@ -39,6 +39,12 @@ const VerticalNav = () => {
     const isDoctor = !!doctorUser && !isPatient && !isNurse
     const isSuperAdmin = adminUser?.role === "superadmin"
     const isAuditor = adminUser?.role === "auditor"
+    const isCareCoordinator = adminUser?.role === "carecoordinator"
+    const isCareCoordinatorPatientsActive =
+        location.pathname === "/dashboard-pages/care-coordinator-patients" ||
+        /^\/dashboard-pages\/care-coordinator-patient\/[^/]+$/.test(location.pathname)
+    const showHospitalAdminMenu =
+        adminUser && !["auditor", "carecoordinator"].includes(adminUser.role)
 
     const emailItems = [
         { path: "/email/inbox", nameKey: "emailInbox", icon: "ri-inbox-fill" },
@@ -456,6 +462,88 @@ const VerticalNav = () => {
         );
     }
 
+    /** Menu réduit : uniquement les écrans branchés pour le rôle coordinateur. */
+    if (isCareCoordinator) {
+        return (
+            <>
+                <ul className="navbar-nav iq-main-menu" id="sidebar-menu">
+                    <Nav.Item as="li" className="static-item ms-2">
+                        <Link className="nav-link static-item disabled text-start" tabIndex="-1">
+                            <span className="default-icon">{t("sidebar.sectionDashboard")}</span>
+                            <OverlayTrigger
+                                key="cc-home"
+                                placement="right"
+                                overlay={<Tooltip id="cc-home">{t("sidebar.homeTooltip")}</Tooltip>}
+                            >
+                                <span className="mini-icon">-</span>
+                            </OverlayTrigger>
+                        </Link>
+                    </Nav.Item>
+                    <Nav.Item as="li">
+                        <Link
+                            to="/dashboard-pages/care-coordinator-dashboard"
+                            className={`nav-link ${location.pathname === "/dashboard-pages/care-coordinator-dashboard" ? "active" : ""}`}
+                        >
+                            <i className="ri-heart-pulse-fill"></i>
+                            <span className="item-name">{t("sidebar.careCoordinatorDashboard")}</span>
+                        </Link>
+                    </Nav.Item>
+                    <Nav.Item as="li">
+                        <Link
+                            to="/dashboard-pages/care-coordinator-patients"
+                            className={`nav-link ${isCareCoordinatorPatientsActive ? "active" : ""}`}
+                        >
+                            <i className="ri-team-line"></i>
+                            <span className="item-name">{t("sidebar.careCoordinatorPatients")}</span>
+                        </Link>
+                    </Nav.Item>
+                    <Nav.Item as="li">
+                        <Link
+                            to="/dashboard-pages/care-coordinator-appointments"
+                            className={`nav-link ${location.pathname === "/dashboard-pages/care-coordinator-appointments" ? "active" : ""}`}
+                        >
+                            <i className="ri-calendar-check-line"></i>
+                            <span className="item-name">{t("sidebar.careCoordinatorAppointments")}</span>
+                        </Link>
+                    </Nav.Item>
+                    <Nav.Item as="li">
+                        <Link
+                            to="/dashboard-pages/care-coordinator-communication"
+                            className={`nav-link ${location.pathname === "/dashboard-pages/care-coordinator-communication" ? "active" : ""}`}
+                        >
+                            <i className="ri-message-3-line"></i>
+                            <span className="item-name">{t("sidebar.careCoordinatorCommunication")}</span>
+                        </Link>
+                    </Nav.Item>
+                    <li>
+                        <hr className="hr-horizontal" />
+                    </li>
+                    <Nav.Item as="li" className="static-item ms-2">
+                        <Nav.Link className="static-item disabled text-start" tabIndex="-1">
+                            <span className="default-icon">{t("sidebar.sectionApps")}</span>
+                            <span className="mini-icon">-</span>
+                        </Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item as="li">
+                        <Link
+                            to="/notifications"
+                            className={`nav-link ${location.pathname === "/notifications" ? "active" : ""}`}
+                        >
+                            <i className="ri-notification-3-fill"></i>
+                            <span className="item-name">{t("sidebar.notificationsCenter")}</span>
+                        </Link>
+                    </Nav.Item>
+                    <Nav.Item as="li">
+                        <Link to="/chat" className={`nav-link ${location.pathname === "/chat" ? "active" : ""}`}>
+                            <i className="ri-message-fill"></i>
+                            <span className="item-name">{t("sidebar.chat")}</span>
+                        </Link>
+                    </Nav.Item>
+                </ul>
+            </>
+        );
+    }
+
     return (
         <>
             <ul className="navbar-nav iq-main-menu" id="sidebar-menu">
@@ -493,50 +581,6 @@ const VerticalNav = () => {
 
                     </Link>
                 </Nav.Item>
-                {isCareCoordinator && (
-                    <Nav.Item as="li">
-                        <Link
-                            to="/dashboard-pages/care-coordinator-dashboard"
-                            className={`nav-link ${location.pathname === "/dashboard-pages/care-coordinator-dashboard" ? "active" : ""}`}
-                        >
-                            <i className="ri-heart-pulse-fill"></i>
-                            <span className="item-name">{t("sidebar.careCoordinatorDashboard")}</span>
-                        </Link>
-                    </Nav.Item>
-                )}
-                {isCareCoordinator && (
-                    <Nav.Item as="li">
-                        <Link
-                            to="/dashboard-pages/care-coordinator-patients"
-                            className={`nav-link ${isCareCoordinatorPatientsActive ? "active" : ""}`}
-                        >
-                            <i className="ri-team-line"></i>
-                            <span className="item-name">{t("sidebar.careCoordinatorPatients")}</span>
-                        </Link>
-                    </Nav.Item>
-                )}
-                {isCareCoordinator && (
-                    <Nav.Item as="li">
-                        <Link
-                            to="/dashboard-pages/care-coordinator-appointments"
-                            className={`nav-link ${location.pathname === "/dashboard-pages/care-coordinator-appointments" ? "active" : ""}`}
-                        >
-                            <i className="ri-calendar-check-line"></i>
-                            <span className="item-name">{t("sidebar.careCoordinatorAppointments")}</span>
-                        </Link>
-                    </Nav.Item>
-                )}
-                {isCareCoordinator && (
-                    <Nav.Item as="li">
-                        <Link
-                            to="/dashboard-pages/care-coordinator-communication"
-                            className={`nav-link ${location.pathname === "/dashboard-pages/care-coordinator-communication" ? "active" : ""}`}
-                        >
-                            <i className="ri-message-3-line"></i>
-                            <span className="item-name">{t("sidebar.careCoordinatorCommunication")}</span>
-                        </Link>
-                    </Nav.Item>
-                )}
                 {showHospitalAdminMenu && (
                     <>
                         <Nav.Item as="li">

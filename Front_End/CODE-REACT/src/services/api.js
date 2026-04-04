@@ -612,6 +612,7 @@ export const departmentApi = {
   usersByDepartment: (department) =>
     api.get(`/departments/users?department=${encodeURIComponent(department)}`),
   /** Coordinateur : patients du même département + scores de suivi (JWT adminToken). */
+  coordinatorDashboardStats: () => api.getWithAdminToken("/departments/coordinator/dashboard-stats"),
   coordinatorMyPatients: () => api.getWithAdminToken("/departments/coordinator/my-patients"),
   coordinatorPatientHistory: (patientId) =>
     api.getWithAdminToken(`/departments/coordinator/patient/${encodeURIComponent(patientId)}/history`),

@@ -5,6 +5,7 @@ import { Doctor, DoctorSchema } from '../doctor/schemas/doctor.schema';
 import { Nurse, NurseSchema } from '../nurse/schemas/nurse.schema';
 import { HealthLog, HealthLogSchema } from '../health-log/schemas/health-log.schema';
 import { Medication, MedicationSchema } from '../medication/schemas/medication.schema';
+import { Appointment, AppointmentSchema } from '../appointment/schemas/appointment.schema';
 import { DepartmentService } from './department.service';
 import { CareCoordinatorFollowupService } from './care-coordinator-followup.service';
 import { DepartmentController } from './department.controller';
@@ -17,6 +18,7 @@ import { DepartmentController } from './department.controller';
       { name: Nurse.name, schema: NurseSchema },
       { name: HealthLog.name, schema: HealthLogSchema },
       { name: Medication.name, schema: MedicationSchema },
+      { name: Appointment.name, schema: AppointmentSchema },
     ]),
   ],
   controllers: [DepartmentController],

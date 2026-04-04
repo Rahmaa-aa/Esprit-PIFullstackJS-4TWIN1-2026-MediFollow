@@ -2,8 +2,11 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Patient } from '../patient/schemas/patient.schema';
+import { Doctor } from '../doctor/schemas/doctor.schema';
+import { Nurse } from '../nurse/schemas/nurse.schema';
 import { HealthLog } from '../health-log/schemas/health-log.schema';
 import { Medication } from '../medication/schemas/medication.schema';
+import { Appointment } from '../appointment/schemas/appointment.schema';
 import { getSlotCountForFrequency } from '../medication/medication-slots.util';
 
 const WINDOW_DAYS = 7;
@@ -59,6 +62,17 @@ function ymdFromLog(log: { date?: string; recordedAt?: Date; createdAt?: Date })
   return null;
 }
 
+function todayYmdLocal(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function addDaysYmdLocal(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function mergeLegacySlotKeys(med: Record<string, unknown>): string[] {
   const m = med as Record<string, unknown>;
   const set = new Set<string>([...(Array.isArray(m.takenSlotKeys) ? m.takenSlotKeys : [])]);
@@ -81,8 +95,11 @@ function mergeLegacySlotKeys(med: Record<string, unknown>): string[] {
 export class CareCoordinatorFollowupService {
   constructor(
     @InjectModel(Patient.name) private patientModel: Model<Patient>,
+    @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
+    @InjectModel(Nurse.name) private nurseModel: Model<Nurse>,
     @InjectModel(HealthLog.name) private healthLogModel: Model<HealthLog>,
     @InjectModel(Medication.name) private medicationModel: Model<Medication>,
+    @InjectModel(Appointment.name) private appointmentModel: Model<Appointment>,
   ) {}
 
   /** Aligné sur DepartmentService : department explicite ou repli sur service. */
@@ -231,6 +248,101 @@ export class CareCoordinatorFollowupService {
       department: dept,
       windowDays: WINDOW_DAYS,
       patients: rows,
+    };
+  }
+
+  /**
+   * Indicateurs agrégés pour le tableau de bord coordinateur (même périmètre que my-patients).
+   */
+  async getDashboardStats(user: JwtCoordinator) {
+    const dept = this.assertCoordinator(user);
+    const [list, doctorCount, nurseCount] = await Promise.all([
+      this.listMyDepartmentPatients(user),
+      this.doctorModel.countDocuments({ department: dept }).exec(),
+      this.nurseModel.countDocuments({ department: dept }).exec(),
+    ]);
+    const patients = (list as { patients?: unknown[] }).patients || [];
+    const patientCount = patients.length;
+    const patientsNeedingAttention = (patients as { complianceScore?: number }[]).filter(
+      (p) => (p.complianceScore ?? 100) < 50,
+    ).length;
+
+    const oidList: Types.ObjectId[] = [];
+    for (const p of patients as { id?: string }[]) {
+      const sid = String(p.id || '').trim();
+      if (Types.ObjectId.isValid(sid)) oidList.push(new Types.ObjectId(sid));
+    }
+
+    const start = todayYmdLocal();
+    const end = addDaysYmdLocal(7);
+
+    let appointmentsNext7Days = 0;
+    const appointmentsByDayDates: string[] = [];
+    const appointmentsByDayCounts: number[] = [];
+    for (let i = 0; i <= 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      appointmentsByDayDates.push(ymd);
+    }
+
+    if (oidList.length) {
+      appointmentsNext7Days = await this.appointmentModel
+        .countDocuments({
+          patientId: { $in: oidList },
+          date: { $gte: start, $lte: end },
+          status: { $nin: ['cancelled'] },
+        })
+        .exec();
+
+      const appts = await this.appointmentModel
+        .find({
+          patientId: { $in: oidList },
+          date: { $gte: start, $lte: end },
+          status: { $nin: ['cancelled'] },
+        })
+        .select('date')
+        .lean()
+        .exec();
+
+      const perDay = new Map<string, number>();
+      for (const ymd of appointmentsByDayDates) perDay.set(ymd, 0);
+      for (const a of appts as { date?: string }[]) {
+        const dt = String(a.date || '').slice(0, 10);
+        if (perDay.has(dt)) perDay.set(dt, (perDay.get(dt) || 0) + 1);
+      }
+      for (const ymd of appointmentsByDayDates) {
+        appointmentsByDayCounts.push(perDay.get(ymd) || 0);
+      }
+    } else {
+      for (let i = 0; i < appointmentsByDayDates.length; i++) appointmentsByDayCounts.push(0);
+    }
+
+    const followUpBuckets = [0, 0, 0, 0];
+    for (const p of patients as { complianceScore?: number }[]) {
+      const s = Math.min(100, Math.max(0, Math.round(p.complianceScore ?? 0)));
+      if (s < 25) followUpBuckets[0]++;
+      else if (s < 50) followUpBuckets[1]++;
+      else if (s < 75) followUpBuckets[2]++;
+      else followUpBuckets[3]++;
+    }
+
+    return {
+      department: dept,
+      patientCount,
+      doctorCount,
+      nurseCount,
+      appointmentsNext7Days,
+      patientsNeedingAttention,
+      followUpWindowDays: WINDOW_DAYS,
+      charts: {
+        teamCounts: [patientCount, doctorCount, nurseCount],
+        followUpBuckets,
+        appointmentsByDay: {
+          dates: appointmentsByDayDates,
+          counts: appointmentsByDayCounts,
+        },
+      },
     };
   }
 
