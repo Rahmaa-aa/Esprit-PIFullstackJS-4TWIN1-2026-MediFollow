@@ -8,14 +8,15 @@ const svgBase = {
 };
 
 /** Royaume-Uni — SVG (évite l’affichage « GB » en lettres sous Windows). */
-export function SvgFlagGb({ className = "", style }) {
+export function SvgFlagGb({ className = "", style, width = 20 }) {
   const clipId = useId().replace(/:/g, "");
+  const h = width / 2;
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 60 30"
-      width="20"
-      height="10"
+      width={width}
+      height={h}
       className={className}
       style={{ ...svgBase, ...style }}
       aria-hidden
@@ -35,13 +36,14 @@ export function SvgFlagGb({ className = "", style }) {
 }
 
 /** France — tricolore. */
-export function SvgFlagFr({ className = "", style }) {
+export function SvgFlagFr({ className = "", style, width = 20 }) {
+  const h = (width * 2) / 3;
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 3 2"
-      width="20"
-      height="13.333"
+      width={width}
+      height={h}
       className={className}
       style={{ ...svgBase, ...style }}
       aria-hidden
@@ -53,17 +55,17 @@ export function SvgFlagFr({ className = "", style }) {
   );
 }
 
-/** Tunisie — ressource officielle (PNG) pour un rendu fidèle au drapeau. */
+/** Tunisie — fichier image du dépôt : `public/flags/Flag_of_Tunisia.svg.png` (rendu tel quel). */
 export function SvgFlagTn({ className = "", style, width = 20 }) {
-  const h = (width * 2) / 3;
+  const base = String(import.meta.env.BASE_URL || "/").replace(/\/+$/, "") || "";
+  const src = `${base}/flags/Flag_of_Tunisia.svg.png`.replace(/([^:])\/\/+/g, "$1/");
   return (
     <img
-      src={`${import.meta.env.BASE_URL}flags/tunisia.png`}
+      src={src}
       alt=""
       width={width}
-      height={h}
       className={className}
-      style={{ ...svgBase, objectFit: "contain", ...style }}
+      style={{ ...svgBase, width, height: "auto", objectFit: "contain", ...style }}
       draggable={false}
       aria-hidden
     />
@@ -106,13 +108,37 @@ export function SvgFlagDz({ className = "", style, width = 20 }) {
   );
 }
 
+/** Arabe : drapeaux Tunisie + Algérie (partenariat régional). */
+function FlagArTnDz({ className = "", style, width = 20 }) {
+  const w = Math.max(12, Math.round(width * 0.9));
+  return (
+    <span
+      className={className}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "0.35rem",
+        verticalAlign: "middle",
+        ...style,
+      }}
+    >
+      <SvgFlagTn width={w} />
+      <SvgFlagDz width={w} />
+    </span>
+  );
+}
+
 const FLAGS = {
   en: SvgFlagGb,
   fr: SvgFlagFr,
-  ar: SvgFlagTn,
+  ar: FlagArTnDz,
 };
 
-export function LanguageFlag({ code, className = "", style }) {
+/** `width` : largeur du drapeau en px (défaut 20). Passer ~32 sur la landing pour un menu plus lisible. */
+export function LanguageFlag({ code, className = "", style, width = 20 }) {
   const C = FLAGS[code] || SvgFlagFr;
-  return <C className={className} style={style} />;
+  if (code === "ar") {
+    return <FlagArTnDz className={className} style={style} width={width} />;
+  }
+  return <C className={className} style={style} width={width} />;
 }

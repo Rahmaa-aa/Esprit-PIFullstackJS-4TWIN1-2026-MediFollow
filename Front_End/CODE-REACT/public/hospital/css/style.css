@@ -244,3 +244,14 @@
     width: 150px;
     height: 150px;
 }
+
+/* MediFollow landing — même ligne verticale pour liens, langue et boutons */
+@media (min-width: 992px) {
+    .hospital-home .navbar-nav {
+        align-items: center;
+    }
+    .hospital-home .navbar-nav .nav-item {
+        display: flex;
+        align-items: center;
+    }
+}
