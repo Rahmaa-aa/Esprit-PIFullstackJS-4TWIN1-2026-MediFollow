@@ -4,12 +4,16 @@ import { AuthModule } from '../auth/auth.module';
 import { DoctorAvailabilityModule } from '../doctor-availability/doctor-availability.module';
 import { NotificationModule } from '../notification/notification.module';
 import { Appointment, AppointmentSchema } from './schemas/appointment.schema';
+import { Patient, PatientSchema } from '../patient/schemas/patient.schema';
 import { AppointmentService } from './appointment.service';
 import { AppointmentController } from './appointment.controller';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Appointment.name, schema: AppointmentSchema }]),
+    MongooseModule.forFeature([
+      { name: Appointment.name, schema: AppointmentSchema },
+      { name: Patient.name, schema: PatientSchema },
+    ]),
     AuthModule,
     DoctorAvailabilityModule,
     NotificationModule,

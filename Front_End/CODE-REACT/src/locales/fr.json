@@ -169,6 +169,8 @@
     "adminDashboard": "Tableau de bord admin",
     "careCoordinatorDashboard": "Tableau de bord coordinateur",
     "careCoordinatorPatients": "Patients du département",
+    "careCoordinatorAppointments": "Rendez-vous du département",
+    "careCoordinatorCommunication": "Communication",
     "departments": "Départements",
     "appointmentRequests": "Demandes de RDV",
     "questionnaireBank": "Banque questionnaires",
@@ -802,7 +804,65 @@
     "quickMailDesc": "Courriels internes de l’établissement.",
     "introHint": "Espace dédié à la coordination des soins. Les raccourcis ci-dessus vous permettent de rester informé et connecté aux équipes.",
     "quickPatients": "Patients du département",
-    "quickPatientsDesc": "Liste des patients de votre service avec indicateur de suivi (constantes et médicaments)."
+    "quickPatientsDesc": "Liste des patients de votre service avec indicateur de suivi (constantes et médicaments).",
+    "quickAppointments": "Rendez-vous",
+    "quickAppointmentsDesc": "Tous les rendez-vous des patients de votre département.",
+    "quickCommunication": "Communication",
+    "quickCommunicationDesc": "Modèles de messages et contacts du service pour la messagerie."
+  },
+  "careCoordinatorCommunication": {
+    "pageTitle": "Communication",
+    "intro": "Modèles de textes pour les relances et accès rapide aux contacts utiles de votre service (messagerie interne).",
+    "templatesTitle": "Modèles de messages",
+    "templatesHint": "Copiez le texte pour le coller dans la messagerie ou un courriel. Adaptez-le au contexte et au patient.",
+    "contactsTitle": "Contacts du service",
+    "contactsHint": "Ouvrir une conversation directe avec un médecin ou une infirmière du même département.",
+    "openChat": "Ouvrir le chat",
+    "copied": "Copié",
+    "copy": "Copier",
+    "loadingContacts": "Chargement des contacts…",
+    "contactsError": "Impossible de charger les contacts.",
+    "emptyContacts": "Aucun contact pour ce département.",
+    "roleDoctor": "Médecin",
+    "roleNurse": "Infirmier(ère)",
+    "rolePatient": "Patient",
+    "thName": "Nom",
+    "thRole": "Rôle",
+    "thAction": "Action",
+    "template_vitals": {
+      "title": "Rappel constantes",
+      "body": "Bonjour,\n\nNous vous rappelons d'enregistrer vos constantes (tension, poids, glycémie) dans l'application aujourd'hui. Merci pour votre collaboration.\n\nCordialement"
+    },
+    "template_appointment": {
+      "title": "Rappel rendez-vous",
+      "body": "Bonjour,\n\nNous vous rappelons votre rendez-vous prévu le [DATE] à [HEURE]. Merci de vous présenter avec vos documents d'identité.\n\nCordialement"
+    },
+    "template_missedAppointment": {
+      "title": "Relance après RDV manqué",
+      "body": "Bonjour,\n\nNous vous contactons suite à une absence au rendez-vous. Merci de nous rappeler pour réorganiser un créneau ou pour toute question.\n\nCordialement"
+    },
+    "template_lab": {
+      "title": "Résultats d'analyses",
+      "body": "Bonjour,\n\nNous vous informons que vos résultats d'analyses sont disponibles. Votre médecin pourra les commenter lors de votre prochaine consultation.\n\nCordialement"
+    },
+    "template_general": {
+      "title": "Suivi général",
+      "body": "Bonjour,\n\nNous vous contactons pour un suivi de votre prise en charge. N'hésitez pas à nous répondre si vous avez des questions.\n\nCordialement"
+    }
+  },
+  "careCoordinatorAppointments": {
+    "pageTitle": "Rendez-vous — patients du département",
+    "loading": "Chargement…",
+    "loadError": "Impossible de charger les rendez-vous.",
+    "empty": "Aucun rendez-vous pour les patients de ce département.",
+    "backDashboard": "Tableau de bord",
+    "thDate": "Date",
+    "thTime": "Heure",
+    "thPatient": "Patient",
+    "thDoctor": "Médecin",
+    "thTitle": "Motif",
+    "thType": "Type",
+    "thStatus": "Statut"
   },
   "careCoordinatorPatients": {
     "pageTitle": "Patients de mon département",
@@ -2196,6 +2256,9 @@
       "patient": "Patient",
       "peerDoctorDefault": "Médecin",
       "peerNurseDefault": "Infirmier(ère)",
+      "coordinators": "Coordinateurs de soins",
+      "peerCoordinatorDefault": "Coordinateur de soins",
+      "patientsSameDept": "Patients — même service",
       "doctorsSameDept": "Médecins — même service",
       "nursesSameDept": "Infirmiers — même service",
       "allDoctors": "Tous les médecins",

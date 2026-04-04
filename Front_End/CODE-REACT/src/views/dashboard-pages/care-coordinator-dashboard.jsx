@@ -9,6 +9,8 @@ const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 
 const QUICK_LINKS = [
   { to: "/dashboard-pages/care-coordinator-patients", icon: "ri-team-line", color: "secondary", titleKey: "quickPatients", descKey: "quickPatientsDesc" },
+  { to: "/dashboard-pages/care-coordinator-appointments", icon: "ri-calendar-check-line", color: "info", titleKey: "quickAppointments", descKey: "quickAppointmentsDesc" },
+  { to: "/dashboard-pages/care-coordinator-communication", icon: "ri-message-3-line", color: "warning", titleKey: "quickCommunication", descKey: "quickCommunicationDesc" },
   { to: "/notifications", icon: "ri-notification-3-line", color: "primary", titleKey: "quickNotifications", descKey: "quickNotificationsDesc" },
   { to: "/chat", icon: "ri-chat-3-line", color: "success", titleKey: "quickChat", descKey: "quickChatDesc" },
   { to: "/email/inbox", icon: "ri-mail-line", color: "info", titleKey: "quickMail", descKey: "quickMailDesc" },

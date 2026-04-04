@@ -21,6 +21,15 @@ import { randomUUID } from 'crypto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ChatService } from './chat.service';
 
+/** JWT utilisateur pour le chat (department requis pour coordinateur sur GET / markRead). */
+function chatUserFromReq(u: { id?: unknown; role?: string; department?: string }) {
+  return {
+    id: u.id,
+    role: String(u.role || ''),
+    department: typeof u?.department === 'string' ? u.department : '',
+  };
+}
+
 const chatUploadDir = join(process.cwd(), 'uploads', 'chat');
 const chatVoiceStorage = diskStorage({
   destination: (_req, _file, cb) => {
@@ -49,10 +58,14 @@ export class ChatController {
 
   @UseGuards(JwtAuthGuard)
   @Get('department-contacts')
-  async departmentContacts(@Req() req: { user?: { id?: unknown; role?: string } }) {
+  async departmentContacts(@Req() req: { user?: { id?: unknown; role?: string; department?: string } }) {
     const u = req.user;
     if (!u?.id) throw new ForbiddenException();
-    return this.chatService.getDepartmentContacts({ id: u.id, role: String(u.role || '') });
+    return this.chatService.getDepartmentContacts({
+      id: u.id,
+      role: String(u.role || ''),
+      department: typeof (u as { department?: string }).department === 'string' ? (u as { department?: string }).department : '',
+    });
   }
 
   /** Groupes staff : médecin / infirmier uniquement. */
@@ -105,10 +118,13 @@ export class ChatController {
       return this.chatService.getMessagesGroup({ id: u.id, role: String(u.role || '') }, groupId, before, lim);
     }
     if (peerRole && peerId) {
-      if (peerRole !== 'doctor' && peerRole !== 'nurse') {
+      if (peerRole !== 'doctor' && peerRole !== 'nurse' && peerRole !== 'carecoordinator') {
         throw new BadRequestException('peerRole invalide');
       }
       if (String(u.role) === 'patient') {
+        if (peerRole !== 'doctor' && peerRole !== 'nurse' && peerRole !== 'carecoordinator') {
+          throw new BadRequestException('peerRole invalide');
+        }
         return this.chatService.getMessagesPatientStaff(
           { id: u.id, role: String(u.role || '') },
           peerRole,
@@ -117,10 +133,15 @@ export class ChatController {
           lim,
         );
       }
-      return this.chatService.getMessagesPeer({ id: u.id, role: String(u.role || '') }, peerRole, peerId, before, lim);
+      const jwtUser = {
+        id: u.id,
+        role: String(u.role || ''),
+        department: typeof (u as { department?: string }).department === 'string' ? (u as { department?: string }).department : '',
+      };
+      return this.chatService.getMessagesPeer(jwtUser, peerRole, peerId, before, lim);
     }
     if (patientId) {
-      return this.chatService.getMessages({ id: u.id, role: String(u.role || '') }, patientId, before, lim);
+      return this.chatService.getMessages(chatUserFromReq(u), patientId, before, lim);
     }
     throw new BadRequestException('Paramètre patientId ou peerRole+peerId requis');
   }
@@ -136,7 +157,7 @@ export class ChatController {
     const u = req.user;
     if (!u?.id) throw new ForbiddenException();
     return this.chatService.getMessages(
-      { id: u.id, role: String(u.role || '') },
+      chatUserFromReq(u),
       patientId,
       before,
       limit ? parseInt(limit, 10) : 50,
@@ -152,7 +173,7 @@ export class ChatController {
       patientId?: string;
       body?: string;
       kind?: 'text' | 'call';
-      peerRole?: 'doctor' | 'nurse';
+      peerRole?: 'doctor' | 'nurse' | 'carecoordinator';
       peerId?: string;
       groupId?: string;
     },
@@ -160,7 +181,7 @@ export class ChatController {
     const u = req.user;
     if (!u?.id) throw new ForbiddenException();
     return this.chatService.postMessage(
-      { id: u.id, role: String(u.role || '') },
+      chatUserFromReq(u as { id?: unknown; role?: string; department?: string }),
       {
         text: body.body ?? '',
         body: body.body,
@@ -190,7 +211,7 @@ export class ChatController {
     if (!u?.id) throw new ForbiddenException();
     if (!file?.filename) throw new BadRequestException('Fichier audio requis');
     return this.chatService.postVoiceMessage(
-      { id: u.id, role: String(u.role || '') },
+      chatUserFromReq(u as { id?: unknown; role?: string; department?: string }),
       file,
       {
         patientId: req.body?.patientId,
@@ -217,7 +238,7 @@ export class ChatController {
     if (!u?.id) throw new ForbiddenException();
     if (!file?.filename) throw new BadRequestException('Fichier requis');
     return this.chatService.postMediaMessage(
-      { id: u.id, role: String(u.role || '') },
+      chatUserFromReq(u as { id?: unknown; role?: string; department?: string }),
       file,
       {
         category: req.body?.category || '',
@@ -237,7 +258,7 @@ export class ChatController {
   ) {
     const u = req.user;
     if (!u?.id) throw new ForbiddenException();
-    return this.chatService.markRead({ id: u.id, role: String(u.role || '') }, patientId);
+    return this.chatService.markRead(chatUserFromReq(u), patientId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -249,7 +270,7 @@ export class ChatController {
   ) {
     const u = req.user;
     if (!u?.id) throw new ForbiddenException();
-    if (!peerRole || !peerId || (peerRole !== 'doctor' && peerRole !== 'nurse')) {
+    if (!peerRole || !peerId || (peerRole !== 'doctor' && peerRole !== 'nurse' && peerRole !== 'carecoordinator')) {
       throw new BadRequestException('peerRole et peerId requis');
     }
     return this.chatService.markReadPatientStaff({ id: u.id, role: String(u.role || '') }, peerRole, peerId);
@@ -264,10 +285,10 @@ export class ChatController {
   ) {
     const u = req.user;
     if (!u?.id) throw new ForbiddenException();
-    if (!peerRole || !peerId || (peerRole !== 'doctor' && peerRole !== 'nurse')) {
+    if (!peerRole || !peerId || (peerRole !== 'doctor' && peerRole !== 'nurse' && peerRole !== 'carecoordinator')) {
       throw new BadRequestException('peerRole et peerId requis');
     }
-    return this.chatService.markReadPeer({ id: u.id, role: String(u.role || '') }, peerRole, peerId);
+    return this.chatService.markReadPeer(chatUserFromReq(u as { id?: unknown; role?: string; department?: string }), peerRole, peerId);
   }
 
   @UseGuards(JwtAuthGuard)

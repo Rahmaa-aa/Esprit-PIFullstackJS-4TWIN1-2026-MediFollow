@@ -169,6 +169,8 @@
     "adminDashboard": "Admin dashboard",
     "careCoordinatorDashboard": "Care coordinator dashboard",
     "careCoordinatorPatients": "Department patients",
+    "careCoordinatorAppointments": "Department appointments",
+    "careCoordinatorCommunication": "Communication",
     "departments": "Departments",
     "appointmentRequests": "Appointment requests",
     "questionnaireBank": "Questionnaire bank",
@@ -802,7 +804,65 @@
     "quickMailDesc": "Hospital internal email.",
     "introHint": "Your space for care coordination. Use the shortcuts above to stay informed and connected with teams.",
     "quickPatients": "Department patients",
-    "quickPatientsDesc": "Patients in your department with a follow-up score (vitals and medications)."
+    "quickPatientsDesc": "Patients in your department with a follow-up score (vitals and medications).",
+    "quickAppointments": "Appointments",
+    "quickAppointmentsDesc": "All appointments for patients in your department.",
+    "quickCommunication": "Communication",
+    "quickCommunicationDesc": "Message templates and department contacts for chat."
+  },
+  "careCoordinatorCommunication": {
+    "pageTitle": "Communication",
+    "intro": "Reusable message texts for follow-ups and quick access to useful department contacts (internal messaging).",
+    "templatesTitle": "Message templates",
+    "templatesHint": "Copy the text to paste into chat or email. Adjust for context and the patient.",
+    "contactsTitle": "Department contacts",
+    "contactsHint": "Open a direct conversation with a physician or nurse in the same department.",
+    "openChat": "Open chat",
+    "copied": "Copied",
+    "copy": "Copy",
+    "loadingContacts": "Loading contacts…",
+    "contactsError": "Could not load contacts.",
+    "emptyContacts": "No contacts for this department.",
+    "roleDoctor": "Physician",
+    "roleNurse": "Nurse",
+    "rolePatient": "Patient",
+    "thName": "Name",
+    "thRole": "Role",
+    "thAction": "Action",
+    "template_vitals": {
+      "title": "Vitals reminder",
+      "body": "Hello,\n\nPlease remember to record your vitals (blood pressure, weight, blood glucose) in the app today. Thank you.\n\nKind regards"
+    },
+    "template_appointment": {
+      "title": "Appointment reminder",
+      "body": "Hello,\n\nThis is a reminder of your appointment on [DATE] at [TIME]. Please bring a valid ID.\n\nKind regards"
+    },
+    "template_missedAppointment": {
+      "title": "Follow-up after missed appointment",
+      "body": "Hello,\n\nWe are contacting you following a missed appointment. Please call us to reschedule or if you have any questions.\n\nKind regards"
+    },
+    "template_lab": {
+      "title": "Lab results",
+      "body": "Hello,\n\nYour lab results are available. Your physician can discuss them at your next visit.\n\nKind regards"
+    },
+    "template_general": {
+      "title": "General follow-up",
+      "body": "Hello,\n\nWe are reaching out regarding your care. Please reply if you have any questions.\n\nKind regards"
+    }
+  },
+  "careCoordinatorAppointments": {
+    "pageTitle": "Appointments — department patients",
+    "loading": "Loading…",
+    "loadError": "Could not load appointments.",
+    "empty": "No appointments for patients in this department.",
+    "backDashboard": "Dashboard",
+    "thDate": "Date",
+    "thTime": "Time",
+    "thPatient": "Patient",
+    "thDoctor": "Doctor",
+    "thTitle": "Reason",
+    "thType": "Type",
+    "thStatus": "Status"
   },
   "careCoordinatorPatients": {
     "pageTitle": "Patients in my department",
@@ -2196,6 +2256,9 @@
       "patient": "Patient",
       "peerDoctorDefault": "Physician",
       "peerNurseDefault": "Nurse",
+      "coordinators": "Care coordinators",
+      "peerCoordinatorDefault": "Care coordinator",
+      "patientsSameDept": "Patients — same department",
       "doctorsSameDept": "Physicians — same department",
       "nursesSameDept": "Nurses — same department",
       "allDoctors": "All physicians",

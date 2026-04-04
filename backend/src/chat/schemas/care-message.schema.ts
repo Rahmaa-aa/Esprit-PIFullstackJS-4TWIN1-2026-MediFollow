@@ -15,8 +15,8 @@ export class CareMessage extends Document {
   @Prop({ type: Types.ObjectId, ref: 'StaffGroup', required: false, index: true })
   groupId?: Types.ObjectId;
 
-  @Prop({ required: true, enum: ['patient', 'doctor', 'nurse'] })
-  senderRole: 'patient' | 'doctor' | 'nurse';
+  @Prop({ required: true, enum: ['patient', 'doctor', 'nurse', 'carecoordinator'] })
+  senderRole: 'patient' | 'doctor' | 'nurse' | 'carecoordinator';
 
   /** Identifiant du compte expéditeur (string pour comparaisons JWT) */
   @Prop({ required: true })

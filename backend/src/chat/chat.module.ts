@@ -6,6 +6,7 @@ import { ChatReadState, ChatReadStateSchema } from './schemas/chat-read-state.sc
 import { Patient, PatientSchema } from '../patient/schemas/patient.schema';
 import { Doctor, DoctorSchema } from '../doctor/schemas/doctor.schema';
 import { Nurse, NurseSchema } from '../nurse/schemas/nurse.schema';
+import { User, UserSchema } from '../auth/schemas/user.schema';
 import { ChatController } from './chat.controller';
 import { ChatMessageCryptoService } from './chat-message-crypto.service';
 import { ChatService } from './chat.service';
@@ -21,6 +22,7 @@ import { NotificationModule } from '../notification/notification.module';
       { name: Patient.name, schema: PatientSchema },
       { name: Doctor.name, schema: DoctorSchema },
       { name: Nurse.name, schema: NurseSchema },
+      { name: User.name, schema: UserSchema },
     ]),
   ],
   controllers: [ChatController],

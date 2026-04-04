@@ -169,6 +169,8 @@
     "adminDashboard": "لوحة تحكم المشرف",
     "careCoordinatorDashboard": "لوحة منسّق الرعاية",
     "careCoordinatorPatients": "مرضى القسم",
+    "careCoordinatorAppointments": "مواعيد القسم",
+    "careCoordinatorCommunication": "التواصل",
     "departments": "الأقسام",
     "appointmentRequests": "طلبات المواعيد",
     "questionnaireBank": "بنك الاستبيانات",
@@ -802,7 +804,65 @@
     "quickMailDesc": "البريد الإلكتروني الداخلي للمؤسسة.",
     "introHint": "مساحتك لتنسيق الرعاية. استخدم الاختصارات أعلاه للبقاء على اطلاع ومتصلاً بالفرق.",
     "quickPatients": "مرضى القسم",
-    "quickPatientsDesc": "قائمة مرضى قسمك مع مؤشر متابعة (العلامات الحيوية والأدوية)."
+    "quickPatientsDesc": "قائمة مرضى قسمك مع مؤشر متابعة (العلامات الحيوية والأدوية).",
+    "quickAppointments": "المواعيد",
+    "quickAppointmentsDesc": "جميع مواعيد مرضى قسمك.",
+    "quickCommunication": "التواصل",
+    "quickCommunicationDesc": "قوالب رسائل وجهات اتصال القسم للدردشة."
+  },
+  "careCoordinatorCommunication": {
+    "pageTitle": "التواصل",
+    "intro": "نصوص جاهزة للمتابعة ووصول سريع إلى جهات الاتصال المفيدة في قسمك (المراسلة الداخلية).",
+    "templatesTitle": "قوالب الرسائل",
+    "templatesHint": "انسخ النص للصقه في الدردشة أو البريد. عدّله حسب السياق والمريض.",
+    "contactsTitle": "جهات اتصال القسم",
+    "contactsHint": "افتح محادثة مباشرة مع طبيب أو ممرض في نفس القسم.",
+    "openChat": "فتح الدردشة",
+    "copied": "تم النسخ",
+    "copy": "نسخ",
+    "loadingContacts": "جاري تحميل جهات الاتصال…",
+    "contactsError": "تعذّر تحميل جهات الاتصال.",
+    "emptyContacts": "لا توجد جهات اتصال لهذا القسم.",
+    "roleDoctor": "طبيب",
+    "roleNurse": "ممرض / ممرضة",
+    "rolePatient": "مريض",
+    "thName": "الاسم",
+    "thRole": "الدور",
+    "thAction": "إجراء",
+    "template_vitals": {
+      "title": "تذكير بالعلامات الحيوية",
+      "body": "مرحباً،\n\nنذكّركم بتسجيل علاماتكم الحيوية (ضغط الدم، الوزن، السكر) في التطبيق اليوم. شكراً لتعاونكم.\n\nمع التحية"
+    },
+    "template_appointment": {
+      "title": "تذكير بالموعد",
+      "body": "مرحباً،\n\nنذكّركم بموعدكم المقرّر في [التاريخ] الساعة [الوقت]. يرجى إحضار بطاقة الهوية.\n\nمع التحية"
+    },
+    "template_missedAppointment": {
+      "title": "متابعة بعد تفويت الموعد",
+      "body": "مرحباً،\n\nنتواصل معكم بعد تفويت الموعد. يرجى الاتصال بنا لإعادة جدولة الموعد أو لأي استفسار.\n\nمع التحية"
+    },
+    "template_lab": {
+      "title": "نتائج التحاليل",
+      "body": "مرحباً،\n\nنُعلمكم بأن نتائج تحاليلكم متاحة. يمكن لطبيبكم مناقشتها في الزيارة القادمة.\n\nمع التحية"
+    },
+    "template_general": {
+      "title": "متابعة عامة",
+      "body": "مرحباً،\n\nنتواصل معكم لمتابعة رعايتكم. لا تترددوا في الرد إذا كانت لديكم أسئلة.\n\nمع التحية"
+    }
+  },
+  "careCoordinatorAppointments": {
+    "pageTitle": "المواعيد — مرضى القسم",
+    "loading": "جاري التحميل…",
+    "loadError": "تعذّر تحميل المواعيد.",
+    "empty": "لا توجد مواعيد لمرضى هذا القسم.",
+    "backDashboard": "لوحة التحكم",
+    "thDate": "التاريخ",
+    "thTime": "الوقت",
+    "thPatient": "المريض",
+    "thDoctor": "الطبيب",
+    "thTitle": "السبب",
+    "thType": "النوع",
+    "thStatus": "الحالة"
   },
   "careCoordinatorPatients": {
     "pageTitle": "مرضى قسمي",
@@ -2232,6 +2292,9 @@
       "patient": "مريض",
       "peerDoctorDefault": "طبيب",
       "peerNurseDefault": "ممرض / ممرضة",
+      "coordinators": "منسّقو الرعاية",
+      "peerCoordinatorDefault": "منسّق رعاية",
+      "patientsSameDept": "مرضى — نفس القسم",
       "doctorsSameDept": "أطباء — نفس القسم",
       "nursesSameDept": "ممرضون — نفس القسم",
       "allDoctors": "جميع الأطباء",
