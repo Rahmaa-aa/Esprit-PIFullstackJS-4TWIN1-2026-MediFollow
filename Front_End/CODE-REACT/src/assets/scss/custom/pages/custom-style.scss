@@ -974,3 +974,44 @@ label.iq-active {
         margin-top: 12rem !important;
     }
 }
+
+/* ===== Accessibility: Grand texte — toutes les pages (global) ===== */
+html.a11y-large-text {
+    font-size: 120% !important;
+
+    h1, h2, h3, h4, h5, h6 {
+        font-size: calc(1em + 0.35rem) !important;
+        line-height: 1.3 !important;
+    }
+
+    p, label, span, td, th, li, a, .form-text, .badge, .small {
+        font-size: 1.05rem !important;
+        line-height: 1.7 !important;
+    }
+
+    .btn, .nav-link, .breadcrumb-item {
+        font-size: 1rem !important;
+        padding: 0.45rem 0.85rem !important;
+    }
+
+    .form-control, .form-select {
+        font-size: 1rem !important;
+        padding: 0.55rem 0.8rem !important;
+        min-height: 44px !important;
+    }
+
+    .card {
+        .card-header, .card-body, .card-footer {
+            font-size: 1rem !important;
+        }
+    }
+
+    table {
+        font-size: 1rem !important;
+    }
+
+    .a11y-coordinator-toolbar .a11y-btn {
+        font-size: 1rem !important;
+        padding: 0.45rem 1rem !important;
+    }
+}

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Row, Col, Spinner, Alert, Table, Badge } from "react-bootstrap";
 import Card from "../../components/Card";
+import A11yToolbar from "../../components/A11yToolbar";
 import { appointmentApi } from "../../services/api";
 import { hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
 
@@ -97,6 +98,7 @@ const CareCoordinatorAppointments = () => {
 
   return (
     <>
+      <A11yToolbar />
       <Row>
         <Col sm={12}>
           <Card>

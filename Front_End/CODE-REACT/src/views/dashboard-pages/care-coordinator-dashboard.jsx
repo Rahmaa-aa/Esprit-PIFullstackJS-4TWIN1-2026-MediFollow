@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Chart from "react-apexcharts";
 import Card from "../../components/Card";
+import A11yToolbar from "../../components/A11yToolbar";
 import { hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
 import { departmentApi } from "../../services/api";
 
@@ -175,6 +176,7 @@ const CareCoordinatorDashboard = () => {
 
   return (
     <>
+      <A11yToolbar />
       <Row>
         <Col sm={12}>
           <Card>

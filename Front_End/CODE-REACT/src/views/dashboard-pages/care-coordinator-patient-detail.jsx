@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Row, Col, Spinner, Alert, Table, Badge } from "react-bootstrap";
 import Card from "../../components/Card";
+import A11yToolbar from "../../components/A11yToolbar";
 import { departmentApi } from "../../services/api";
 import {
   getIntakeHistoryByDate,
@@ -112,6 +113,7 @@ const CareCoordinatorPatientDetail = () => {
 
   return (
     <>
+      <A11yToolbar />
       <Row>
         <Col sm={12}>
           <Card>

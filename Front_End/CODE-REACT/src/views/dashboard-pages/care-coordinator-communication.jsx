@@ -3,6 +3,7 @@ import { Row, Col, Card as BsCard, Badge, Button, Spinner } from "react-bootstra
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
+import A11yToolbar from "../../components/A11yToolbar";
 import { chatApi } from "../../services/api";
 
 const TEMPLATE_IDS = ["vitals", "appointment", "missedAppointment", "lab", "general"];
@@ -116,6 +117,7 @@ const CareCoordinatorCommunication = () => {
 
     return (
         <>
+            <A11yToolbar />
             <Row>
                 <Col sm={12}>
                     <Card>

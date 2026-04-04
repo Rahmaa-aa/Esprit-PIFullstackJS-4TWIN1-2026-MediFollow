@@ -273,7 +273,7 @@ const SignIn = () => {
             localStorage.setItem("adminToken", data.access_token);
             localStorage.setItem("adminUser", JSON.stringify(data.user));
             const role = data.user?.role;
-            const path = role === "auditor" ? "/auditor/dashboard" : "/super-admin/care-coordinators";
+            const path = role === "auditor" ? "/auditor/dashboard" : "/dashboard-pages/care-coordinator-dashboard";
             window.location.href = path;
           }
         }
@@ -315,7 +315,7 @@ const SignIn = () => {
       clearMedifollowSessionExcept("admin");
       localStorage.setItem("adminToken", data.access_token);
       localStorage.setItem("adminUser", JSON.stringify(data.user));
-      const path = role === "auditor" ? "/auditor/dashboard" : "/super-admin/care-coordinators";
+      const path = role === "auditor" ? "/auditor/dashboard" : "/dashboard-pages/care-coordinator-dashboard";
       window.location.href = path;
       return;
     }
