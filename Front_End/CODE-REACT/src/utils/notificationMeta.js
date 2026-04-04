@@ -117,6 +117,13 @@ export function staffNotifMeta(n, role) {
       iconWrapClass: "rounded-3 bg-primary-subtle text-primary border",
     };
   }
+  if (t === "lab_analysis_anomaly") {
+    return {
+      href: patientLink(role, n.patientId),
+      icon: "ri-test-tube-line",
+      iconWrapClass: "rounded-3 bg-warning-subtle text-warning-emphasis border border-warning-subtle",
+    };
+  }
   return {
     href: patientLink(role, n.patientId),
     icon: "ri-alarm-warning-fill",
@@ -142,6 +149,7 @@ export function staffDefaultTitle(n, t) {
     return t("notifications.staffTitle.messaging");
   }
   if (ty === "mail_inbox") return t("notifications.staffTitle.internalMail");
+  if (ty === "lab_analysis_anomaly") return t("notifications.staffTitle.labAnalysisAnomaly");
   return t("notifications.staffTitle.patientAlert");
 }
 
@@ -149,7 +157,7 @@ export function staffDefaultTitle(n, t) {
 export function staffNotifCategory(n) {
   const t = n.type || "";
   const id = n._id || n.id;
-  if (t === "risk_alert") return "danger";
+  if (t === "risk_alert" || t === "lab_analysis_anomaly") return "danger";
   if (t === "appointment_request") return "demande_rdv";
   if (isAppointmentNotifType(t) || isVirtualId(id)) return "rdv";
   if (

@@ -1833,7 +1833,8 @@
       "appointmentReminder": "Appointment reminder",
       "messaging": "Messaging",
       "internalMail": "Internal mail",
-      "patientAlert": "Patient alert"
+      "patientAlert": "Patient alert",
+      "labAnalysisAnomaly": "Lab report — possible anomaly"
     },
     "pageTitle": "Notifications",
     "pageSubtitle": "Review your alerts, messages, and appointments. Filter by status or type.",

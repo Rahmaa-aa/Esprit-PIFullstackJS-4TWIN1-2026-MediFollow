@@ -1833,7 +1833,8 @@
       "appointmentReminder": "Rappel rendez-vous",
       "messaging": "Messagerie",
       "internalMail": "Messagerie interne",
-      "patientAlert": "Alerte patient"
+      "patientAlert": "Alerte patient",
+      "labAnalysisAnomaly": "Bilan labo — anomalie possible"
     },
     "pageTitle": "Notifications",
     "pageSubtitle": "Consultez vos alertes, messages et rendez-vous. Filtrez par statut ou par type.",
