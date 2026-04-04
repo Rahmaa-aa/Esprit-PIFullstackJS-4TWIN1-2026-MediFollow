@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import PaginationBar from "../../components/PaginationBar";
 import { usePagination } from "../../hooks/usePagination";
+import A11yToolbar from "../../components/A11yToolbar";
 import { chatApi } from "../../services/api";
 
 const TEMPLATE_IDS = ["vitals", "appointment", "missedAppointment", "lab", "general"];
@@ -127,6 +128,7 @@ const CareCoordinatorCommunication = () => {
 
     return (
         <>
+            <A11yToolbar />
             <Row>
                 <Col sm={12}>
                     <Card>
