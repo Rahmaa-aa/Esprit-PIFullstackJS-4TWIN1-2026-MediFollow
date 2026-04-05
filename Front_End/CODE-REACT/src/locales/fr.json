@@ -23,7 +23,8 @@
     "adminProfileDetails": "Voir les détails du profil personnel.",
     "signOut": "Déconnexion",
     "regionFlagsTitle": "Partenariat Tunisie–Algérie",
-    "languageMenu": "Langue"
+    "languageMenu": "Langue",
+    "a11yReadPageEmpty": "Aucun texte lisible dans cette zone."
   },
   "emailPage": {
     "loading": "Chargement…",

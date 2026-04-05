@@ -23,7 +23,8 @@
     "adminProfileDetails": "عرض تفاصيل الملف الشخصي.",
     "signOut": "تسجيل الخروج",
     "regionFlagsTitle": "شراكة تونس والجزائر",
-    "languageMenu": "اللغة"
+    "languageMenu": "اللغة",
+    "a11yReadPageEmpty": "لا يوجد نص قابل للقراءة في هذه المنطقة."
   },
   "emailPage": {
     "loading": "جاري التحميل…",

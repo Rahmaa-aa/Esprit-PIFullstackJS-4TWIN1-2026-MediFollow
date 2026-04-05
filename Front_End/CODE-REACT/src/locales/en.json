@@ -23,7 +23,8 @@
     "adminProfileDetails": "View personal profile details.",
     "signOut": "Sign out",
     "regionFlagsTitle": "Tunisia–Algeria partnership",
-    "languageMenu": "Language"
+    "languageMenu": "Language",
+    "a11yReadPageEmpty": "No readable text in this area."
   },
   "emailPage": {
     "loading": "Loading…",
