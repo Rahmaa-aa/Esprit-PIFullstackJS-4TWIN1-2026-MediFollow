@@ -13,7 +13,7 @@ import { Pagination } from "react-bootstrap";
  *  onPageChange(n) - called when user clicks a page
  */
 const PaginationBar = ({ page, totalPages, totalItems, pageSize, onPageChange }) => {
-  if (totalPages <= 1) return null;
+  if (totalItems === 0) return null;
 
   const start = (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, totalItems);
@@ -26,9 +26,9 @@ const PaginationBar = ({ page, totalPages, totalItems, pageSize, onPageChange })
   }
 
   return (
-    <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+    <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 px-1">
       <small className="text-muted">
-        Showing {start}–{end} of {totalItems} results
+        Showing <strong>{start}–{end}</strong> of <strong>{totalItems}</strong> results
       </small>
       <Pagination className="mb-0" size="sm">
         <Pagination.First onClick={() => onPageChange(1)} disabled={page === 1} />

@@ -99,7 +99,7 @@ const CareCoordinatorCommunication = () => {
     return out;
   }, [contacts, t]);
 
-  const { page, setPage, totalPages, paginated: paginatedContacts, totalItems } = usePagination(contactRows, 8);
+  const { page, setPage, totalPages, paginated: paginatedContacts, totalItems } = usePagination(contactRows, 2);
 
     const copyTemplate = useCallback(
         async (id) => {
@@ -221,7 +221,7 @@ const CareCoordinatorCommunication = () => {
                                         page={page}
                                         totalPages={totalPages}
                                         totalItems={totalItems}
-                                        pageSize={8}
+                                        pageSize={2}
                                         onPageChange={setPage}
                                     />
                                 </>
