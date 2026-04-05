@@ -165,6 +165,7 @@
     "prescriptions": "الوصفات",
     "appointmentCalendar": "تقويم المواعيد",
     "brainMri": "تصوير الرنين المغناطيسي للدماغ (ذكاء اصطناعي)",
+    "brainMriPatient": "رنين دماغي بمساعدة الذكاء الاصطناعي",
     "sectionDashboard": "لوحة التحكم",
     "homeTooltip": "الرئيسية",
     "adminDashboard": "لوحة تحكم المشرف",
@@ -409,7 +410,8 @@
     "qsStatusCancelled": "ملغى",
     "apptStatusConfirmed": "مؤكَّد",
     "apptStatusPending": "قيد الانتظار",
-    "apptStatusCancelled": "ملغى"
+    "apptStatusCancelled": "ملغى",
+    "sectionBrainMri": "تصوير رنين مغناطيسي للدماغ (مساعدة ذكاء اصطناعي)"
   },
   "vitalStatus": {
     "noData": "لا توجد بيانات",
@@ -2615,7 +2617,24 @@
     "normal": "فحص سلبي (الفئة 0)",
     "tumor": "فحص إيجابي (الفئة 1)",
     "probability": "احتمال الورم: {{pct}}٪",
-    "heatmapTitle": "خريطة أهمية Grad-CAM"
+    "heatmapTitle": "خريطة أهمية Grad-CAM",
+    "historyTitle": "التحليلات المسجّلة",
+    "historyColDate": "التاريخ",
+    "historyColResult": "الفحص",
+    "historyColScore": "درجة النموذج",
+    "historyColSource": "المصدر",
+    "historySourceDoctor": "الفريق الطبي",
+    "historySourcePatient": "المريض",
+    "historyEmpty": "لا توجد تحليلات مسجّلة بعد.",
+    "historyLoadError": "تعذّر تحميل التحليلات المحفوظة (الجلسة أو ربط المريض)."
+  },
+  "patientBrainMri": {
+    "title": "رنين مغناطيسي للدماغ — مراجعة بمساعدة الذكاء (مساحتك)",
+    "subtitle": "ارفع شريحة رنين للحصول على درجة مساعدة للفحص. يُبلَّغ طبيبك المعتمد والممرض المكلف عند كل تحليل — هذا لا يغني عن الأشعة أو زيارة طبية.",
+    "disclaimer": "أداة دعم قرار فقط وليست تشخيصاً. للطوارئ اتصل بخدمات الطوارئ. يتلقى فريق الرعاية إشعاراً بعد كل تحليل تشغّله من هذه الصفحة.",
+    "loginPrompt": "سجّل الدخول كمريض لاستخدام هذه الصفحة.",
+    "signIn": "تسجيل الدخول",
+    "careTeamNotified": "تم إبلاغ فريق الرعاية (الطبيب المعتمد والممرض إن وُجد) بهذا التحليل."
   },
   "patientAppointmentRequest": {
     "backToDashboard": "العودة إلى لوحة التحكم",

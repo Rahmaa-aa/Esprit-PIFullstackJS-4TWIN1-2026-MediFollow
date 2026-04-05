@@ -1,9 +1,20 @@
-import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { randomUUID } from 'crypto';
 import { execFile } from 'child_process';
+import { Model, Types } from 'mongoose';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
+import { Patient } from '../patient/schemas/patient.schema';
+import { BrainMriAnalysisRecord, BrainMriAnalysisRecordDocument } from './schemas/brain-mri-analysis-record.schema';
 
 const execFileAsync = promisify(execFile);
 
@@ -58,6 +69,14 @@ export interface BrainTumorUploadMeta {
 
 @Injectable()
 export class BrainTumorService {
+  private readonly brainMriUploadDir = path.join(process.cwd(), 'uploads', 'brain-mri');
+
+  constructor(
+    @InjectModel(BrainMriAnalysisRecord.name)
+    private readonly brainMriRecordModel: Model<BrainMriAnalysisRecordDocument>,
+    @InjectModel(Patient.name) private readonly patientModel: Model<Patient>,
+  ) {}
+
   /**
    * Interpréteur Python (TensorFlow) :
    * - `BRAIN_TUMOR_PYTHON` optionnel : chemin absolu, ou relatif au dossier `brain-tumor-detection` (ex. `.venv/Scripts/python.exe`).
@@ -262,5 +281,76 @@ export class BrainTumorService {
     } finally {
       await fs.unlink(tmp).catch(() => undefined);
     }
+  }
+
+  async assertDoctorAssignedToPatient(doctorId: string, patientId: string): Promise<void> {
+    if (!Types.ObjectId.isValid(patientId)) {
+      throw new BadRequestException('Identifiant patient invalide.');
+    }
+    const p = await this.patientModel.findById(patientId).select('doctorId').lean().exec();
+    if (!p) throw new NotFoundException('Patient introuvable.');
+    const assigned = String((p as { doctorId?: string }).doctorId || '').trim();
+    const me = String(doctorId).trim();
+    if (!assigned || assigned !== me) {
+      throw new ForbiddenException('Ce patient n’est pas assigné à votre compte médecin.');
+    }
+  }
+
+  /**
+   * Enregistre le résultat + image overlay sur disque (dossier patient).
+   */
+  async persistAnalysis(
+    patientId: string,
+    result: BrainTumorPredictResult,
+    opts: { source: 'doctor' | 'patient'; doctorId?: string; originalname?: string },
+  ): Promise<{ id: string }> {
+    if (!Types.ObjectId.isValid(patientId)) {
+      throw new BadRequestException('Identifiant patient invalide.');
+    }
+    const pid = String(patientId);
+    const rel = `${pid}/${randomUUID()}.png`;
+    const abs = path.join(this.brainMriUploadDir, rel);
+    await fs.mkdir(path.dirname(abs), { recursive: true });
+    try {
+      await fs.writeFile(abs, Buffer.from(result.overlayPngBase64, 'base64'));
+    } catch (e) {
+      console.warn('[brain-tumor] overlay write failed:', e);
+    }
+    const doc = await this.brainMriRecordModel.create({
+      patientId: new Types.ObjectId(pid),
+      prediction: result.prediction,
+      probability: result.probability,
+      labelText: result.labelText || '',
+      source: opts.source,
+      createdByDoctorId: opts.doctorId ? String(opts.doctorId) : '',
+      originalFilename: opts.originalname ? String(opts.originalname).slice(0, 500) : '',
+      overlayRelativePath: rel,
+    });
+    return { id: String(doc._id) };
+  }
+
+  async listRecordsForPatient(patientId: string, limit = 30) {
+    if (!Types.ObjectId.isValid(patientId)) {
+      throw new BadRequestException('Identifiant patient invalide.');
+    }
+    const n = Math.min(50, Math.max(1, limit));
+    const rows = await this.brainMriRecordModel
+      .find({ patientId: new Types.ObjectId(patientId) })
+      .sort({ createdAt: -1 })
+      .limit(n)
+      .lean()
+      .exec();
+    return rows.map((r) => ({
+      id: String(r._id),
+      patientId: String(r.patientId),
+      prediction: r.prediction,
+      probability: r.probability,
+      labelText: r.labelText,
+      source: r.source,
+      createdByDoctorId: r.createdByDoctorId || '',
+      originalFilename: r.originalFilename || '',
+      createdAt: (r as { createdAt?: Date }).createdAt,
+      hasOverlay: !!(r as { overlayRelativePath?: string }).overlayRelativePath,
+    }));
   }
 }

@@ -152,6 +152,70 @@ export class NotificationService {
     await sendTo(p.doctorId, 'doctor');
   }
 
+  /**
+   * Patient : analyse IRM assistée (upload) — notifie médecin référent et infirmier assigné.
+   */
+  async notifyCareTeamBrainMriAnalysis(params: {
+    patientId: Types.ObjectId;
+    prediction: number;
+    probability: number;
+  }) {
+    const patient = await this.patientModel
+      .findById(params.patientId)
+      .select('firstName lastName email doctorId nurseId')
+      .lean()
+      .exec();
+    if (!patient) return;
+
+    const p = patient as {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      doctorId?: string;
+      nurseId?: string;
+    };
+    const patientName =
+      `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.email || 'Patient';
+    const pct = Math.round(params.probability * 1000) / 10;
+    const screening =
+      params.prediction === 1
+        ? 'Dépistage positif (classe tumeur) — à confirmer cliniquement.'
+        : 'Pas de signal positif au seuil du modèle.';
+    const title = `Analyse IRM cérébrale — ${patientName}`;
+    const body = `${patientName} a effectué une analyse d’assistance IRM. ${screening} Score modèle : ${pct} %.`;
+
+    const meta: Record<string, unknown> = {
+      kind: 'brain_mri_patient_analysis',
+      patientName,
+      prediction: params.prediction,
+      probability: params.probability,
+    };
+
+    const notifiedRecipientIds = new Set<string>();
+
+    const sendTo = async (recipientId: string | undefined, recipientRole: 'doctor' | 'nurse') => {
+      if (recipientId == null || !String(recipientId).trim()) return;
+      const rid = String(recipientId);
+      if (notifiedRecipientIds.has(rid)) return;
+      notifiedRecipientIds.add(rid);
+
+      await this.notificationModel.create({
+        recipientId: rid,
+        recipientRole,
+        type: 'brain_mri_patient_analysis',
+        title,
+        body,
+        patientId: params.patientId,
+        patientName,
+        read: false,
+        meta,
+      });
+    };
+
+    await sendTo(p.nurseId, 'nurse');
+    await sendTo(p.doctorId, 'doctor');
+  }
+
   /** Escalade infirmier → médecin (messagerie + notification médecin). */
   async notifyDoctorVitalEscalation(params: {
     doctorId: string;

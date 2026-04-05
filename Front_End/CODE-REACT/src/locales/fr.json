@@ -165,6 +165,7 @@
     "prescriptions": "Ordonnances",
     "appointmentCalendar": "Calendrier RDV",
     "brainMri": "IRM cérébrale (IA)",
+    "brainMriPatient": "IRM cérébrale (aide IA)",
     "sectionDashboard": "Tableau de bord",
     "homeTooltip": "Accueil",
     "adminDashboard": "Tableau de bord admin",
@@ -409,7 +410,8 @@
     "qsStatusCancelled": "Annulé",
     "apptStatusConfirmed": "Confirmé",
     "apptStatusPending": "En attente",
-    "apptStatusCancelled": "Annulé"
+    "apptStatusCancelled": "Annulé",
+    "sectionBrainMri": "IRM cérébrale (aide IA)"
   },
   "vitalStatus": {
     "noData": "Non renseigné",
@@ -2579,7 +2581,24 @@
     "normal": "Dépistage négatif (classe 0)",
     "tumor": "Dépistage positif (classe 1)",
     "probability": "Probabilité tumeur : {{pct}} %",
-    "heatmapTitle": "Saliency Grad-CAM"
+    "heatmapTitle": "Saliency Grad-CAM",
+    "historyTitle": "Analyses enregistrées",
+    "historyColDate": "Date",
+    "historyColResult": "Dépistage",
+    "historyColScore": "Score modèle",
+    "historyColSource": "Origine",
+    "historySourceDoctor": "Équipe médicale",
+    "historySourcePatient": "Patient",
+    "historyEmpty": "Aucune analyse enregistrée pour l’instant.",
+    "historyLoadError": "Impossible de charger les analyses enregistrées (session ou rattachement patient)."
+  },
+  "patientBrainMri": {
+    "title": "IRM cérébrale — aide à la lecture (espace patient)",
+    "subtitle": "Importez une coupe IRM pour un score d’aide au dépistage. Votre médecin référent et votre infirmier assigné sont notifiés à chaque analyse — cela ne remplace ni la radiologie ni une consultation.",
+    "disclaimer": "Outil d’aide à la décision uniquement, pas un diagnostic. Urgence vitale : appelez le 15. L’équipe soignante reçoit une notification après chaque analyse lancée depuis cet écran.",
+    "loginPrompt": "Connectez-vous en tant que patient pour accéder à cette page.",
+    "signIn": "Connexion",
+    "careTeamNotified": "Votre équipe soignante (médecin référent et infirmier si assigné) a été informée de cette analyse."
   },
   "patientAppointmentRequest": {
     "backToDashboard": "Retour au tableau de bord",

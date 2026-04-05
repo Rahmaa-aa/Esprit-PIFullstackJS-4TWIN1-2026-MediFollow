@@ -165,6 +165,7 @@
     "prescriptions": "Prescriptions",
     "appointmentCalendar": "Appointment calendar",
     "brainMri": "Brain MRI (AI)",
+    "brainMriPatient": "Brain MRI (AI-assisted)",
     "sectionDashboard": "Dashboard",
     "homeTooltip": "Home",
     "adminDashboard": "Admin dashboard",
@@ -409,7 +410,8 @@
     "qsStatusCancelled": "Cancelled",
     "apptStatusConfirmed": "Confirmed",
     "apptStatusPending": "Pending",
-    "apptStatusCancelled": "Cancelled"
+    "apptStatusCancelled": "Cancelled",
+    "sectionBrainMri": "Brain MRI (AI-assisted)"
   },
   "vitalStatus": {
     "noData": "No data",
@@ -2579,7 +2581,24 @@
     "normal": "Negative screen (class 0)",
     "tumor": "Positive screen (class 1)",
     "probability": "Tumor probability: {{pct}}%",
-    "heatmapTitle": "Grad-CAM saliency"
+    "heatmapTitle": "Grad-CAM saliency",
+    "historyTitle": "Recorded analyses",
+    "historyColDate": "Date",
+    "historyColResult": "Screening",
+    "historyColScore": "Model score",
+    "historyColSource": "Source",
+    "historySourceDoctor": "Clinician",
+    "historySourcePatient": "Patient",
+    "historyEmpty": "No saved analysis yet.",
+    "historyLoadError": "Could not load saved analyses (check session or assignment)."
+  },
+  "patientBrainMri": {
+    "title": "Brain MRI — assisted review (your space)",
+    "subtitle": "Upload a brain MRI slice for an AI-assisted screening score. Your referring physician and assigned nurse are notified when you run an analysis—this does not replace radiology or an in-person visit.",
+    "disclaimer": "Decision-support tool only. Not a diagnosis. Emergency? Call emergency services. Your care team receives a notification after each analysis you run.",
+    "loginPrompt": "Sign in as a patient to use this page.",
+    "signIn": "Sign in",
+    "careTeamNotified": "Your care team (referring physician and nurse, if assigned) has been notified of this analysis."
   },
   "patientAppointmentRequest": {
     "backToDashboard": "Back to dashboard",

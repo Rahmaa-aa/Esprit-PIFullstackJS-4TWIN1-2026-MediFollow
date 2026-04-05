@@ -3,6 +3,8 @@ import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Alert, Badge, Button, Card, Col, Form, Modal, Row, Spinner, Table } from "react-bootstrap";
 import { healthLogApi, medicationApi, appointmentApi, questionnaireApi } from "../../services/api";
+import BrainMriAnalysisPage from "../../components/brain-mri-analysis-page";
+import { normalizeMongoId } from "../../utils/mongoId";
 import VitalMetricTile, { hrStatus, bpStatus, o2Status, tempStatus, weightStatus } from "../../components/VitalMetricTile";
 import {
   localDateStringYMD,
@@ -914,6 +916,18 @@ export default function DoctorPatientDossierView({ patient }) {
                 </Table>
               </div>
             )}
+          </SectionCard>
+
+          <SectionCard
+            sectionId="dossier-section-brain-mri"
+            icon="ri-brain-line"
+            title={t("doctorPatientDossier.sectionBrainMri")}
+          >
+            <BrainMriAnalysisPage
+              variant="doctor"
+              patientId={normalizeMongoId(patient?._id ?? patient?.id)}
+              embedded
+            />
           </SectionCard>
 
           <SectionCard icon="ri-draft-line" title={t("doctorPatientDossier.sectionProtocol")}>
