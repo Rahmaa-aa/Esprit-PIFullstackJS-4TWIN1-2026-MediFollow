@@ -721,6 +721,43 @@ div#sidebar-toggle {
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
             z-index: 1;
         }
+
+        .voice-call-modal__emotion-badge {
+            position: absolute;
+            z-index: 3;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            background: rgba(10, 14, 18, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+            pointer-events: none;
+            max-width: min(92%, 20rem);
+        }
+
+        .voice-call-modal__emotion-badge--main {
+            top: 0.65rem;
+            left: 0.65rem;
+        }
+
+        .voice-call-modal__emotion-badge--pip {
+            bottom: 5.25rem;
+            right: 0.85rem;
+        }
+
+        .voice-call-modal__emotion-emoji {
+            font-size: 1.15rem;
+            line-height: 1;
+        }
+
+        .voice-call-modal__emotion-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+        }
     }
 
     .voice-call-modal__video-overlay {

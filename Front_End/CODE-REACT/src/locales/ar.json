@@ -2579,7 +2579,17 @@
       "errorVideoDenied": "الكاميرا أو الميكروفون غير متاح / مرفوض",
       "errorAcceptVideo": "تعذّر القبول (كاميرا / ميكروفون)",
       "errorAcceptAudio": "تعذّر قبول المكالمة",
-      "ok": "حسناً"
+      "ok": "حسناً",
+      "emotionHint": "مؤشر تعبير الوجه (عرض المريض)",
+      "emotion": {
+        "neutral": "محايد",
+        "happy": "سعيد",
+        "sad": "حزين",
+        "angry": "غاضب",
+        "fearful": "خائف",
+        "disgusted": "مشمئز",
+        "surprised": "متفاجئ"
+      }
     },
     "data": {
       "name": "الاسم:",
