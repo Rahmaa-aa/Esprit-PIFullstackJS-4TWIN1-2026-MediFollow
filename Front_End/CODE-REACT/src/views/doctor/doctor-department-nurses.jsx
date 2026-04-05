@@ -3,6 +3,8 @@ import { Badge, Button, Card, Col, Container, Form, InputGroup, Row, Spinner, Ta
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { departmentApi } from "../../services/api";
+import PaginationBar from "../../components/PaginationBar";
+import { usePagination } from "../../hooks/usePagination";
 
 const PREDEFINED_SPECIALTIES = [
   "Pediatrics",
@@ -78,6 +80,8 @@ const DoctorDepartmentNurses = () => {
   }, [nurses, search, specialtyFilter]);
 
   const hasActiveFilters = search.trim() || specialtyFilter !== "all";
+
+  const { page, setPage, totalPages, paginated, totalItems } = usePagination(filtered, 5);
 
   if (!doctorId) {
     return (
@@ -187,7 +191,7 @@ const DoctorDepartmentNurses = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((n) => {
+                {paginated.map((n) => {
                   const nid = n._id || n.id;
                   return (
                     <tr key={nid}>
@@ -211,6 +215,11 @@ const DoctorDepartmentNurses = () => {
           )}
         </Card.Body>
       </Card>
+      {!loading && filtered.length > 0 && (
+        <div className="px-3">
+          <PaginationBar page={page} totalPages={totalPages} totalItems={totalItems} pageSize={5} onPageChange={setPage} />
+        </div>
+      )}
     </Container>
   );
 };

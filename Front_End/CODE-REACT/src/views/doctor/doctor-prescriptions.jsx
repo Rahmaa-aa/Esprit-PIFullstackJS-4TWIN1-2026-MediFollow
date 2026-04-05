@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Card, Col, Container, Form, Row, Spinner, Table } from "react-bootstrap";
+import { Button, Card, Col, Container, Form, InputGroup, Row, Spinner, Table } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { patientApi, medicationApi } from "../../services/api";
@@ -7,6 +7,8 @@ import MedicationNameAutocomplete from "../../components/MedicationNameAutocompl
 import DosageAutocomplete from "../../components/DosageAutocomplete";
 import { formatMedicationFrequencyDisplay } from "../../utils/medicationFrequencyLabel";
 import { formatYmdForLocale } from "../../utils/localeDateDisplay";
+import PaginationBar from "../../components/PaginationBar";
+import { usePagination } from "../../hooks/usePagination";
 
 /** Canonical values (English) — aligned with backend medication-slots.util.ts */
 const FREQUENCY_OPTIONS = [
@@ -50,6 +52,7 @@ const DoctorPrescriptions = () => {
   const [patients, setPatients] = useState([]);
   const [loadingPatients, setLoadingPatients] = useState(true);
   const [selectedPatientId, setSelectedPatientId] = useState("");
+  const [searchPatient, setSearchPatient] = useState("");
   const [medications, setMedications] = useState([]);
   const [loadingMeds, setLoadingMeds] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -126,6 +129,17 @@ const DoctorPrescriptions = () => {
     () => patients.find((p) => String(p._id || p.id) === String(selectedPatientId)),
     [patients, selectedPatientId],
   );
+
+  const filteredPatients = useMemo(() => {
+    if (!searchPatient.trim()) return patients;
+    const q = searchPatient.trim().toLowerCase();
+    return patients.filter((p) =>
+      `${p.firstName || ""} ${p.lastName || ""}`.toLowerCase().includes(q) ||
+      (p.email || "").toLowerCase().includes(q)
+    );
+  }, [patients, searchPatient]);
+
+  const { page: medPage, setPage: setMedPage, totalPages: medTotalPages, paginated: paginatedMeds, totalItems: medTotalItems } = usePagination(medications, 5);
 
   const handleAddMedication = async (e) => {
     e.preventDefault();
@@ -206,18 +220,37 @@ const DoctorPrescriptions = () => {
               ) : (
                 <Form.Group>
                   <Form.Label>{t("doctorPrescriptions.selectPatientLabel")}</Form.Label>
+                  <InputGroup className="mb-2">
+                    <InputGroup.Text><i className="ri-search-line" /></InputGroup.Text>
+                    <Form.Control
+                      type="text"
+                      placeholder="Search patient by name..."
+                      value={searchPatient}
+                      onChange={(e) => setSearchPatient(e.target.value)}
+                    />
+                    {searchPatient && (
+                      <Button variant="outline-secondary" size="sm" onClick={() => setSearchPatient("")}>
+                        <i className="ri-close-line" />
+                      </Button>
+                    )}
+                  </InputGroup>
                   <Form.Select
                     value={selectedPatientId}
                     onChange={(e) => setSelectedPatientId(e.target.value)}
                     aria-label={t("doctorPrescriptions.selectPatientPlaceholder")}
                   >
                     <option value="">{t("doctorPrescriptions.patientPlaceholderOption")}</option>
-                    {patients.map((p) => (
+                    {filteredPatients.map((p) => (
                       <option key={p._id || p.id} value={String(p._id || p.id)}>
                         {p.firstName} {p.lastName} — {p.email}
                       </option>
                     ))}
                   </Form.Select>
+                  {searchPatient && (
+                    <div className="mt-1 small text-muted">
+                      {filteredPatients.length} / {patients.length} patients
+                    </div>
+                  )}
                 </Form.Group>
               )}
             </Card.Body>
@@ -377,38 +410,43 @@ const DoctorPrescriptions = () => {
             ) : medications.length === 0 ? (
               <p className="text-muted small text-center py-4 mb-0">{t("doctorPrescriptions.emptyMedicationsList")}</p>
             ) : (
-              <div className="table-responsive">
-                <Table hover className="mb-0 align-middle">
-                  <thead className="table-light">
-                    <tr>
-                      <th className="ps-4">{t("doctorPrescriptions.tableMedication")}</th>
-                      <th>{t("doctorPrescriptions.tableDosage")}</th>
-                      <th>{t("doctorPrescriptions.tableFrequency")}</th>
-                      <th>{t("doctorPrescriptions.tablePrescribedBy")}</th>
-                      <th className="pe-4">{t("doctorPrescriptions.tablePeriod")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {medications.map((m) => (
-                      <tr key={m._id}>
-                        <td className="ps-4 fw-semibold">{m.name}</td>
-                        <td className="small">{m.dosage || "—"}</td>
-                        <td className="small">{formatMedicationFrequencyDisplay(m.frequency, t)}</td>
-                        <td className="small text-primary">{m.prescribedBy || "—"}</td>
-                        <td className="pe-4 small text-muted">
-                          {m.startDate
-                            ? formatYmdForLocale(String(m.startDate).slice(0, 10), dateLocaleTag)
-                            : "—"}{" "}
-                          →{" "}
-                          {m.endDate
-                            ? formatYmdForLocale(String(m.endDate).slice(0, 10), dateLocaleTag)
-                            : "—"}
-                        </td>
+              <>
+                <div className="table-responsive">
+                  <Table hover className="mb-0 align-middle">
+                    <thead className="table-light">
+                      <tr>
+                        <th className="ps-4">{t("doctorPrescriptions.tableMedication")}</th>
+                        <th>{t("doctorPrescriptions.tableDosage")}</th>
+                        <th>{t("doctorPrescriptions.tableFrequency")}</th>
+                        <th>{t("doctorPrescriptions.tablePrescribedBy")}</th>
+                        <th className="pe-4">{t("doctorPrescriptions.tablePeriod")}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {paginatedMeds.map((m) => (
+                        <tr key={m._id}>
+                          <td className="ps-4 fw-semibold">{m.name}</td>
+                          <td className="small">{m.dosage || "—"}</td>
+                          <td className="small">{formatMedicationFrequencyDisplay(m.frequency, t)}</td>
+                          <td className="small text-primary">{m.prescribedBy || "—"}</td>
+                          <td className="pe-4 small text-muted">
+                            {m.startDate
+                              ? formatYmdForLocale(String(m.startDate).slice(0, 10), dateLocaleTag)
+                              : "—"}{" "}
+                            →{" "}
+                            {m.endDate
+                              ? formatYmdForLocale(String(m.endDate).slice(0, 10), dateLocaleTag)
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
+                <div className="px-3">
+                  <PaginationBar page={medPage} totalPages={medTotalPages} totalItems={medTotalItems} pageSize={5} onPageChange={setMedPage} />
+                </div>
+              </>
             )}
           </Card.Body>
         </Card>
