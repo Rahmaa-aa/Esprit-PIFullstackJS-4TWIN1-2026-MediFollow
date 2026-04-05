@@ -1,4 +1,4 @@
 
 import { DefaultRoute, BlankLayoutRouter } from "./default-router";
 
-export const LayoutsRoute = [...DefaultRoute, ...BlankLayoutRouter]
+export const LayoutsRoute = [...BlankLayoutRouter, ...DefaultRoute]

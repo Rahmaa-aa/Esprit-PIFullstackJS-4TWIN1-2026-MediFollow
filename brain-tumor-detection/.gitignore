@@ -1,0 +1,8 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+brain_tumor_resnet.h5
+brain_tumor_resnet.keras
+training_history.png
+.ipynb_checkpoints/

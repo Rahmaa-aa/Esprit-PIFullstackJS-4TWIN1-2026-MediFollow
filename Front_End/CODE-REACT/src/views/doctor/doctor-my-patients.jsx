@@ -3,6 +3,8 @@ import { Button, Card, Col, Container, Row, Spinner, Table, Form, Badge, InputGr
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { patientApi } from "../../services/api";
+import PaginationBar from "../../components/PaginationBar";
+import { usePagination } from "../../hooks/usePagination";
 
 const SCORE_ALL = "all";
 const SCORE_GOOD = "good";
@@ -111,6 +113,8 @@ const DoctorMyPatients = () => {
   };
 
   const hasActiveFilters = search.trim() || deptFilter !== "all" || scoreFilter !== SCORE_ALL;
+
+  const { page, setPage, totalPages, paginated, totalItems } = usePagination(filtered, 5);
 
   if (!doctorId) {
     return (
@@ -262,7 +266,7 @@ const DoctorMyPatients = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p) => {
+                {paginated.map((p) => {
                   const pid = p._id || p.id;
                   return (
                     <tr key={pid}>
@@ -291,6 +295,11 @@ const DoctorMyPatients = () => {
           )}
         </Card.Body>
       </Card>
+      {!loading && filtered.length > 0 && (
+        <div className="px-3">
+          <PaginationBar page={page} totalPages={totalPages} totalItems={totalItems} pageSize={5} onPageChange={setPage} />
+        </div>
+      )}
     </Container>
   );
 };

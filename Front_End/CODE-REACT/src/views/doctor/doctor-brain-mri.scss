@@ -1,0 +1,113 @@
+// Page IRM cérébrale médecin — présentation sobre, usage hospitalier
+
+.doctor-brain-mri-page {
+  background: var(--bs-gray-100);
+  min-height: 100%;
+  padding-bottom: 2rem;
+
+  .dbm-hero {
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, var(--bs-body-bg) 0%, var(--bs-tertiary-bg) 100%);
+    border: 1px solid var(--bs-border-color-translucent);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .dbm-icon-wrap {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    background: rgba(var(--bs-primary-rgb), 0.12);
+    color: var(--bs-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .dbm-card {
+    border-radius: 0.75rem;
+    border: 1px solid var(--bs-border-color-translucent);
+    overflow: hidden;
+  }
+
+  .dbm-card .card-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bs-secondary);
+    background: var(--bs-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    padding: 0.75rem 1.25rem;
+  }
+
+  .dbm-preview-box {
+    border-radius: 0.5rem;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color-translucent);
+    overflow: hidden;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dbm-preview-box img {
+    max-height: 280px;
+    width: 100%;
+    object-fit: contain;
+  }
+
+  .dbm-empty-panel {
+    border-radius: 0.5rem;
+    border: 1px dashed var(--bs-border-color);
+    background: var(--bs-body-bg);
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--bs-secondary);
+  }
+
+  .dbm-result-badge {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0.5rem 0.875rem;
+  }
+
+  .dbm-score-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--bs-secondary);
+    margin-bottom: 0.35rem;
+  }
+
+  .dbm-heatmap-caption {
+    font-size: 0.75rem;
+    color: var(--bs-secondary);
+    margin-top: 0.5rem;
+  }
+
+  .dbm-footnote {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--bs-secondary);
+    border-top: 1px solid var(--bs-border-color-translucent);
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+  }
+
+  .dbm-file-meta {
+    font-size: 0.8125rem;
+    color: var(--bs-secondary);
+    word-break: break-all;
+  }
+}

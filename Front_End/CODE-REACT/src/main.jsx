@@ -9,6 +9,7 @@ import "swiper/css/free-mode";
 import 'swiper/css/pagination'
 import 'swiper/css/autoplay'
 import 'swiper/css/effect-fade'
+import "./i18n/i18n.js";
 import './assets/scss/xray.scss'
 import './assets/scss/custom.scss'
 import './assets/scss/rtl.scss'

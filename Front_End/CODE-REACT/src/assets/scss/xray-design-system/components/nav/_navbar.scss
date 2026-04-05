@@ -233,6 +233,21 @@
                     }
                 }
 
+                /* Panneau notifications (cloche) : pas de scroll horizontal, texte qui revient à la ligne */
+                &.notif-dropdown-panel {
+                    .notif-dropdown-body {
+                        overflow-x: hidden;
+                        overflow-y: visible;
+                        max-height: none;
+                    }
+
+                    .iq-sub-card {
+                        display: block !important;
+                        max-width: 100%;
+                        box-sizing: border-box;
+                    }
+                }
+
                 .iq-sub-card {
                     cursor: pointer;
                     padding: .75rem 1.25rem !important;

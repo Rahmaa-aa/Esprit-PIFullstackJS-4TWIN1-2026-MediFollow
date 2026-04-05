@@ -58,7 +58,27 @@
 }
 
 .sidebar .logo-main .logo-normal {
-  height: 45px !important;
+  max-height: 80px !important;
+  width: auto !important;
+  object-fit: contain;
+}
+
+.sidebar .navbar-brand {
+  flex: 1;
+  justify-content: center;
+  margin-right: 0 !important;
+}
+
+.sidebar .sidebar-header .wrapper-menu,
+.sidebar .sidebar-header .nav-item {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.sidebar .sidebar-header .nav-item {
+  margin: 0;
 }
 
 .main-circle {

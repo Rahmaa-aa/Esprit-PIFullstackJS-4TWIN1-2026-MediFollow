@@ -52,7 +52,7 @@ const Sidebar = () => {
    }
 
    useEffect(() => {
-      if (location.pathname === "/") {
+      if (location.pathname === "/dashboard") {
          handleSidebar()
       } else if (window.innerWidth < 999) {
          handleSidebar()
@@ -65,7 +65,7 @@ const Sidebar = () => {
    window.addEventListener("resize", () => {
       if (window.innerWidth < 990) {
          handleSidebar()
-      } else if (location.pathname === "/") {
+      } else if (location.pathname === "/dashboard") {
          handleSidebar()
       }
       else {
@@ -77,11 +77,11 @@ const Sidebar = () => {
          <aside
             className={`sidebar sidebar-base sidebar-default ${sidebarColor} ${newsidebarType} ${sidebarMenuStyle}`}
             id="first-tour" data-toggle="main-sidebar" data-sidebar="responsive">
-            <div className="sidebar-header d-flex align-items-center justify-content-start position-relative">
-               <Link to="/" className="navbar-brand me-5 pt-3">
+            <div className="sidebar-header d-flex align-items-center justify-content-center position-relative">
+               <Link to="/dashboard" className="navbar-brand pt-3">
                   <Logo />
                </Link>{" "}
-               <div className="ms-5 wrapper-menu d-flex d-none d-xl-block" onClick={() => { handleSidebar(true) }}>
+               <div className="wrapper-menu d-flex d-none d-xl-block" onClick={() => { handleSidebar(true) }}>
                   <div className="main-circle" role="button"><i className="ri-more-fill"></i></div>
                </div>
                <li className="nav-item d-block d-xl-none" onClick={handleSidebar}>

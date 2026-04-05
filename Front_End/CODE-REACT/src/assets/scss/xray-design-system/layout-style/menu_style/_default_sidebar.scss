@@ -26,6 +26,9 @@
 
     .sidebar-header {
         margin-bottom: $spacer * .5;
+        min-height: 90px;
+        max-height: 90px;
+        flex-shrink: 0;
     }
 
     .sidebar-logo {

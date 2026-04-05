@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/extra-disk/innoquad_extra_disk/themes/xray-dist/react/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    (function () {
+      const savedTheme = sessionStorage.getItem('themeColor');
+
+      if (savedTheme) {
+        const settings = JSON.parse(savedTheme);
+        document.documentElement.setAttribute('data-bs-theme', settings);
+      }
+    })();
+  </script>
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css?family=Poppins:200,200i,300,400,500,600,700,800,900&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/all.min.css" rel="stylesheet">
+  <title>MediFollow | React </title>
+  <script type="module" crossorigin src="/extra-disk/innoquad_extra_disk/themes/xray-dist/react/assets/index-v8Q8p1a2.js"></script>
+  <link rel="stylesheet" crossorigin href="/extra-disk/innoquad_extra_disk/themes/xray-dist/react/assets/index-CgqhzCJC.css">
+</head>
+
+<body>
+  <div id="root"></div>
+</body>
+
+</html>

@@ -8,10 +8,36 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: baseUrl,
+    /** Dev : si le front appelle `/api` sur le port Vite, proxifier vers Nest (évite « Cannot GET /api/... »). */
+    server: {
+      proxy: {
+        "/api": {
+          target: "http://localhost:3000",
+          changeOrigin: true,
+        },
+      },
+    },
     plugins: [react()],
+    css: {
+      preprocessorOptions: {
+        scss: {
+          silenceDeprecations: [
+            "legacy-js-api",
+            "import",
+            "if-function",
+            "color-functions",
+            "global-builtin",
+          ],
+        },
+      },
+    },
     build: {
-      outDir: "build",
+      outDir: "dist",
       minify: true,
+    },
+    test: {
+      environment: "jsdom",
+      globals: true,
     },
   };
 });

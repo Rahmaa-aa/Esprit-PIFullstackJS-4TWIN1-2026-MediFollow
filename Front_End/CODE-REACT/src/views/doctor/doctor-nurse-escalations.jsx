@@ -20,6 +20,8 @@ import { appointmentApi, healthLogApi, medicationApi } from "../../services/api"
 import MedicationNameAutocomplete from "../../components/MedicationNameAutocomplete";
 import DosageAutocomplete from "../../components/DosageAutocomplete";
 import { broadcastDoctorHealthLogResolved, subscribeDoctorHealthLogResolved } from "../../utils/healthLogResolveBroadcast";
+import PaginationBar from "../../components/PaginationBar";
+import { usePagination } from "../../hooks/usePagination";
 
 const FREQUENCY_KEYS = ["freqOnceDay", "freqTwiceDay", "freqThriceDay", "freqEvery8h", "freqWeekly", "freqPrn"];
 
@@ -172,6 +174,8 @@ const DoctorNurseEscalations = () => {
     }
     return result;
   }, [items, filter, search]);
+
+  const { page, setPage, totalPages, paginated, totalItems } = usePagination(filtered, 5);
 
   const counts = useMemo(() => {
     const pending = items.filter((r) => r.escalationStatus === "escalated_to_doctor").length;
@@ -443,7 +447,7 @@ const DoctorNurseEscalations = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((row) => {
+                  {paginated.map((row) => {
                     const pending = row.escalationStatus === "escalated_to_doctor";
                     const pid = row.patientId;
                     return (
@@ -536,6 +540,11 @@ const DoctorNurseEscalations = () => {
           )}
         </Card.Body>
       </Card>
+      {!loading && filtered.length > 0 && (
+        <div className="px-3">
+          <PaginationBar page={page} totalPages={totalPages} totalItems={totalItems} pageSize={5} onPageChange={setPage} />
+        </div>
+      )}
 
       <Modal show={resolveModal != null} onHide={closeResolveModal} centered backdrop="static">
         <Modal.Header closeButton>

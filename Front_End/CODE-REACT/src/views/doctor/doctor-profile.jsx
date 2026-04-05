@@ -1,12 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Col, Row } from "react-bootstrap";
+import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
+import FaceEnrollmentCard from "../../components/FaceEnrollmentCard";
+import { doctorApi } from "../../services/api";
 
 // Import FsLightBox
 import ReactFsLightbox from "fslightbox-react";
 
 // Import Image
-
 import imgg1 from "/assets/images/page-img/g1.jpg"
 import imgg2 from "/assets/images/page-img/g2.jpg"
 import imgg3 from "/assets/images/page-img/g3.jpg"
@@ -19,9 +22,47 @@ import imgg9 from "/assets/images/page-img/g9.jpg"
 import img11 from "/assets/images/user/11.png"
 import CountUp from "react-countup";
 
-const DoctorProfile = (props) => {
+const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 
-    const { show, handleClose } = props
+/** Face enrollment only when the doctor views their own profile — not when viewing a colleague or other roles. */
+function isDoctorViewingOwnProfile(profileId) {
+    if (!profileId) return false;
+    try {
+        if (localStorage.getItem("adminUser") || localStorage.getItem("patientUser") || localStorage.getItem("nurseUser")) {
+            return false;
+        }
+        const raw = localStorage.getItem("doctorUser");
+        if (!raw) return false;
+        const u = JSON.parse(raw);
+        const did = u?.id ?? u?._id;
+        return did != null && String(did) === String(profileId);
+    } catch {
+        return false;
+    }
+}
+
+/** Edit: own profile or admin — not when a doctor views another doctor’s profile (read-only). */
+function canEditDoctorProfile(profileId) {
+    if (!profileId) return false;
+    try {
+        if (localStorage.getItem("adminUser")) return true;
+        const raw = localStorage.getItem("doctorUser");
+        if (!raw) return false;
+        const u = JSON.parse(raw);
+        const did = u?.id ?? u?._id;
+        return did != null && String(did) === String(profileId);
+    } catch {
+        return false;
+    }
+}
+
+const DoctorProfile = (props) => {
+    const { t } = useTranslation();
+    const { id } = useParams();
+    const [doctor, setDoctor] = useState(null);
+    const [loading, setLoading] = useState(!!id);
+    const [error, setError] = useState("");
+
     const FsLightbox = ReactFsLightbox.default
         ? ReactFsLightbox.default
         : ReactFsLightbox;
@@ -31,6 +72,24 @@ const DoctorProfile = (props) => {
         slide: 1,
     });
 
+    const showFaceEnrollment = useMemo(() => isDoctorViewingOwnProfile(id), [id]);
+    const showEditButton = useMemo(() => canEditDoctorProfile(id), [id]);
+
+    useEffect(() => {
+        if (!id) return;
+        const fetchDoctor = async () => {
+            try {
+                const data = await doctorApi.getById(id);
+                setDoctor(data);
+            } catch (err) {
+                setError(err.message || "Médecin non trouvé");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDoctor();
+    }, [id]);
+
     function imageOnSlide(number) {
         setImageController({
             toggler: !imageController.toggler,
@@ -38,8 +97,56 @@ const DoctorProfile = (props) => {
         });
     }
 
+    const displayDoctor = doctor || {};
+    const profileImg = doctor?.profileImage
+        ? (doctor.profileImage.startsWith("data:") ? doctor.profileImage
+            : (doctor.profileImage.startsWith("http") ? doctor.profileImage : generatePath(doctor.profileImage)))
+        : img11;
+    const lastDoctorSession = displayDoctor.updatedAt
+        ? new Date(displayDoctor.updatedAt).toLocaleString("fr-FR")
+        : "Session active";
+
+    if (loading) {
+        return (
+            <Row>
+                <Col sm={12}>
+                    <Card>
+                        <Card.Body className="text-center py-5">
+                            <div className="spinner-border text-primary" role="status">
+                                <span className="visually-hidden">Chargement...</span>
+                            </div>
+                            <p className="mt-3 mb-0">Chargement du profil...</p>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        );
+    }
+
+    if (id && error) {
+        return (
+            <Row>
+                <Col sm={12}>
+                    <Card>
+                        <Card.Body className="text-center py-5">
+                            <p className="text-danger mb-3">{error}</p>
+                            <Link to="/doctor/doctor-list" className="btn btn-primary-subtle">Retour à la liste</Link>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        );
+    }
+
     return (
         <>
+            {showFaceEnrollment ? (
+                <Row>
+                    <Col sm={12}>
+                        <FaceEnrollmentCard />
+                    </Col>
+                </Row>
+            ) : null}
             <FsLightbox
                 toggler={imageController.toggler}
                 sources={[
@@ -55,14 +162,12 @@ const DoctorProfile = (props) => {
                                 <div className="doc-profile-bg bg-primary rounded-top-2" style={{ height: "150px" }}>
                                 </div>
                                 <div className="docter-profile text-center">
-                                    <img src={img11} alt="profile-img" className="avatar-130 img-fluid" />
+                                    <img src={profileImg} alt="profile-img" className="avatar-130 img-fluid" style={{ objectFit: "cover" }} />
                                 </div>
                                 <div className="text-center mt-3 ps-3 pe-3">
-                                    <h4><b>Bini Jets</b></h4>
-                                    <p>Doctor</p>
-                                    <p className="mb-0">Lorem ipsum dolor sit amet,
-                                        consectetur adipisicing elit. Delectus
-                                        repudiandae eveniet harum.</p>
+                                    <h4><b>{displayDoctor.firstName ? `Dr. ${displayDoctor.firstName} ${displayDoctor.lastName}` : "Bini Jets"}</b></h4>
+                                    <p>{displayDoctor.specialty || "Doctor"}</p>
+                                    <p className="mb-0">{displayDoctor.department || "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Delectus repudiandae eveniet harum."}</p>
                                 </div>
                                 <hr />
                                 <ul className="doctoe-sedual d-flex align-items-center justify-content-between p-0 m-0">
@@ -83,32 +188,41 @@ const DoctorProfile = (props) => {
                         </Card.Body>
                     </Card>
                     <Card>
-                        <Card.Header className="d-flex justify-content-between">
-                            <Card.Header.Title>
-                                <h4 className="card-title">Personal Information</h4>
+                        <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <Card.Header.Title className="mb-0">
+                                <h4 className="card-title mb-0">{t("doctorProfile.personalInfo")}</h4>
                             </Card.Header.Title>
+                            {showEditButton ? (
+                                <Link to={`/doctor/edit-doctor/${id}`} className="btn btn-primary-subtle btn-sm">
+                                    {t("doctorProfile.edit")}
+                                </Link>
+                            ) : null}
                         </Card.Header>
                         <Card.Body>
                             <div className="about-info m-0 p-0">
                                 <Row>
                                     <Col xs={4}>First Name:</Col>
-                                    <Col xs={8}>Bini</Col>
+                                    <Col xs={8}>{displayDoctor.firstName || "Bini"}</Col>
                                     <Col xs={4}>Last Name:</Col>
-                                    <Col xs={8}>Jets</Col>
-                                    <Col xs={4}>Age:</Col>
-                                    <Col xs={8}>27</Col>
+                                    <Col xs={8}>{displayDoctor.lastName || "Jets"}</Col>
                                     <Col xs={4}>Position:</Col>
-                                    <Col xs={8}>Senior Doctor</Col>
+                                    <Col xs={8}>{displayDoctor.specialty || "Senior Doctor"}</Col>
                                     <Col xs={4}>Email:</Col>
                                     <Col xs={8}>
-                                        <a href="mailto:biniJets24@demo.com">biniJets24@demo.com</a>
+                                        <a href={`mailto:${displayDoctor.email || "biniJets24@demo.com"}`}>{displayDoctor.email || "biniJets24@demo.com"}</a>
                                     </Col>
                                     <Col xs={4}>Phone:</Col>
                                     <Col xs={8}>
-                                        <a href="tel:001-2351-25612">001 2351 256 12</a>
+                                        <a href={`tel:${displayDoctor.phone || "001-2351-25612"}`}>{displayDoctor.phone || "001 2351 256 12"}</a>
                                     </Col>
                                     <Col xs={4}>Location:</Col>
-                                    <Col xs={8}>USA</Col>
+                                    <Col xs={8}>{displayDoctor.city || displayDoctor.country || "USA"}</Col>
+                                    <Col xs={4}>Session:</Col>
+                                    <Col xs={8}>
+                                        <span className="badge bg-success-subtle text-success">Connecté</span>
+                                    </Col>
+                                    <Col xs={4}>Dernière session:</Col>
+                                    <Col xs={8}>{lastDoctorSession}</Col>
                                 </Row>
 
                             </div>

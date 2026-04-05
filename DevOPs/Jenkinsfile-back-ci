@@ -1,0 +1,42 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Checkout Repository') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Install Back-End Dependencies') {
+            steps {
+                dir('backend') {
+                    sh 'npm install --legacy-peer-deps'
+                }
+            }
+        }
+        stage('Run NestJS Unit Tests') {
+            steps {
+                dir('backend') {
+                    echo "Dynamically Injecting DevOps Backend Tests for Sandboxed Execution..."
+                    sh 'cp ../DevOPs/tests/backend/app.health.spec.ts src/app.health.spec.ts'
+                    sh 'npm run test'
+                    // Post-test cleanup
+                    sh 'rm src/app.health.spec.ts || true'
+                }
+            }
+        }
+        stage('SonarQube Security Scan') {
+            steps {
+                echo "Running Code Quality Checks..."
+                // Ready for Phase 4 Sonar Token
+            }
+        }
+    }
+    
+    post {
+        success {
+            // Automatically trigger the Backend CD pipeline when CI passes!
+            build job: 'MediFollow-Back-CD', wait: false
+        }
+    }
+}

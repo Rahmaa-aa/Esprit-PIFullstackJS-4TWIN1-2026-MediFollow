@@ -146,10 +146,9 @@ export const defaultState: SettingDefaultState = {
         "sidebar-white",
         "sidebar-dark",
         "sidebar-color",
-        "sidebar-color",
       ],
       type: "layout_design",
-      value: "sidebar-default",
+      value: "sidebar-color",
     },
     sidebar_type: {
       target: '[data-toggle="main-sidebar"]',
@@ -178,7 +177,7 @@ export const defaultState: SettingDefaultState = {
         "navs-pill-all",
       ],
       type: "layout_design",
-      value: "navs-rounded-all",
+      value: "navs-pill-all",
     },
     footer: {
       target: ".footer",

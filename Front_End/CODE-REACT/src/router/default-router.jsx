@@ -6,6 +6,17 @@ import Index from "../views"
 import HospitalDashboardOne from "../views/dashboard-pages/hospital-dashboard-one"
 import HospitalDashboardTwo from "../views/dashboard-pages/hospital-dashboard-two"
 import PatientDashboard from "../views/dashboard-pages/patient-dashboard"
+import PatientMedicationHistory from "../views/dashboard-pages/patient-medication-history"
+import PatientVitalsHistory from "../views/dashboard-pages/patient-vitals-history"
+import PatientAppointmentRequest from "../views/dashboard-pages/patient-appointment-request"
+import PatientQuestionnairesPage from "../views/dashboard-pages/patient-questionnaires"
+import PatientLabAnalysisPage from "../views/dashboard-pages/patient-lab-analysis"
+import NurseDashboard from "../views/dashboard-pages/nurse-dashboard"
+import CareCoordinatorDashboard from "../views/dashboard-pages/care-coordinator-dashboard"
+import CareCoordinatorPatients from "../views/dashboard-pages/care-coordinator-patients"
+import CareCoordinatorPatientDetail from "../views/dashboard-pages/care-coordinator-patient-detail"
+import CareCoordinatorAppointments from "../views/dashboard-pages/care-coordinator-appointments"
+import CareCoordinatorCommunication from "../views/dashboard-pages/care-coordinator-communication"
 import Covid19Dashboard from "../views/dashboard-pages/covid-19-dashboard"
 
 // Email Page
@@ -17,12 +28,34 @@ import AddDoctor from "../views/doctor/add-doctor"
 import DoctorList from "../views/doctor/doctor-list"
 import DoctorProfile from "../views/doctor/doctor-profile"
 import EditDoctor from "../views/doctor/edit-doctor"
+import DoctorPrescriptions from "../views/doctor/doctor-prescriptions"
+import DoctorMyPatients from "../views/doctor/doctor-my-patients"
+import DoctorPatientDossierPage from "../views/doctor/doctor-patient-dossier"
+import DoctorDepartmentNurses from "../views/doctor/doctor-department-nurses"
+import DoctorDepartmentDoctors from "../views/doctor/doctor-department-doctors"
+import DoctorAvailabilityCalendar from "../views/doctor/doctor-availability-calendar"
+import DoctorNurseEscalations from "../views/doctor/doctor-nurse-escalations"
+import DoctorBrainMri from "../views/doctor/doctor-brain-mri"
+import PatientBrainMri from "../views/patient/patient-brain-mri"
+
+// Patient Page
+import AddPatient from "../views/patient/add-patient"
+import PatientList from "../views/patient/patient-list"
+import PatientProfile from "../views/patient/patient-profile"
+import EditPatient from "../views/patient/edit-patient"
+
+// Nurse Page
+import AddNurse from "../views/nurse/add-nurse"
+import NurseList from "../views/nurse/nurse-list"
+import NurseProfile from "../views/nurse/nurse-profile"
+import EditNurse from "../views/nurse/edit-nurse"
 
 // Calendar Page
 import Calendar from "../views/calendar/calendar"
 
 // Chat Page
 import Chat from "../views/chat/chat"
+import NotificationsCenterPage from "../views/notifications/notifications-center"
 
 // UI Elements
 import Alerts from "../views/ui-elements/alerts";
@@ -80,7 +113,27 @@ import GoogleMap from "../views/maps/google-map"
 
 // Extra Page
 import AccountSetting from "../views/extra-pages/account-setting"
-import BlankPage from "../views/extra-pages/blank-page"
+import AdminDashboard from "../views/extra-pages/admin-dashboard"
+import AdminProfile from "../views/admin/admin-profile"
+import AdminEditProfile from "../views/admin/admin-edit-profile"
+import AdminDepartments from "../views/admin/admin-departments"
+import AdminDepartmentDetail from "../views/admin/admin-department-detail"
+import AdminAppointmentRequests from "../views/admin/admin-appointment-requests"
+import AdminQuestionnaireBank from "../views/admin/admin-questionnaire-bank"
+import SuperAdminDashboard from "../views/super-admin/super-admin-dashboard"
+import UserList from "../views/super-admin/user-list"
+import AuditorList from "../views/super-admin/auditor-list"
+import AddAuditor from "../views/super-admin/add-auditor"
+import EditAuditor from "../views/super-admin/edit-auditor"
+import ViewAuditor from "../views/super-admin/view-auditor"
+import CareCoordinatorList from "../views/super-admin/care-coordinator-list"
+import AddCareCoordinator from "../views/super-admin/add-care-coordinator"
+import EditCareCoordinator from "../views/super-admin/edit-care-coordinator"
+import ViewCareCoordinator from "../views/super-admin/view-care-coordinator"
+import SuperAdminProfile from "../views/super-admin/super-admin-profile"
+import AuditorDashboard from "../views/auditor/auditor-dashboard"
+import AuditorLogsPage from "../views/auditor/auditor-logs"
+import AuditorSessionGuard from "../components/routing/auditor-session-guard"
 import CommingSoon from "../views/extra-pages/pages-comingsoon"
 import Error404 from "../views/extra-pages/pages-error-404"
 import Error500 from "../views/extra-pages/pages-error-500"
@@ -94,13 +147,16 @@ import PrivacyPolicy from "../views/extra-pages/privacy-policy"
 import PrivacySetting from "../views/extra-pages/privacy-setting"
 import TermsOfService from "../views/extra-pages/terms-of-service"
 import BlankLayout from "../layouts/blank-layout"
+import Home from "../views/home"
+import About from "../views/about"
+import Features from "../views/features"
+import Contact from "../views/contact"
 import SignIn from "../views/auth/sign-in"
 import ConformMail from "../views/auth/confirm-mail"
 import SignUp from "../views/auth/sign-up"
 import RecoverPassword from "../views/auth/recover-password"
 import LockScreen from "../views/auth/lock-screen"
-import { path } from "@amcharts/amcharts4/core"
-
+import ConfirmLogin from "../views/auth/confirm-login"
 export const DefaultRoute = [
   {
     path: "",
@@ -108,7 +164,7 @@ export const DefaultRoute = [
     children: [
       //  ------ Dashboard Route ------ 
       {
-        path: '/',
+        path: '/dashboard',
         element: <Index />
       },
       {
@@ -124,6 +180,54 @@ export const DefaultRoute = [
         element: <PatientDashboard />
       },
       {
+        path: '/dashboard-pages/patient-medication-history',
+        element: <PatientMedicationHistory />
+      },
+      {
+        path: '/dashboard-pages/patient-vitals-history',
+        element: <PatientVitalsHistory />
+      },
+      {
+        path: '/dashboard-pages/patient-appointment-request',
+        element: <PatientAppointmentRequest />
+      },
+      {
+        path: '/dashboard-pages/patient-questionnaires',
+        element: <PatientQuestionnairesPage />
+      },
+      {
+        path: '/dashboard-pages/patient-lab-analysis',
+        element: <PatientLabAnalysisPage />
+      },
+      {
+        path: '/dashboard-pages/patient-brain-mri',
+        element: <PatientBrainMri />
+      },
+      {
+        path: '/dashboard-pages/nurse-dashboard',
+        element: <NurseDashboard />
+      },
+      {
+        path: '/dashboard-pages/care-coordinator-dashboard',
+        element: <CareCoordinatorDashboard />
+      },
+      {
+        path: '/dashboard-pages/care-coordinator-patients',
+        element: <CareCoordinatorPatients />
+      },
+      {
+        path: '/dashboard-pages/care-coordinator-patient/:patientId',
+        element: <CareCoordinatorPatientDetail />
+      },
+      {
+        path: '/dashboard-pages/care-coordinator-appointments',
+        element: <CareCoordinatorAppointments />
+      },
+      {
+        path: '/dashboard-pages/care-coordinator-communication',
+        element: <CareCoordinatorCommunication />
+      },
+      {
         path: '/dashboard-pages/dashboard-4',
         element: <Covid19Dashboard />
       },
@@ -135,6 +239,10 @@ export const DefaultRoute = [
       },
       {
         path: '/email/email-compose',
+        element: <EmailCompose />
+      },
+      {
+        path: '/email/email-compose/:draftMessageId',
         element: <EmailCompose />
       },
 
@@ -152,8 +260,88 @@ export const DefaultRoute = [
         element: <DoctorProfile />
       },
       {
-        path: '/doctor/edit-doctor',
+        path: '/doctor/doctor-profile/:id',
+        element: <DoctorProfile />
+      },
+      {
+        path: '/doctor/edit-doctor/:id',
         element: <EditDoctor />
+      },
+      {
+        path: '/doctor/prescriptions',
+        element: <DoctorPrescriptions />
+      },
+      {
+        path: '/doctor/availability-calendar',
+        element: <DoctorAvailabilityCalendar />
+      },
+      {
+        path: '/doctor/brain-mri',
+        element: <DoctorBrainMri />
+      },
+      {
+        path: '/doctor/my-patients',
+        element: <DoctorMyPatients />
+      },
+      {
+        path: '/doctor/urgent-nurse-escalations',
+        element: <DoctorNurseEscalations />
+      },
+      {
+        path: '/doctor/my-patients/:patientId',
+        element: <DoctorPatientDossierPage />
+      },
+      {
+        path: '/doctor/department-nurses',
+        element: <DoctorDepartmentNurses />
+      },
+      {
+        path: '/doctor/department-doctors',
+        element: <DoctorDepartmentDoctors />
+      },
+
+      //  ------ Patient Route ------
+      {
+        path: '/patient/patient-list',
+        element: <PatientList />
+      },
+      {
+        path: '/patient/add-patient',
+        element: <AddPatient />
+      },
+      {
+        path: '/patient/patient-profile',
+        element: <PatientProfile />
+      },
+      {
+        path: '/patient/patient-profile/:id',
+        element: <PatientProfile />
+      },
+      {
+        path: '/patient/edit-patient/:id',
+        element: <EditPatient />
+      },
+
+      //  ------ Nurse Route ------
+      {
+        path: '/nurse/nurse-list',
+        element: <NurseList />
+      },
+      {
+        path: '/nurse/add-nurse',
+        element: <AddNurse />
+      },
+      {
+        path: '/nurse/nurse-profile',
+        element: <NurseProfile />
+      },
+      {
+        path: '/nurse/nurse-profile/:id',
+        element: <NurseProfile />
+      },
+      {
+        path: '/nurse/edit-nurse/:id',
+        element: <EditNurse />
       },
 
       //  ------ Calendar Route ------ 
@@ -166,6 +354,10 @@ export const DefaultRoute = [
       {
         path: '/chat',
         element: <Chat />
+      },
+      {
+        path: '/notifications',
+        element: <NotificationsCenterPage />
       },
 
       //  ------ UI Elements Route ------ 
@@ -357,7 +549,97 @@ export const DefaultRoute = [
       },
       {
         path: '/extra-pages/blank-page',
-        element: <BlankPage />
+        element: <AdminDashboard />
+      },
+      {
+        path: '/admin/dashboard',
+        element: <AdminDashboard />
+      },
+      {
+        path: '/admin/profile',
+        element: <AdminProfile />
+      },
+      {
+        path: '/admin/edit-profile',
+        element: <AdminEditProfile />
+      },
+      {
+        path: '/admin/departments',
+        element: <AdminDepartments />
+      },
+      {
+        path: '/admin/departments/:departmentName',
+        element: <AdminDepartmentDetail />
+      },
+      {
+        path: '/admin/appointment-requests',
+        element: <AdminAppointmentRequests />
+      },
+      {
+        path: '/admin/questionnaire-bank',
+        element: <AdminQuestionnaireBank />
+      },
+
+      //  ------ Super Admin Routes ------
+      {
+        path: '/super-admin/dashboard',
+        element: <SuperAdminDashboard />
+      },
+      {
+        path: '/super-admin/users',
+        element: <UserList />
+      },
+      {
+        path: '/super-admin/auditors',
+        element: <AuditorList />
+      },
+      {
+        path: '/super-admin/auditors/add',
+        element: <AddAuditor />
+      },
+      {
+        path: '/super-admin/auditors/edit/:id',
+        element: <EditAuditor />
+      },
+      {
+        path: '/super-admin/auditors/:id',
+        element: <ViewAuditor />
+      },
+      {
+        path: '/super-admin/care-coordinators',
+        element: <CareCoordinatorList />
+      },
+      {
+        path: '/super-admin/care-coordinators/add',
+        element: <AddCareCoordinator />
+      },
+      {
+        path: '/super-admin/care-coordinators/edit/:id',
+        element: <EditCareCoordinator />
+      },
+      {
+        path: '/super-admin/care-coordinators/:id',
+        element: <ViewCareCoordinator />
+      },
+      {
+        path: '/super-admin/profile',
+        element: <SuperAdminProfile />
+      },
+      {
+        path: '/auditor/dashboard',
+        element: (
+          <AuditorSessionGuard>
+            <AuditorDashboard />
+          </AuditorSessionGuard>
+        )
+      },
+      {
+        path: '/auditor/logs',
+        element: (
+          <AuditorSessionGuard>
+            <AuditorLogsPage />
+          </AuditorSessionGuard>
+        )
       },
       {
         path: '/extra-pages/pages-pricing',
@@ -396,7 +678,23 @@ export const BlankLayoutRouter = [
     path: "",
     element: <BlankLayout />,
     children: [
-
+      //  ------ Home Route ------ 
+      {
+        path: '/',
+        element: <Home />
+      },
+      {
+        path: '/about',
+        element: <About />
+      },
+      {
+        path: '/features',
+        element: <Features />
+      },
+      {
+        path: '/contact',
+        element: <Contact />
+      },
       //  ------ Auth Route ------ 
       {
         path: '/auth/sign-in',
@@ -417,6 +715,10 @@ export const BlankLayoutRouter = [
       {
         path: '/auth/lock-screen',
         element: <LockScreen />
+      },
+      {
+        path: '/auth/confirm-login',
+        element: <ConfirmLogin />
       },
 
       //  ------ Extra Page Route ------ 

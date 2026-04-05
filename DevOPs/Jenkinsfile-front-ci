@@ -1,0 +1,38 @@
+pipeline {
+    agent any
+    
+
+    
+    stages {
+        stage('Checkout Repository') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Install Front-End Dependencies') {
+            steps {
+                dir('Front_End/CODE-REACT') {
+                    sh 'npm install --legacy-peer-deps'
+                }
+            }
+        }
+        stage('Run React Tests') {
+            steps {
+                dir('Front_End/CODE-REACT') {
+                    echo "Dynamically Injecting DevOps Frontend Tests for Sandboxed Execution..."
+                    sh 'cp ../../DevOPs/tests/frontend/render.spec.ts src/render.spec.ts'
+                    sh 'npm run test'
+                    // Post-test cleanup
+                    sh 'rm src/render.spec.ts || true'
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            // Automatically trigger the Frontend CD pipeline when CI passes!
+            build job: 'MediFollow-Front-CD', wait: false
+        }
+    }
+}
