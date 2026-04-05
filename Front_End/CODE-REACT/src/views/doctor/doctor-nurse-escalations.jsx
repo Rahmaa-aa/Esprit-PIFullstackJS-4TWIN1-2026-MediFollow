@@ -8,6 +8,7 @@ import {
   Container,
   Dropdown,
   Form,
+  InputGroup,
   Modal,
   Row,
   Spinner,
@@ -116,6 +117,7 @@ const DoctorNurseEscalations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [resolveBusyId, setResolveBusyId] = useState(null);
   const [resolveModal, setResolveModal] = useState(null);
   const [modalNote, setModalNote] = useState("");
@@ -161,14 +163,15 @@ const DoctorNurseEscalations = () => {
   }, [doctorId, load]);
 
   const filtered = useMemo(() => {
-    if (filter === "pending") {
-      return items.filter((r) => r.escalationStatus === "escalated_to_doctor");
+    let result = items;
+    if (filter === "pending") result = result.filter((r) => r.escalationStatus === "escalated_to_doctor");
+    if (filter === "resolved") result = result.filter((r) => r.escalationStatus === "resolved");
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter((r) => (r.patientName || "").toLowerCase().includes(q));
     }
-    if (filter === "resolved") {
-      return items.filter((r) => r.escalationStatus === "resolved");
-    }
-    return items;
-  }, [items, filter]);
+    return result;
+  }, [items, filter, search]);
 
   const counts = useMemo(() => {
     const pending = items.filter((r) => r.escalationStatus === "escalated_to_doctor").length;
@@ -364,25 +367,55 @@ const DoctorNurseEscalations = () => {
 
       <Card className="border-0 shadow-sm">
         <Card.Body className="p-3">
-          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-            <span className="small text-muted">{t("doctorNurseEscalations.filterLabel")}</span>
-            <ButtonGroup size="sm">
-              {filterTabs.map((tab) => (
-                <Button
-                  key={tab.key}
-                  variant={filter === tab.key ? "primary" : "outline-primary"}
-                  onClick={() => setFilter(tab.key)}
-                >
-                  {tab.label}
-                  {tab.key === "pending" && counts.pending > 0 ? (
-                    <Badge bg="danger" className="ms-1">
-                      {counts.pending}
-                    </Badge>
-                  ) : null}
-                </Button>
-              ))}
-            </ButtonGroup>
-          </div>
+          <Row className="g-2 align-items-end mb-3">
+            {/* Search by patient name */}
+            <Col xs={12} md={6}>
+              <InputGroup size="sm">
+                <InputGroup.Text className="bg-white border-end-0">
+                  <i className="ri-search-line text-muted"></i>
+                </InputGroup.Text>
+                <Form.Control
+                  type="text"
+                  placeholder="Search by patient name..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="border-start-0 ps-0"
+                />
+                {search && (
+                  <Button variant="outline-secondary" size="sm" onClick={() => setSearch("")}>
+                    <i className="ri-close-line"></i>
+                  </Button>
+                )}
+              </InputGroup>
+            </Col>
+            {/* Status filter */}
+            <Col xs={12} md={6} className="d-flex align-items-end justify-content-md-end gap-2">
+              <span className="small text-muted">{t("doctorNurseEscalations.filterLabel")}</span>
+              <ButtonGroup size="sm">
+                {filterTabs.map((tab) => (
+                  <Button
+                    key={tab.key}
+                    variant={filter === tab.key ? "primary" : "outline-primary"}
+                    onClick={() => setFilter(tab.key)}
+                  >
+                    {tab.label}
+                    {tab.key === "pending" && counts.pending > 0 ? (
+                      <Badge bg="danger" className="ms-1">{counts.pending}</Badge>
+                    ) : null}
+                  </Button>
+                ))}
+              </ButtonGroup>
+            </Col>
+          </Row>
+
+          {/* Results counter */}
+          {!loading && (
+            <div className="small text-muted mb-2">
+              {filtered.length === items.length
+                ? `${items.length} escalation(s)`
+                : `${filtered.length} of ${items.length} escalation(s)`}
+            </div>
+          )}
 
           {loading ? (
             <div className="text-center py-5">
