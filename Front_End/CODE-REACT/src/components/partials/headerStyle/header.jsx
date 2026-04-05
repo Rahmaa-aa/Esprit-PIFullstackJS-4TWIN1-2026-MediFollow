@@ -25,6 +25,7 @@ import PatientMedicationNotificationsBell from "../../PatientMedicationNotificat
 import LanguageSwitcher from "../../LanguageSwitcher"
 import { SvgFlagTn, SvgFlagDz } from "../../language-flag-svgs"
 import { useTranslation } from "react-i18next"
+import { LARGE_TEXT_STORAGE_KEY } from "../../../constants/accessibility"
 
 const generatePath = (path) => {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "") || "";
@@ -192,6 +193,45 @@ const Header = () => {
 
    const [open, setOpen] = useState(false)
    const [isScrolled, setIsScrolled] = useState(false);
+   const [patientLargeText, setPatientLargeText] = useState(() => {
+      try {
+         if (typeof localStorage === "undefined") return false;
+         return localStorage.getItem(LARGE_TEXT_STORAGE_KEY) === "1";
+      } catch {
+         return false;
+      }
+   });
+
+   useEffect(() => {
+      if (!isPatient) {
+         document.body.classList.remove("patient-a11y-large-text");
+         return;
+      }
+      try {
+         setPatientLargeText(localStorage.getItem(LARGE_TEXT_STORAGE_KEY) === "1");
+      } catch {
+         setPatientLargeText(false);
+      }
+   }, [isPatient]);
+
+   useEffect(() => {
+      if (!isPatient) return;
+      document.body.classList.toggle("patient-a11y-large-text", patientLargeText);
+      try {
+         localStorage.setItem(LARGE_TEXT_STORAGE_KEY, patientLargeText ? "1" : "0");
+      } catch { /* ignore */ }
+   }, [isPatient, patientLargeText]);
+
+   useEffect(() => {
+      if (!isPatient) return;
+      const onStorage = (e) => {
+         if (e.key === LARGE_TEXT_STORAGE_KEY && e.newValue != null) {
+            setPatientLargeText(e.newValue === "1");
+         }
+      };
+      window.addEventListener("storage", onStorage);
+      return () => window.removeEventListener("storage", onStorage);
+   }, [isPatient]);
 
    useEffect(() => {
       const handleScrolld = () => {
@@ -306,6 +346,20 @@ const Header = () => {
                         <SvgFlagDz width={26} />
                      </span>
                      <LanguageSwitcher toggleClassName="nav-link d-none d-xl-block" />
+                     {isPatient && (
+                        <Nav.Item as="li" className="nav-item d-none d-xl-flex align-items-center ms-1">
+                           <button
+                              type="button"
+                              className={`btn btn-sm a11y-btn ${patientLargeText ? "btn-primary" : "btn-outline-primary"}`}
+                              data-eye-clickable
+                              aria-pressed={patientLargeText}
+                              onClick={() => setPatientLargeText((v) => !v)}
+                           >
+                              <i className="ri-font-size me-1"></i>
+                              {patientLargeText ? t("signIn.largeTextDisable") : t("signIn.largeTextEnable")}
+                           </button>
+                        </Nav.Item>
+                     )}
                      <Nav.Item as="li" className="nav-item iq-full-screen d-none d-xl-block"
                         id="fullscreen-item">
                         <a href="#" className="nav-link" id="btnFullscreen" onClick={toggleFullScreen}>
@@ -707,8 +761,22 @@ const Header = () => {
             <Navbar.Collapse id="navbarSupportedContent">
                <Row className="flex-grow-1 pt-4 pb-4 px-2">
 
-                  <Col md={12} className="d-flex justify-content-end align-items-center">
+                  <Col md={12} className="d-flex justify-content-end align-items-center flex-wrap gap-2">
                      <LanguageSwitcher toggleClassName="nav-link d-block d-xl-none" />{" "}
+                     {isPatient && (
+                        <Nav.Item as="li" className="nav-item d-flex d-xl-none align-items-center">
+                           <button
+                              type="button"
+                              className={`btn btn-sm a11y-btn ${patientLargeText ? "btn-primary" : "btn-outline-primary"}`}
+                              data-eye-clickable
+                              aria-pressed={patientLargeText}
+                              onClick={() => setPatientLargeText((v) => !v)}
+                           >
+                              <i className="ri-font-size me-1"></i>
+                              {patientLargeText ? t("signIn.largeTextDisable") : t("signIn.largeTextEnable")}
+                           </button>
+                        </Nav.Item>
+                     )}
                      <li className="nav-item dropdown">
                      </li>
                      <Nav.Item className="iq-full-screen iq-full-screen2 d-block d-xl-none"

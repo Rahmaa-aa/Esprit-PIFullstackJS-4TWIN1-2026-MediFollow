@@ -7,12 +7,12 @@ import { useHandGesture } from "../../context/HandGestureContext";
 import { captureFaceDescriptor } from "../../services/face-auth";
 import { generatePath } from "../landing/landingPaths";
 import AuthCarouselMedifollow from "../../components/auth/AuthCarouselMedifollow";
+import { LARGE_TEXT_STORAGE_KEY } from "../../constants/accessibility";
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const SpeechSynthesis = window.speechSynthesis;
 const isSpeechSupported = !!SpeechRecognition;
 const isTtsSupported = !!SpeechSynthesis;
-const LARGE_TEXT_KEY = "medifollow_large_text_signin";
 
 const KEYWORD_STOP = ["stop", "terminer", "arrêt", "arrêter", "finish", "fin", "توقف", "إيقاف"];
 
@@ -46,7 +46,7 @@ const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [largeTextEnabled, setLargeTextEnabled] = useState(() => localStorage.getItem(LARGE_TEXT_KEY) === "1");
+  const [largeTextEnabled, setLargeTextEnabled] = useState(() => localStorage.getItem(LARGE_TEXT_STORAGE_KEY) === "1");
   const [listeningField, setListeningField] = useState(null);
   const [speechError, setSpeechError] = useState("");
   const [isReadingPage, setIsReadingPage] = useState(false);
@@ -198,8 +198,8 @@ const SignIn = () => {
   }, [isTtsSupported, stopPageReading, stopVoiceInput, t, i18n.language]);
 
   useEffect(() => {
-    localStorage.setItem(LARGE_TEXT_KEY, largeTextEnabled ? "1" : "0");
-  }, [largeTextEnabled, LARGE_TEXT_KEY]);
+    localStorage.setItem(LARGE_TEXT_STORAGE_KEY, largeTextEnabled ? "1" : "0");
+  }, [largeTextEnabled]);
 
   useEffect(() => {
     return () => {

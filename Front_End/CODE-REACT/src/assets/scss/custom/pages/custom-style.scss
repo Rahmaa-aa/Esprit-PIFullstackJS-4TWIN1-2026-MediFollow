@@ -442,6 +442,72 @@
     padding-top: 20px;
 }
 
+/* Session patient : grand texte (même clé localStorage que la page de connexion) */
+body.patient-a11y-large-text {
+    .wrapper {
+        font-size: 1.06rem;
+    }
+
+    .main-content,
+    .content-inner,
+    .content-page {
+        font-size: 1.06rem;
+    }
+
+    h1,
+    .h1 {
+        font-size: clamp(1.65rem, 2.2vw, 2.1rem);
+    }
+
+    h2,
+    .h2 {
+        font-size: clamp(1.4rem, 1.8vw, 1.75rem);
+    }
+
+    h3,
+    .h3,
+    .card-title {
+        font-size: 1.22rem;
+    }
+
+    h4,
+    h5,
+    h6 {
+        font-size: 1.1rem;
+    }
+
+    p,
+    .card-body,
+    .table td,
+    .table th,
+    .form-label,
+    .list-group-item,
+    .nav-link .item-name {
+        font-size: 1.03em !important;
+    }
+
+    small,
+    .small,
+    .text-muted {
+        font-size: 0.95em !important;
+    }
+
+    .btn {
+        font-size: 0.98rem;
+    }
+
+    .form-control,
+    .form-select {
+        font-size: 1.05rem;
+        padding-top: 0.55rem;
+        padding-bottom: 0.55rem;
+    }
+
+    .iq-navbar .caption .font-size-12 {
+        font-size: 0.92rem !important;
+    }
+}
+
 .sign-in-page .sign-in-page-bg {
     position: relative;
     overflow: visible;
