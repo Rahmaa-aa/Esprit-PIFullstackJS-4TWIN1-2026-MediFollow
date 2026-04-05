@@ -442,8 +442,9 @@
     padding-top: 20px;
 }
 
-/* Session patient : grand texte (même clé localStorage que la page de connexion) */
-body.patient-a11y-large-text {
+/* Sessions patient / médecin : grand texte (même clé localStorage que la page de connexion) */
+body.patient-a11y-large-text,
+body.doctor-a11y-large-text {
     .wrapper {
         font-size: 1.06rem;
     }

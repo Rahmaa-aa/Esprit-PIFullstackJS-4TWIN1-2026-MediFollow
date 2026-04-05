@@ -193,7 +193,7 @@ const Header = () => {
 
    const [open, setOpen] = useState(false)
    const [isScrolled, setIsScrolled] = useState(false);
-   const [patientLargeText, setPatientLargeText] = useState(() => {
+   const [sessionLargeText, setSessionLargeText] = useState(() => {
       try {
          if (typeof localStorage === "undefined") return false;
          return localStorage.getItem(LARGE_TEXT_STORAGE_KEY) === "1";
@@ -202,36 +202,45 @@ const Header = () => {
       }
    });
 
+   const isPatientOrDoctor = isPatient || isDoctor;
+
    useEffect(() => {
-      if (!isPatient) {
-         document.body.classList.remove("patient-a11y-large-text");
+      if (!isPatientOrDoctor) {
+         document.body.classList.remove("patient-a11y-large-text", "doctor-a11y-large-text");
          return;
       }
       try {
-         setPatientLargeText(localStorage.getItem(LARGE_TEXT_STORAGE_KEY) === "1");
+         setSessionLargeText(localStorage.getItem(LARGE_TEXT_STORAGE_KEY) === "1");
       } catch {
-         setPatientLargeText(false);
+         setSessionLargeText(false);
       }
-   }, [isPatient]);
+   }, [isPatientOrDoctor]);
 
    useEffect(() => {
-      if (!isPatient) return;
-      document.body.classList.toggle("patient-a11y-large-text", patientLargeText);
+      if (!isPatientOrDoctor) {
+         document.body.classList.remove("patient-a11y-large-text", "doctor-a11y-large-text");
+         return;
+      }
+      document.body.classList.remove("patient-a11y-large-text", "doctor-a11y-large-text");
+      if (sessionLargeText) {
+         if (isPatient) document.body.classList.add("patient-a11y-large-text");
+         if (isDoctor) document.body.classList.add("doctor-a11y-large-text");
+      }
       try {
-         localStorage.setItem(LARGE_TEXT_STORAGE_KEY, patientLargeText ? "1" : "0");
+         localStorage.setItem(LARGE_TEXT_STORAGE_KEY, sessionLargeText ? "1" : "0");
       } catch { /* ignore */ }
-   }, [isPatient, patientLargeText]);
+   }, [isPatient, isDoctor, isPatientOrDoctor, sessionLargeText]);
 
    useEffect(() => {
-      if (!isPatient) return;
+      if (!isPatientOrDoctor) return;
       const onStorage = (e) => {
          if (e.key === LARGE_TEXT_STORAGE_KEY && e.newValue != null) {
-            setPatientLargeText(e.newValue === "1");
+            setSessionLargeText(e.newValue === "1");
          }
       };
       window.addEventListener("storage", onStorage);
       return () => window.removeEventListener("storage", onStorage);
-   }, [isPatient]);
+   }, [isPatientOrDoctor]);
 
    useEffect(() => {
       const handleScrolld = () => {
@@ -346,17 +355,17 @@ const Header = () => {
                         <SvgFlagDz width={26} />
                      </span>
                      <LanguageSwitcher toggleClassName="nav-link d-none d-xl-block" />
-                     {isPatient && (
+                     {isPatientOrDoctor && (
                         <Nav.Item as="li" className="nav-item d-none d-xl-flex align-items-center ms-1">
                            <button
                               type="button"
-                              className={`btn btn-sm a11y-btn ${patientLargeText ? "btn-primary" : "btn-outline-primary"}`}
+                              className={`btn btn-sm a11y-btn ${sessionLargeText ? "btn-primary" : "btn-outline-primary"}`}
                               data-eye-clickable
-                              aria-pressed={patientLargeText}
-                              onClick={() => setPatientLargeText((v) => !v)}
+                              aria-pressed={sessionLargeText}
+                              onClick={() => setSessionLargeText((v) => !v)}
                            >
                               <i className="ri-font-size me-1"></i>
-                              {patientLargeText ? t("signIn.largeTextDisable") : t("signIn.largeTextEnable")}
+                              {sessionLargeText ? t("signIn.largeTextDisable") : t("signIn.largeTextEnable")}
                            </button>
                         </Nav.Item>
                      )}
@@ -763,17 +772,17 @@ const Header = () => {
 
                   <Col md={12} className="d-flex justify-content-end align-items-center flex-wrap gap-2">
                      <LanguageSwitcher toggleClassName="nav-link d-block d-xl-none" />{" "}
-                     {isPatient && (
+                     {isPatientOrDoctor && (
                         <Nav.Item as="li" className="nav-item d-flex d-xl-none align-items-center">
                            <button
                               type="button"
-                              className={`btn btn-sm a11y-btn ${patientLargeText ? "btn-primary" : "btn-outline-primary"}`}
+                              className={`btn btn-sm a11y-btn ${sessionLargeText ? "btn-primary" : "btn-outline-primary"}`}
                               data-eye-clickable
-                              aria-pressed={patientLargeText}
-                              onClick={() => setPatientLargeText((v) => !v)}
+                              aria-pressed={sessionLargeText}
+                              onClick={() => setSessionLargeText((v) => !v)}
                            >
                               <i className="ri-font-size me-1"></i>
-                              {patientLargeText ? t("signIn.largeTextDisable") : t("signIn.largeTextEnable")}
+                              {sessionLargeText ? t("signIn.largeTextDisable") : t("signIn.largeTextEnable")}
                            </button>
                         </Nav.Item>
                      )}

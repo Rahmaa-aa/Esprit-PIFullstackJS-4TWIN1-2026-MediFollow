@@ -17,12 +17,12 @@ function staffId(req: { user?: { id?: unknown; role?: string } }) {
   return String(u.id);
 }
 
-/** JWT admin / superadmin → rôle stocké `admin` pour les notifications. */
+/** JWT admin / superadmin / auditeur → rôle stocké `admin` pour les notifications. */
 function notifRole(
   req: { user?: { role?: string } },
 ): 'doctor' | 'nurse' | 'patient' | 'admin' | 'carecoordinator' | null {
   const r = req.user?.role;
-  if (r === 'superadmin' || r === 'admin') return 'admin';
+  if (r === 'superadmin' || r === 'admin' || r === 'auditor') return 'admin';
   if (r === 'doctor' || r === 'nurse' || r === 'patient') return r;
   if (r === 'carecoordinator') return 'carecoordinator';
   return null;
