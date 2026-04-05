@@ -35,10 +35,10 @@ async function bootstrap() {
   setTimeout(async () => {
     try {
       const authService = app.get(AuthService);
-      await authService.createAdmin('25k01a2003c@gmail.com', 'Admin123!', 'Admin MediFollow');
-      console.log('Admin prêt: 25k01a2003c@gmail.com / Admin123!');
-      await authService.createSuperAdmin('khalilhlila2@gmail.com', 'SuperAdmin123!', 'Super Admin MediFollow');
-      console.log('Super Admin prêt:codeSuperAdmin123!');
+      await authService.createAdmin('codecraftmedi@gmail.com', 'Admin123!', 'Admin MediFollow');
+      console.log('Admin prêt: codecraftmedi@gmail.com / Admin123!');
+      await authService.createSuperAdmin('codecraftmedi@gmail.com', 'SuperAdmin123!', 'Super Admin MediFollow');
+      console.log('Super Admin prêt: codecraftmedi@gmail.com / SuperAdmin123!');
     } catch (e) {
       // Ignorer si erreur
     }
