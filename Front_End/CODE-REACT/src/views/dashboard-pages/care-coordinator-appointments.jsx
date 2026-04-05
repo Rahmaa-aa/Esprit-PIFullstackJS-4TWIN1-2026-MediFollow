@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Row, Col, Spinner, Alert, Table, Badge } from "react-bootstrap";
 import Card from "../../components/Card";
 import A11yToolbar from "../../components/A11yToolbar";
+import PaginationBar from "../../components/PaginationBar";
+import { usePagination } from "../../hooks/usePagination";
 import { appointmentApi } from "../../services/api";
 import { hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
 
@@ -79,6 +81,8 @@ const CareCoordinatorAppointments = () => {
     return raw ? hospitalDepartmentLabel(raw, t) : "";
   }, [user?.department, t]);
 
+  const { page, setPage, totalPages, paginated, totalItems } = usePagination(list, 8);
+
   const patientLabel = (row) => {
     const p = row.patientId;
     if (p && typeof p === "object") {
@@ -127,50 +131,59 @@ const CareCoordinatorAppointments = () => {
               ) : list.length === 0 ? (
                 <p className="text-muted mb-0">{t("careCoordinatorAppointments.empty")}</p>
               ) : (
-                <div className="table-responsive">
-                  <Table hover className="align-middle mb-0 small">
-                    <thead className="table-light">
-                      <tr>
-                        <th>{t("careCoordinatorAppointments.thDate")}</th>
-                        <th>{t("careCoordinatorAppointments.thTime")}</th>
-                        <th>{t("careCoordinatorAppointments.thPatient")}</th>
-                        <th>{t("careCoordinatorAppointments.thDoctor")}</th>
-                        <th>{t("careCoordinatorAppointments.thTitle")}</th>
-                        <th>{t("careCoordinatorAppointments.thType")}</th>
-                        <th>{t("careCoordinatorAppointments.thStatus")}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {list.map((row) => {
-                        const pid = patientIdForLink(row);
-                        return (
-                          <tr key={row._id}>
-                            <td>{row.date || "—"}</td>
-                            <td>{row.time || "—"}</td>
-                            <td>
-                              {pid ? (
-                                <Link
-                                  to={`/dashboard-pages/care-coordinator-patient/${encodeURIComponent(pid)}`}
-                                  className="fw-medium text-decoration-none"
-                                >
-                                  {patientLabel(row)}
-                                </Link>
-                              ) : (
-                                <span className="fw-medium">{patientLabel(row)}</span>
-                              )}
-                            </td>
-                            <td>{row.doctorName || "—"}</td>
-                            <td>{row.title || "—"}</td>
-                            <td>{appointmentTypeLabel(row.type, t)}</td>
-                            <td>
-                              <Badge bg={statusBadgeVariant(row.status)}>{row.status || "—"}</Badge>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </Table>
-                </div>
+                <>
+                  <div className="table-responsive">
+                    <Table hover className="align-middle mb-0 small">
+                      <thead className="table-light">
+                        <tr>
+                          <th>{t("careCoordinatorAppointments.thDate")}</th>
+                          <th>{t("careCoordinatorAppointments.thTime")}</th>
+                          <th>{t("careCoordinatorAppointments.thPatient")}</th>
+                          <th>{t("careCoordinatorAppointments.thDoctor")}</th>
+                          <th>{t("careCoordinatorAppointments.thTitle")}</th>
+                          <th>{t("careCoordinatorAppointments.thType")}</th>
+                          <th>{t("careCoordinatorAppointments.thStatus")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginated.map((row) => {
+                          const pid = patientIdForLink(row);
+                          return (
+                            <tr key={row._id}>
+                              <td>{row.date || "—"}</td>
+                              <td>{row.time || "—"}</td>
+                              <td>
+                                {pid ? (
+                                  <Link
+                                    to={`/dashboard-pages/care-coordinator-patient/${encodeURIComponent(pid)}`}
+                                    className="fw-medium text-decoration-none"
+                                  >
+                                    {patientLabel(row)}
+                                  </Link>
+                                ) : (
+                                  <span className="fw-medium">{patientLabel(row)}</span>
+                                )}
+                              </td>
+                              <td>{row.doctorName || "—"}</td>
+                              <td>{row.title || "—"}</td>
+                              <td>{appointmentTypeLabel(row.type, t)}</td>
+                              <td>
+                                <Badge bg={statusBadgeVariant(row.status)}>{row.status || "—"}</Badge>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </Table>
+                  </div>
+                  <PaginationBar
+                    page={page}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    pageSize={8}
+                    onPageChange={setPage}
+                  />
+                </>
               )}
             </Card.Body>
           </Card>

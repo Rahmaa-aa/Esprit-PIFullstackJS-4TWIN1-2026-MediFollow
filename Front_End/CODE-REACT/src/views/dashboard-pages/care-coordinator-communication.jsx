@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import A11yToolbar from "../../components/A11yToolbar";
+import PaginationBar from "../../components/PaginationBar";
+import { usePagination } from "../../hooks/usePagination";
 import { chatApi } from "../../services/api";
 
 const TEMPLATE_IDS = ["vitals", "appointment", "missedAppointment", "lab", "general"];
@@ -94,8 +96,10 @@ const CareCoordinatorCommunication = () => {
                 roleLabel: t("careCoordinatorCommunication.roleNurse"),
             });
         }
-        return out;
-    }, [contacts, t]);
+    return out;
+  }, [contacts, t]);
+
+  const { page, setPage, totalPages, paginated: paginatedContacts, totalItems } = usePagination(contactRows, 8);
 
     const copyTemplate = useCallback(
         async (id) => {
@@ -175,43 +179,52 @@ const CareCoordinatorCommunication = () => {
                                 <p className="text-muted small">{t("careCoordinatorCommunication.emptyContacts")}</p>
                             )}
                             {contactRows.length > 0 && (
-                                <div className="table-responsive">
-                                    <table className="table table-sm align-middle mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>{t("careCoordinatorCommunication.thName")}</th>
-                                                <th>{t("careCoordinatorCommunication.thRole")}</th>
-                                                <th className="text-end">{t("careCoordinatorCommunication.thAction")}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {contactRows.map((row) => (
-                                                <tr key={row.key}>
-                                                    <td>{row.name}</td>
-                                                    <td>
-                                                        <Badge bg="light" text="dark" className="fw-normal">
-                                                            {row.roleLabel}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="text-end">
-                                                        <Button
-                                                            as={Link}
-                                                            size="sm"
-                                                            variant="primary"
-                                                            to={
-                                                                row.thread === "patient"
-                                                                    ? chatHrefPatient(row.patientId)
-                                                                    : chatHref(row.peerRole, row.peerId)
-                                                            }
-                                                        >
-                                                            {t("careCoordinatorCommunication.openChat")}
-                                                        </Button>
-                                                    </td>
+                                <>
+                                    <div className="table-responsive">
+                                        <table className="table table-sm align-middle mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>{t("careCoordinatorCommunication.thName")}</th>
+                                                    <th>{t("careCoordinatorCommunication.thRole")}</th>
+                                                    <th className="text-end">{t("careCoordinatorCommunication.thAction")}</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                            </thead>
+                                            <tbody>
+                                                {paginatedContacts.map((row) => (
+                                                    <tr key={row.key}>
+                                                        <td>{row.name}</td>
+                                                        <td>
+                                                            <Badge bg="light" text="dark" className="fw-normal">
+                                                                {row.roleLabel}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="text-end">
+                                                            <Button
+                                                                as={Link}
+                                                                size="sm"
+                                                                variant="primary"
+                                                                to={
+                                                                    row.thread === "patient"
+                                                                        ? chatHrefPatient(row.patientId)
+                                                                        : chatHref(row.peerRole, row.peerId)
+                                                                }
+                                                            >
+                                                                {t("careCoordinatorCommunication.openChat")}
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <PaginationBar
+                                        page={page}
+                                        totalPages={totalPages}
+                                        totalItems={totalItems}
+                                        pageSize={8}
+                                        onPageChange={setPage}
+                                    />
+                                </>
                             )}
 
                             <div className="mt-4">
