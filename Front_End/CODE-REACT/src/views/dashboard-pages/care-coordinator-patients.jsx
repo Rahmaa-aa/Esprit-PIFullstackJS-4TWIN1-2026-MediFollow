@@ -65,7 +65,7 @@ const CareCoordinatorPatients = () => {
   }, [data?.department, user?.department, t]);
 
   const patients = useMemo(() => data?.patients || [], [data]);
-  const { page, setPage, totalPages, paginated, totalItems } = usePagination(patients, 8);
+  const { page, setPage, totalPages, paginated, totalItems } = usePagination(patients, 2);
 
   if (!user) return null;
 
@@ -153,7 +153,7 @@ const CareCoordinatorPatients = () => {
                     page={page}
                     totalPages={totalPages}
                     totalItems={totalItems}
-                    pageSize={8}
+                    pageSize={2}
                     onPageChange={setPage}
                   />
                 </>

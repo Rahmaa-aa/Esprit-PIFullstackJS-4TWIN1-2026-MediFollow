@@ -81,7 +81,7 @@ const CareCoordinatorAppointments = () => {
     return raw ? hospitalDepartmentLabel(raw, t) : "";
   }, [user?.department, t]);
 
-  const { page, setPage, totalPages, paginated, totalItems } = usePagination(list, 8);
+  const { page, setPage, totalPages, paginated, totalItems } = usePagination(list, 2);
 
   const patientLabel = (row) => {
     const p = row.patientId;
@@ -180,7 +180,7 @@ const CareCoordinatorAppointments = () => {
                     page={page}
                     totalPages={totalPages}
                     totalItems={totalItems}
-                    pageSize={8}
+                    pageSize={2}
                     onPageChange={setPage}
                   />
                 </>
