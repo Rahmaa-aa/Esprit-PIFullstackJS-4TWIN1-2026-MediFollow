@@ -43,3 +43,15 @@ Front_End/CODE-REACT/hospital-website-template/
 
 # Vagrant specific
 .vagrant/
+
+# Python venv (ne pas versionner les dépendances)
+**/.venv/
+
+# Export TF.js / SavedModel intermédiaires (régénérables)
+backend/detetction faciale/tfjs_emotion_export/
+backend/detetction faciale/saved_model_emotion/
+backend/detetction faciale/emotion_model_export.h5
+
+# Données FER (Kaggle) — trop volumineuses pour Git ; placer train/ test/ localement
+backend/detetction faciale/archive/train/
+backend/detetction faciale/archive/test/

@@ -18,6 +18,29 @@ import {
     getSelfDisplayName,
 } from "./voiceCallUtils";
 import { startIncomingRingtone, startOutgoingRingback } from "./callRingtone";
+import { detectDominantExpression } from "../../services/face-emotions";
+
+/** Libellés face-api.js / FER (7 classes). */
+const EMOTION_EMOJI = {
+    neutral: "😐",
+    happy: "🙂",
+    sad: "😢",
+    angry: "😠",
+    fearful: "😨",
+    disgusted: "🤢",
+    surprised: "😮",
+};
+
+/** Secours si une clé i18n manque (ne jamais afficher `chat.voice.emotion.xxx` brut). */
+const EMOTION_LABEL_DEFAULT_EN = {
+    neutral: "Neutral",
+    happy: "Happy",
+    sad: "Sad",
+    angry: "Angry",
+    fearful: "Fearful",
+    disgusted: "Disgusted",
+    surprised: "Surprised",
+};
 
 /** Routage messagerie aligné sur POST /chat/messages (patient seul, patient+staff, ou pair). */
 function sendCallLogToThread(routing, bodyJson) {
@@ -89,6 +112,8 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
     /** audio = appel vocal ; video = visio (caméra + micro). */
     const [mediaMode, setMediaMode] = useState(/** @type {CallMediaMode} */ ("audio"));
     const [camOff, setCamOff] = useState(false);
+    /** Émotion dominante du patient (flux analysé : local si patient, distant si soignant). */
+    const [patientEmotion, setPatientEmotion] = useState(/** @type {{ label: string, confidence: number } | null} */ (null));
 
     const phaseRef = useRef(phase);
     useEffect(() => {
@@ -135,6 +160,7 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
         setMicMuted(false);
         setCamOff(false);
         setCallRecording(false);
+        setPatientEmotion(null);
         setMediaMode("audio");
         callMediaRef.current = "audio";
         if (localVideoRef.current) localVideoRef.current.srcObject = null;
@@ -236,6 +262,54 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
             pendingRemoteStreamRef.current = null;
         }
     }, [phase, mediaMode]);
+
+    /** Détection d’émotions (FER / faceExpressionNet) sur le flux du patient : local si patient, distant si soignant. */
+    useEffect(() => {
+        const role = session?.role;
+        const staffRoles = ["doctor", "nurse", "carecoordinator"];
+        const isAnalyzing =
+            mediaMode === "video" &&
+            !camOff &&
+            (phase === "connected" || (phase === "outgoing" && role === "patient"));
+        if (!isAnalyzing || !role) {
+            setPatientEmotion(null);
+            return undefined;
+        }
+
+        const pickVideoEl = () => {
+            if (role === "patient") return localVideoRef.current;
+            if (staffRoles.includes(role)) return remoteVideoRef.current;
+            return null;
+        };
+
+        let cancelled = false;
+        let timerId = 0;
+
+        const tick = async () => {
+            const el = pickVideoEl();
+            if (!el || cancelled) return;
+            try {
+                const res = await detectDominantExpression(el);
+                if (cancelled) return;
+                /* 7 classes softmax : le max est souvent < 0,35 ; 0,32 masquait tout le badge */
+                if (res && res.confidence >= 0.12) {
+                    setPatientEmotion({ label: res.label, confidence: res.confidence });
+                } else {
+                    setPatientEmotion(null);
+                }
+            } catch {
+                if (!cancelled) setPatientEmotion(null);
+            }
+        };
+
+        timerId = window.setInterval(tick, 850);
+        void tick();
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(timerId);
+        };
+    }, [phase, mediaMode, session?.role, camOff]);
 
     const enqueueHangup = useCallback(
         async (notifyPeer) => {
@@ -736,6 +810,28 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                         <div className={`voice-call-modal__video-wrap ${phase === "outgoing" ? "is-outgoing" : "is-live"}`}>
                             <video ref={remoteVideoRef} className="voice-call-modal__remote" playsInline autoPlay />
                             <video ref={localVideoRef} className="voice-call-modal__local" playsInline autoPlay muted />
+                            {patientEmotion && EMOTION_EMOJI[patientEmotion.label] != null && (
+                                <div
+                                    className={`voice-call-modal__emotion-badge ${
+                                        session?.role === "patient" && phase === "connected"
+                                            ? "voice-call-modal__emotion-badge--pip"
+                                            : "voice-call-modal__emotion-badge--main"
+                                    }`}
+                                    role="status"
+                                    aria-live="polite"
+                                    title={t("chat.voice.emotionHint")}
+                                >
+                                    <span className="voice-call-modal__emotion-emoji" aria-hidden>
+                                        {EMOTION_EMOJI[patientEmotion.label]}
+                                    </span>
+                                    <span className="voice-call-modal__emotion-label">
+                                        {t(`chat.voice.emotion.${patientEmotion.label}`, {
+                                            defaultValue:
+                                                EMOTION_LABEL_DEFAULT_EN[patientEmotion.label] ?? patientEmotion.label,
+                                        })}
+                                    </span>
+                                </div>
+                            )}
                             <div className="voice-call-modal__video-overlay">
                                 {phase === "outgoing" && (
                                     <>

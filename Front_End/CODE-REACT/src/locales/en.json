@@ -2543,7 +2543,17 @@
       "errorVideoDenied": "Camera or microphone unavailable / denied",
       "errorAcceptVideo": "Could not accept (camera / microphone)",
       "errorAcceptAudio": "Could not accept call",
-      "ok": "OK"
+      "ok": "OK",
+      "emotionHint": "Facial expression indicator (patient view)",
+      "emotion": {
+        "neutral": "Neutral",
+        "happy": "Happy",
+        "sad": "Sad",
+        "angry": "Angry",
+        "fearful": "Fearful",
+        "disgusted": "Disgusted",
+        "surprised": "Surprised"
+      }
     },
     "data": {
       "name": "Name:",
