@@ -1199,6 +1199,7 @@
     "colName": "الاسم",
     "colEmail": "البريد الإلكتروني",
     "colRole": "الدور",
+    "colDepartment": "القسم",
     "colStatus": "الحالة",
     "colActions": "إجراءات",
     "emptyNoUsers": "لا يوجد مستخدمون",
@@ -1221,6 +1222,8 @@
     "addAdminEmail": "البريد الإلكتروني",
     "addAdminPassword": "كلمة المرور",
     "addAdminNameOptional": "الاسم المعروض (اختياري)",
+    "addAdminDepartmentOptional": "القسم (اختياري)",
+    "addAdminDepartmentNone": "— بدون —",
     "addAdminSubmit": "إنشاء الحساب",
     "addAdminSaving": "جاري الإنشاء…",
     "addAdminSuccess": "تم إنشاء حساب المسؤول {{email}}.",
@@ -1228,7 +1231,15 @@
     "addAdminSuccessNoSmtp": "تم إنشاء الحساب لـ {{email}}. تعذّر إرسال البريد (SMTP غير مُعدّ على الخادم): أرسل بيانات الاعتماد يدويًا.",
     "addAdminError": "تعذّر إنشاء حساب المسؤول.",
     "addAdminValidation": "أدخل البريد الإلكتروني وكلمة المرور.",
-    "addAdminPasswordMin": "يجب أن تتكوّن كلمة المرور من 6 أحرف على الأقل."
+    "addAdminPasswordMin": "يجب أن تتكوّن كلمة المرور من 6 أحرف على الأقل.",
+    "assignDept": "القسم",
+    "assignDeptTitle": "تعيين قسم لهذا المسؤول",
+    "assignDeptModalTitle": "قسم المسؤول",
+    "assignDeptLabel": "القسم",
+    "assignDeptSubmit": "حفظ",
+    "assignDeptSaving": "جاري الحفظ…",
+    "assignDeptSuccess": "تم تحديث قسم {{name}}.",
+    "assignDeptError": "تعذّر تحديث القسم."
   },
   "superAdminViewAuditor": {
     "loadError": "تعذّر تحميل ملف المدقّق.",

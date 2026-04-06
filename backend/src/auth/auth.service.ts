@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
@@ -695,24 +695,76 @@ export class AuthService {
     };
   }
 
-  async createAdmin(email: string, password: string, name?: string) {
+  async createAdmin(email: string, password: string, name?: string, department?: string) {
     const existing = await this.userModel.findOne({ email }).exec();
     if (existing?.role === 'superadmin') {
       throw new BadRequestException('Cet email est déjà utilisé par un super administrateur');
     }
     const hashed = await bcrypt.hash(password, 10);
-    const data = { email, password: hashed, role: 'admin', name: name || 'Admin', isActive: true };
+    const displayName = name || 'Admin';
+    const setDept =
+      department !== undefined && department !== null ? String(department).trim() : undefined;
+
+    const data: Record<string, unknown> = {
+      email,
+      password: hashed,
+      role: 'admin',
+      name: displayName,
+      isActive: true,
+    };
+    if (setDept !== undefined) (data as any).department = setDept;
+
     if (existing) {
-      await this.userModel.updateOne({ email }, { $set: { password: hashed, role: 'admin', name: data.name, isActive: true } }).exec();
-      return { id: existing._id, email: existing.email, name: data.name, role: 'admin' };
+      const $set: Record<string, unknown> = {
+        password: hashed,
+        role: 'admin',
+        name: displayName,
+        isActive: true,
+      };
+      if (setDept !== undefined) $set.department = setDept;
+      await this.userModel.updateOne({ email }, { $set }).exec();
+      const updated = await this.userModel.findOne({ email }).exec();
+      return {
+        id: updated!._id,
+        email: updated!.email,
+        name: updated!.name,
+        role: 'admin',
+        department: updated!.department,
+      };
     }
     const user = await this.userModel.create(data);
-    return { id: user._id, email: user.email, name: user.name, role: user.role };
+    return {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      department: user.department,
+    };
+  }
+
+  /** Rattache un administrateur à un département (super admin uniquement, côté contrôleur). */
+  async assignAdminDepartment(adminUserId: string, department?: string) {
+    const user = await this.userModel.findById(adminUserId).exec();
+    if (!user) throw new NotFoundException('Utilisateur non trouvé');
+    if (user.role !== 'admin') {
+      throw new BadRequestException('Seuls les administrateurs peuvent être rattachés à un département');
+    }
+    const dept =
+      department === undefined || department === null ? user.department : String(department).trim();
+    await this.userModel.updateOne({ _id: adminUserId }, { $set: { department: dept } }).exec();
+    const updated = await this.userModel.findById(adminUserId).select('-password').exec();
+    return {
+      id: updated!._id,
+      email: updated!.email,
+      name: updated!.name,
+      role: updated!.role,
+      department: updated!.department,
+    };
   }
 
   /** Crée un admin et envoie les identifiants par e-mail (SMTP configuré dans .env). */
-  async createAdminWithCredentialsEmail(email: string, password: string, name?: string) {
-    const result = await this.createAdmin(email, password, name);
+  async createAdminWithCredentialsEmail(email: string, password: string, name?: string, department?: string) {
+    const result = await this.createAdmin(email, password, name, department);
     let credentialsEmailSent = false;
     try {
       credentialsEmailSent = await this.emailService.sendAdminCredentials(

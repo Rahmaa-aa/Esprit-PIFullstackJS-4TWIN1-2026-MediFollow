@@ -2,6 +2,20 @@
 
 Pipeline d’entraînement et d’inférence pour le dataset Kaggle *Brain MRI Images for Brain Tumor Detection* (dossiers `yes` / `no`).
 
+## Modèle versionné (`git`)
+
+Les fichiers **`brain_tumor_resnet.keras`** / **`brain_tumor_resnet.h5`** peuvent être **commités** dans ce dossier (ils ne sont plus dans `.gitignore`) pour que tout le monde les récupère après un `git pull`.
+
+Après entraînement local, ajoutez et poussez le fichier :
+
+```bash
+git add brain-tumor-detection/brain_tumor_resnet.keras
+git commit -m "Modèle IRM cérébrale"
+git push
+```
+
+**Limite GitHub :** un fichier ne doit pas dépasser **100 Mo** ; au-delà, utilisez [Git LFS](https://git-lfs.com) ou partagez le fichier autrement. Si le dépôt n’a pas encore le modèle : entraînez avec `train_brain_tumor.py` ou copiez le fichier puis `git add` comme ci-dessus.
+
 ## Prérequis
 
 - **Python 3.11 ou 3.12** (obligatoire pour TensorFlow : **pas de wheel pour Python 3.14** pour l’instant).  

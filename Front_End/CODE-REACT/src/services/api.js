@@ -679,6 +679,8 @@ export const superAdminApi = {
   getAllUsers: () => api.get("/auth/users"),
   /** Créer un compte admin (JWT super admin uniquement). */
   createAdmin: (data) => api.post("/auth/admins", data),
+  /** Département d’un admin (JWT super admin uniquement). */
+  updateAdmin: (id, data) => api.put(`/auth/admins/${id}`, data),
   toggleUserActive: (id) => api.put(`/auth/users/${id}/toggle-active`, {}),
   deleteUser: (id) => api.delete(`/auth/users/${id}`),
   createAuditor: (data) => api.post("/auth/auditors", data),

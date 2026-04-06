@@ -1199,6 +1199,7 @@
     "colName": "Nom",
     "colEmail": "Email",
     "colRole": "Rôle",
+    "colDepartment": "Département",
     "colStatus": "Statut",
     "colActions": "Actions",
     "emptyNoUsers": "Aucun utilisateur trouvé",
@@ -1221,6 +1222,8 @@
     "addAdminEmail": "Email",
     "addAdminPassword": "Mot de passe",
     "addAdminNameOptional": "Nom affiché (facultatif)",
+    "addAdminDepartmentOptional": "Département (facultatif)",
+    "addAdminDepartmentNone": "— Aucun —",
     "addAdminSubmit": "Créer le compte",
     "addAdminSaving": "Création…",
     "addAdminSuccess": "Le compte administrateur {{email}} a été créé.",
@@ -1228,7 +1231,15 @@
     "addAdminSuccessNoSmtp": "Compte créé pour {{email}}. L’e-mail n’a pas pu être envoyé (SMTP non configuré sur le serveur) : transmettez les identifiants manuellement.",
     "addAdminError": "Impossible de créer le compte administrateur.",
     "addAdminValidation": "Indiquez un email et un mot de passe.",
-    "addAdminPasswordMin": "Le mot de passe doit contenir au moins 6 caractères."
+    "addAdminPasswordMin": "Le mot de passe doit contenir au moins 6 caractères.",
+    "assignDept": "Département",
+    "assignDeptTitle": "Assigner un département à cet administrateur",
+    "assignDeptModalTitle": "Département de l’administrateur",
+    "assignDeptLabel": "Département",
+    "assignDeptSubmit": "Enregistrer",
+    "assignDeptSaving": "Enregistrement…",
+    "assignDeptSuccess": "Le département de {{name}} a été mis à jour.",
+    "assignDeptError": "Impossible de mettre à jour le département."
   },
   "superAdminViewAuditor": {
     "loadError": "Impossible de charger le profil de l’auditeur.",

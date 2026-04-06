@@ -1199,6 +1199,7 @@
     "colName": "Name",
     "colEmail": "Email",
     "colRole": "Role",
+    "colDepartment": "Department",
     "colStatus": "Status",
     "colActions": "Actions",
     "emptyNoUsers": "No users found",
@@ -1221,6 +1222,8 @@
     "addAdminEmail": "Email",
     "addAdminPassword": "Password",
     "addAdminNameOptional": "Display name (optional)",
+    "addAdminDepartmentOptional": "Department (optional)",
+    "addAdminDepartmentNone": "— None —",
     "addAdminSubmit": "Create account",
     "addAdminSaving": "Creating…",
     "addAdminSuccess": "Administrator account {{email}} has been created.",
@@ -1228,7 +1231,15 @@
     "addAdminSuccessNoSmtp": "Account created for {{email}}. Email could not be sent (SMTP not configured on the server): share the credentials manually.",
     "addAdminError": "Could not create the administrator account.",
     "addAdminValidation": "Enter an email and password.",
-    "addAdminPasswordMin": "Password must be at least 6 characters."
+    "addAdminPasswordMin": "Password must be at least 6 characters.",
+    "assignDept": "Department",
+    "assignDeptTitle": "Assign a department to this administrator",
+    "assignDeptModalTitle": "Administrator department",
+    "assignDeptLabel": "Department",
+    "assignDeptSubmit": "Save",
+    "assignDeptSaving": "Saving…",
+    "assignDeptSuccess": "{{name}}’s department has been updated.",
+    "assignDeptError": "Could not update the department."
   },
   "superAdminViewAuditor": {
     "loadError": "Could not load auditor profile.",

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Row, Col, Card, Button, Badge, Form, InputGroup, Spinner, Alert, Modal } from "react-bootstrap";
 import { useTranslation } from "react-i18next";
 import { superAdminApi, doctorApi, patientApi, nurseApi } from "../../services/api";
+import { fetchMergedDepartmentNames, mergeDepartmentOptionsForValue } from "../../utils/mergedDepartmentNames";
 
 const ROLE_COLORS = {
   admin: "danger",
@@ -43,7 +44,12 @@ const UserList = () => {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [addAdminModal, setAddAdminModal] = useState(false);
   const [addAdminLoading, setAddAdminLoading] = useState(false);
-  const [addAdminForm, setAddAdminForm] = useState({ email: "", password: "", name: "" });
+  const [addAdminForm, setAddAdminForm] = useState({ email: "", password: "", name: "", department: "" });
+  const [deptOptions, setDeptOptions] = useState([]);
+  const [assignDeptModal, setAssignDeptModal] = useState({ show: false, user: null });
+  const [assignDeptLoading, setAssignDeptLoading] = useState(false);
+  const [assignDeptForm, setAssignDeptForm] = useState({ department: "" });
+  const [assignDeptOptions, setAssignDeptOptions] = useState([]);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -64,6 +70,7 @@ const UserList = () => {
           role: u.role,
           isActive: u.isActive !== false,
           collection: "user",
+          department: u.department || "",
         })),
         ...(Array.isArray(doctors) ? doctors : []).map((d) => ({
           _id: d._id || d.id,
@@ -104,6 +111,10 @@ const UserList = () => {
   }, [loadUsers]);
 
   useEffect(() => {
+    fetchMergedDepartmentNames().then(setDeptOptions);
+  }, []);
+
+  useEffect(() => {
     try {
       const u = JSON.parse(localStorage.getItem("adminUser") || "null");
       setIsSuperAdmin(u?.role === "superadmin");
@@ -125,11 +136,15 @@ const UserList = () => {
     }
     setAddAdminLoading(true);
     try {
-      const created = await superAdminApi.createAdmin({
+      const payload = {
         email: addAdminForm.email.trim(),
         password: addAdminForm.password,
         name: addAdminForm.name.trim() || undefined,
-      });
+      };
+      if (addAdminForm.department.trim()) {
+        payload.department = addAdminForm.department.trim();
+      }
+      const created = await superAdminApi.createAdmin(payload);
       const emailAddr = addAdminForm.email.trim();
       setActionMsg(
         created?.credentialsEmailSent
@@ -138,7 +153,7 @@ const UserList = () => {
       );
       setTimeout(() => setActionMsg(""), 4000);
       setAddAdminModal(false);
-      setAddAdminForm({ email: "", password: "", name: "" });
+      setAddAdminForm({ email: "", password: "", name: "", department: "" });
       loadUsers();
     } catch (err) {
       setError(err.message || t("superAdminUsers.addAdminError"));
@@ -169,6 +184,33 @@ const UserList = () => {
 
   const openConfirm = (user) => {
     setConfirmModal({ show: true, user });
+  };
+
+  const openAssignDepartment = (user) => {
+    fetchMergedDepartmentNames().then((base) => {
+      setAssignDeptOptions(mergeDepartmentOptionsForValue(base, user.department));
+      setAssignDeptForm({ department: user.department || "" });
+      setAssignDeptModal({ show: true, user });
+    });
+  };
+
+  const handleAssignDepartment = async (e) => {
+    e.preventDefault();
+    const u = assignDeptModal.user;
+    if (!u?._id) return;
+    setAssignDeptLoading(true);
+    setError("");
+    try {
+      await superAdminApi.updateAdmin(u._id, { department: assignDeptForm.department.trim() });
+      setActionMsg(t("superAdminUsers.assignDeptSuccess", { name: u.name }));
+      setTimeout(() => setActionMsg(""), 3000);
+      setAssignDeptModal({ show: false, user: null });
+      loadUsers();
+    } catch (err) {
+      setError(err.message || t("superAdminUsers.assignDeptError"));
+    } finally {
+      setAssignDeptLoading(false);
+    }
   };
 
   const displayed = allUsers.filter((u) => {
@@ -305,6 +347,7 @@ const UserList = () => {
                     <th>{t("superAdminUsers.colName")}</th>
                     <th>{t("superAdminUsers.colEmail")}</th>
                     <th>{t("superAdminUsers.colRole")}</th>
+                    <th>{t("superAdminUsers.colDepartment")}</th>
                     <th>{t("superAdminUsers.colStatus")}</th>
                     <th>{t("superAdminUsers.colActions")}</th>
                   </tr>
@@ -312,7 +355,7 @@ const UserList = () => {
                 <tbody>
                   {displayed.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center text-muted py-4">
+                      <td colSpan={7} className="text-center text-muted py-4">
                         {t("superAdminUsers.emptyNoUsers")}
                       </td>
                     </tr>
@@ -335,20 +378,39 @@ const UserList = () => {
                         <td>
                           <Badge bg={ROLE_COLORS[user.role] || "secondary"}>{roleLabel(user.role)}</Badge>
                         </td>
+                        <td className="text-muted small">
+                          {user.role === "admin" && user.collection === "user"
+                            ? user.department || t("superAdminUsers.dash")
+                            : t("superAdminUsers.dash")}
+                        </td>
                         <td>
                           <Badge bg={user.isActive ? "success" : "secondary"}>
                             {user.isActive ? t("superAdminDashboard.statusActive") : t("superAdminDashboard.statusInactive")}
                           </Badge>
                         </td>
                         <td>
-                          <Button
-                            size="sm"
-                            variant={user.isActive ? "outline-danger" : "outline-success"}
-                            onClick={() => openConfirm(user)}
-                          >
-                            <i className={user.isActive ? "ri-user-unfollow-line" : "ri-user-follow-line"}></i>
-                            {" "}{user.isActive ? t("superAdminUsers.deactivate") : t("superAdminUsers.activate")}
-                          </Button>
+                          <div className="d-flex flex-wrap gap-1 align-items-center">
+                            {isSuperAdmin && user.role === "admin" && user.collection === "user" && (
+                              <Button
+                                size="sm"
+                                variant="outline-primary"
+                                className="text-nowrap"
+                                onClick={() => openAssignDepartment(user)}
+                                title={t("superAdminUsers.assignDeptTitle")}
+                              >
+                                <i className="ri-building-line me-1"></i>
+                                {t("superAdminUsers.assignDept")}
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant={user.isActive ? "outline-danger" : "outline-success"}
+                              onClick={() => openConfirm(user)}
+                            >
+                              <i className={user.isActive ? "ri-user-unfollow-line" : "ri-user-follow-line"}></i>
+                              {" "}{user.isActive ? t("superAdminUsers.deactivate") : t("superAdminUsers.activate")}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -414,7 +476,7 @@ const UserList = () => {
                 minLength={6}
               />
             </Form.Group>
-            <Form.Group className="mb-0">
+            <Form.Group className="mb-3">
               <Form.Label>{t("superAdminUsers.addAdminNameOptional")}</Form.Label>
               <Form.Control
                 type="text"
@@ -423,6 +485,21 @@ const UserList = () => {
                 onChange={(e) => setAddAdminForm((f) => ({ ...f, name: e.target.value }))}
                 disabled={addAdminLoading}
               />
+            </Form.Group>
+            <Form.Group className="mb-0">
+              <Form.Label>{t("superAdminUsers.addAdminDepartmentOptional")}</Form.Label>
+              <Form.Select
+                value={addAdminForm.department}
+                onChange={(e) => setAddAdminForm((f) => ({ ...f, department: e.target.value }))}
+                disabled={addAdminLoading}
+              >
+                <option value="">{t("superAdminUsers.addAdminDepartmentNone")}</option>
+                {deptOptions.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </Form.Select>
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
@@ -437,6 +514,58 @@ const UserList = () => {
                 </>
               ) : (
                 t("superAdminUsers.addAdminSubmit")
+              )}
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+
+      <Modal
+        show={assignDeptModal.show}
+        onHide={() => !assignDeptLoading && setAssignDeptModal({ show: false, user: null })}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>{t("superAdminUsers.assignDeptModalTitle")}</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleAssignDepartment}>
+          <Modal.Body>
+            <p className="text-muted small mb-3">
+              {assignDeptModal.user?.name} — {assignDeptModal.user?.email}
+            </p>
+            <Form.Group className="mb-0">
+              <Form.Label>{t("superAdminUsers.assignDeptLabel")}</Form.Label>
+              <Form.Select
+                value={assignDeptForm.department}
+                onChange={(e) => setAssignDeptForm({ department: e.target.value })}
+                disabled={assignDeptLoading}
+              >
+                <option value="">{t("superAdminUsers.addAdminDepartmentNone")}</option>
+                {assignDeptOptions.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="secondary"
+              type="button"
+              disabled={assignDeptLoading}
+              onClick={() => setAssignDeptModal({ show: false, user: null })}
+            >
+              {t("superAdminUsers.cancel")}
+            </Button>
+            <Button type="submit" style={{ background: "#009688", borderColor: "#009688" }} disabled={assignDeptLoading}>
+              {assignDeptLoading ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  {t("superAdminUsers.assignDeptSaving")}
+                </>
+              ) : (
+                t("superAdminUsers.assignDeptSubmit")
               )}
             </Button>
           </Modal.Footer>

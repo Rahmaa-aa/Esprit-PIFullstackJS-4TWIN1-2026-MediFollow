@@ -150,7 +150,7 @@ export class BrainTumorService {
       return h5;
     } catch {
       throw new ServiceUnavailableException(
-        'Modèle introuvable (brain_tumor_resnet.keras ou .h5). Entraînez avec train_brain_tumor.py ou définissez BRAIN_TUMOR_MODEL.',
+        'Modèle introuvable (brain_tumor_resnet.keras ou .h5). Placez le fichier dans brain-tumor-detection/, entraînez avec train_brain_tumor.py, ou définissez BRAIN_TUMOR_MODEL dans le .env du backend.',
       );
     }
   }

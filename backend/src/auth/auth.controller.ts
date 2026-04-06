@@ -134,7 +134,7 @@ export class AuthController {
   @Post('admins')
   async createAdminAccount(
     @Request() req: any,
-    @Body() body: { email?: string; password?: string; name?: string },
+    @Body() body: { email?: string; password?: string; name?: string; department?: string },
   ) {
     if (req.user.role !== 'superadmin') {
       throw new ForbiddenException('Seul le super administrateur peut créer un compte administrateur');
@@ -143,7 +143,25 @@ export class AuthController {
     if (!email || !body.password) {
       throw new BadRequestException('Email et mot de passe requis');
     }
-    return this.authService.createAdminWithCredentialsEmail(email, body.password, body.name?.trim());
+    const department =
+      body.department === undefined || body.department === null
+        ? undefined
+        : String(body.department).trim();
+    return this.authService.createAdminWithCredentialsEmail(email, body.password, body.name?.trim(), department);
+  }
+
+  /** Met à jour le département d’un administrateur (JWT super admin uniquement). */
+  @UseGuards(JwtAuthGuard)
+  @Put('admins/:id')
+  async updateAdmin(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { department?: string },
+  ) {
+    if (req.user.role !== 'superadmin') {
+      throw new ForbiddenException('Seul le super administrateur peut modifier un administrateur');
+    }
+    return this.authService.assignAdminDepartment(id, body.department);
   }
 
   // ─── Super Admin: gestion de tous les utilisateurs ───────────────────────

@@ -27,6 +27,8 @@
     "@reduxjs/toolkit": "^2.2.7",
     "@remixicon/react": "^4.2.0",
     "@simplewebauthn/browser": "^13.2.2",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-core": "^4.22.0",
     "apexcharts": "^3.54.1",
     "bootstrap": "^5.3.3",
     "chart.js": "^4.4.5",
