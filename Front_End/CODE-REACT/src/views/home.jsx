@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import LandingShell from "../components/landing/LandingShell";
 import { landingImg } from "./landing/landingPaths";
 import { LANDING_FEATURE_CARDS } from "./landing/landingFeatureCards";
-import GlobalNewspaper from "../components/landing/GlobalNewspaper";
+
 
 const Home = () => {
   const { t } = useTranslation();
@@ -113,8 +113,6 @@ const Home = () => {
           </Row>
         </Container>
       </div>
-
-      <GlobalNewspaper />
 
       <div className="container-fluid py-5">
         <Container>
