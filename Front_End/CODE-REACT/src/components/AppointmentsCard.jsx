@@ -94,9 +94,25 @@ const AppointmentsCard = ({ appointments: initialAppts }) => {
                         )}
                       </div>
                       {a.doctorName && (
-                        <div className="text-primary" style={{ fontSize: "0.72rem" }}>
+                        <div className="text-primary mb-1" style={{ fontSize: "0.72rem" }}>
                           Dr. {a.doctorName}
                         </div>
+                      )}
+                      {a.isVideoCall && (
+                        <button
+                          className="btn btn-sm btn-primary py-0 px-2 rounded-pill mt-1"
+                          style={{ fontSize: "0.7rem", height: "22px" }}
+                          onClick={() =>
+                            window.medifollow?.startCall?.(String(a.doctorId), {
+                              peerName: `Dr. ${a.doctorName || "Doctor"}`,
+                              peerRole: "doctor",
+                              video: true,
+                            })
+                          }
+                        >
+                          <i className="ri-vidicon-fill me-1"></i>
+                          Join Video
+                        </button>
                       )}
                     </div>
                     <div className="text-end flex-shrink-0">

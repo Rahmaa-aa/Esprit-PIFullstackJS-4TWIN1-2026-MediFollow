@@ -52,6 +52,7 @@ import EditNurse from "../views/nurse/edit-nurse"
 
 // Calendar Page
 import Calendar from "../views/calendar/calendar"
+import VideoMeeting from "../views/video-meeting/video-meeting"
 
 // Chat Page
 import Chat from "../views/chat/chat"
@@ -353,6 +354,12 @@ export const DefaultRoute = [
       {
         path: '/calendar',
         element: <Calendar />
+      },
+
+      //  ------ Video Meeting Route ------
+      {
+        path: '/video-meeting',
+        element: <VideoMeeting />
       },
 
       //  ------ Chat Route ------ 

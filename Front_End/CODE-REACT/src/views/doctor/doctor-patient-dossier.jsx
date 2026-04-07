@@ -128,7 +128,7 @@ const DoctorPatientDossierPage = () => {
                     <h1 className="h3 fw-bold mb-3 text-dark mb-sm-3">
                       {patient.firstName} {patient.lastName}
                     </h1>
-                    <div className="d-flex flex-wrap gap-2 align-items-center">
+                    <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
                       <span className="d-inline-flex align-items-center gap-2 rounded-pill bg-white border px-3 py-2 small shadow-sm">
                         <i className="ri-mail-line text-primary" />
                         <span className="text-break">{patient.email}</span>
@@ -139,6 +139,36 @@ const DoctorPatientDossierPage = () => {
                           {patient.department || patient.service}
                         </span>
                       )}
+                    </div>
+                    <div className="d-flex flex-wrap gap-2">
+                      <Button
+                        variant="primary"
+                        className="rounded-pill px-4 d-flex align-items-center gap-2 shadow-sm"
+                        onClick={() =>
+                          window.medifollow?.startCall?.(String(patient._id || patient.id), {
+                            peerName: `${patient.firstName} ${patient.lastName}`,
+                            peerRole: "patient",
+                            video: true,
+                          })
+                        }
+                      >
+                        <i className="ri-vidicon-fill" />
+                        {t("chat.data.videoCall", "Video Call")}
+                      </Button>
+                      <Button
+                        variant="outline-primary"
+                        className="rounded-pill px-4 d-flex align-items-center gap-2 shadow-sm bg-white"
+                        onClick={() =>
+                          window.medifollow?.startCall?.(String(patient._id || patient.id), {
+                            peerName: `${patient.firstName} ${patient.lastName}`,
+                            peerRole: "patient",
+                            video: false,
+                          })
+                        }
+                      >
+                        <i className="ri-phone-fill" />
+                        {t("chat.data.voiceCall", "Audio Call")}
+                      </Button>
                     </div>
                   </div>
                 </div>

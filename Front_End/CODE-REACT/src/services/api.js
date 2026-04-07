@@ -1216,3 +1216,16 @@ export const mailApi = {
   removeLabel: (stateId, labelId) =>
     api.delete(`/mail/messages/${encodeURIComponent(stateId)}/labels/${encodeURIComponent(labelId)}`),
 };
+
+/* ─────────────── Video Meeting ─────────────── */
+export const videoMeetingApi = {
+  create: (data) => api.post('/video-meetings', data),
+  getMyMeetings: () => api.get('/video-meetings'),
+  getAll: () => api.get('/video-meetings/all'),
+  getByCode: (code) => api.get(`/video-meetings/code/${encodeURIComponent(code)}`),
+  getById: (id) => api.get(`/video-meetings/${id}`),
+  update: (id, data) => api.put(`/video-meetings/${id}`, data),
+  cancel: (id) => api.delete(`/video-meetings/${id}`),
+  join: (code) => api.post(`/video-meetings/join/${encodeURIComponent(code)}`, {}),
+  getInvitableUsers: () => api.get('/video-meetings/invitable-users'),
+};

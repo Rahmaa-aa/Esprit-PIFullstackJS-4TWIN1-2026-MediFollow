@@ -18,6 +18,7 @@ import { MailModule } from './mail/mail.module';
 import { LabAnalysisModule } from './lab-analysis/lab-analysis.module';
 import { AuditModule } from './audit/audit.module';
 import { BrainTumorModule } from './brain-tumor/brain-tumor.module';
+import { VideoMeetingModule } from './video-meeting/video-meeting.module';
 
 @Module({
   imports: [

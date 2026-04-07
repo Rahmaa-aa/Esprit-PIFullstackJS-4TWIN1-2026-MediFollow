@@ -233,6 +233,30 @@ const CareCoordinatorAppointments = () => {
                                   <td>{appointmentTypeLabel(row.type, t)}</td>
                                   <td>
                                     <Badge bg={statusBadgeVariant(row.status)}>{row.status || "—"}</Badge>
+                                    {row.isVideoCall && (
+                                      <Badge bg="info" className="ms-1">
+                                        <i className="ri-vidicon-fill me-1" aria-hidden />
+                                        Video
+                                      </Badge>
+                                    )}
+                                  </td>
+                                  <td>
+                                    {row.isVideoCall && (row.status === "confirmed" || row.status === "scheduled") && (
+                                      <Button
+                                        size="sm"
+                                        variant="primary"
+                                        className="py-0 px-2 rounded-pill"
+                                        onClick={() =>
+                                          window.medifollow?.startCall?.(pid, {
+                                            peerName: patientLabel(row),
+                                            peerRole: "patient",
+                                            video: true,
+                                          })
+                                        }
+                                      >
+                                        Join
+                                      </Button>
+                                    )}
                                   </td>
                                 </tr>
                               );

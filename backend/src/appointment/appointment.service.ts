@@ -81,6 +81,7 @@ export class AppointmentService {
       requestedDate: data.requestedDate || date,
       requestedTime: data.requestedTime || time,
       adminNotes: data.adminNotes || '',
+      isVideoCall: !!data.isVideoCall,
       status,
     });
 
