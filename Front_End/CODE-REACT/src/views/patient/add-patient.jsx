@@ -38,6 +38,13 @@ const AddPatient = () => {
   const [nurses, setNurses] = useState([]);
   const [patientDepartment, setPatientDepartment] = useState("");
   const [deptOptions, setDeptOptions] = useState(HOSPITAL_DEPARTMENTS);
+  const [antecedents, setAntecedents] = useState({
+    diabetes: false,
+    hypertension: false,
+    heartDisease: false,
+    asthmaCopd: false,
+    cancer: false,
+  });
 
   useEffect(() => {
     doctorApi.getAll().then((d) => setDoctors(Array.isArray(d) ? d : [])).catch(() => setDoctors([]));
@@ -122,6 +129,11 @@ const AddPatient = () => {
         nurseId: form.nurseId?.value || undefined,
         password,
         profileImage,
+        antecedentDiabetes: antecedents.diabetes,
+        antecedentHypertension: antecedents.hypertension,
+        antecedentHeartDisease: antecedents.heartDisease,
+        antecedentAsthmaCopd: antecedents.asthmaCopd,
+        antecedentCancer: antecedents.cancer,
       });
       navigate("/patient/patient-list");
     } catch (err) {
@@ -297,6 +309,56 @@ const AddPatient = () => {
                     <Col md={6} className="form-group">
                       <Form.Label className="mb-0">{t("addPatient.postalCode")}</Form.Label>
                       <Form.Control type="text" className="my-2" name="pno" placeholder={t("addPatient.placeholderPostal")} />
+                    </Col>
+                  </Row>
+                  <hr />
+                  <h5 className="mb-2">{t("addPatient.antecedentsSection")}</h5>
+                  <p className="text-muted small mb-3">{t("addPatient.antecedentsLead")}</p>
+                  <Row className="cust-form-input">
+                    <Col md={6} className="form-group">
+                      <Form.Check
+                        type="switch"
+                        id="add-antecedent-diabetes"
+                        checked={antecedents.diabetes}
+                        onChange={(e) => setAntecedents((a) => ({ ...a, diabetes: e.target.checked }))}
+                        label={t("addPatient.antecedentDiabetes")}
+                      />
+                    </Col>
+                    <Col md={6} className="form-group">
+                      <Form.Check
+                        type="switch"
+                        id="add-antecedent-hypertension"
+                        checked={antecedents.hypertension}
+                        onChange={(e) => setAntecedents((a) => ({ ...a, hypertension: e.target.checked }))}
+                        label={t("addPatient.antecedentHypertension")}
+                      />
+                    </Col>
+                    <Col md={6} className="form-group">
+                      <Form.Check
+                        type="switch"
+                        id="add-antecedent-heart"
+                        checked={antecedents.heartDisease}
+                        onChange={(e) => setAntecedents((a) => ({ ...a, heartDisease: e.target.checked }))}
+                        label={t("addPatient.antecedentHeartDisease")}
+                      />
+                    </Col>
+                    <Col md={6} className="form-group">
+                      <Form.Check
+                        type="switch"
+                        id="add-antecedent-asthma"
+                        checked={antecedents.asthmaCopd}
+                        onChange={(e) => setAntecedents((a) => ({ ...a, asthmaCopd: e.target.checked }))}
+                        label={t("addPatient.antecedentAsthmaCopd")}
+                      />
+                    </Col>
+                    <Col md={6} className="form-group">
+                      <Form.Check
+                        type="switch"
+                        id="add-antecedent-cancer"
+                        checked={antecedents.cancer}
+                        onChange={(e) => setAntecedents((a) => ({ ...a, cancer: e.target.checked }))}
+                        label={t("addPatient.antecedentCancer")}
+                      />
                     </Col>
                   </Row>
                   <hr />
