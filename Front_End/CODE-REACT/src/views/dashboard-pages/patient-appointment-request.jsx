@@ -51,6 +51,7 @@ const PatientAppointmentRequest = () => {
     time: "",
     location: "",
     patientMessage: "",
+    isVideoCall: false,
   });
 
   useEffect(() => {
@@ -109,12 +110,13 @@ const PatientAppointmentRequest = () => {
         time: form.time || "",
         location: form.location || "",
         patientMessage: form.patientMessage || "",
+        isVideoCall: form.isVideoCall,
         notes: "",
         status: "pending",
       });
       setSuccess(true);
       setSlotErrorCode("");
-      setForm({ title: "", type: "checkup", date: "", time: "", location: "", patientMessage: "" });
+      setForm({ title: "", type: "checkup", date: "", time: "", location: "", patientMessage: "", isVideoCall: false });
       const all = await appointmentApi.getByPatient(pid);
       setMyAppointments(Array.isArray(all) ? all : []);
     } catch (err) {
@@ -282,6 +284,25 @@ const PatientAppointmentRequest = () => {
                       <Form.Text className="text-muted">{t("patientAppointmentRequest.timeHelp")}</Form.Text>
                     </Col>
                   </Row>
+                  <div className="mb-3 p-3 rounded-3" style={{ background: 'linear-gradient(135deg, #e8f4f8 0%, #f0f7ff 100%)', border: '1px solid rgba(13,110,253,0.15)' }}>
+                    <Form.Check
+                      type="switch"
+                      id="video-call-toggle"
+                      label={
+                        <span className="d-flex align-items-center gap-2">
+                          <i className="ri-vidicon-fill text-primary" style={{ fontSize: '1.2rem' }} />
+                          <span>
+                            <strong>{t('patientAppointmentRequest.videoCallLabel', 'Online Video Consultation')}</strong>
+                            <br />
+                            <small className="text-muted">{t('patientAppointmentRequest.videoCallHelp', 'Join via secure video call instead of in-person visit')}</small>
+                          </span>
+                        </span>
+                      }
+                      checked={form.isVideoCall}
+                      onChange={(e) => setForm((f) => ({ ...f, isVideoCall: e.target.checked, location: e.target.checked ? 'Video Call' : f.location }))}
+                      className="fs-5"
+                    />
+                  </div>
                   <Form.Group className="mb-4">
                     <Form.Label className="small fw-bold">{t("patientAppointmentRequest.fieldMessage")}</Form.Label>
                     <Form.Control

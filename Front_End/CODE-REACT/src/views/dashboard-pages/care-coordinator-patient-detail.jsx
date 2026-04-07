@@ -117,10 +117,42 @@ const CareCoordinatorPatientDetail = () => {
           <Card>
             <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
               <Card.Header.Title>
-                <h4 className="card-title mb-0">{t("careCoordinatorPatientDetail.pageTitle", { name: displayName })}</h4>
-                {patient?.email ? <p className="text-muted small mb-0 mt-1">{patient.email}</p> : null}
+                <h4 className="card-title mb-1">{t("careCoordinatorPatientDetail.pageTitle", { name: displayName })}</h4>
+                {patient?.email ? <p className="text-muted small mb-3">{patient.email}</p> : null}
+                <div className="d-flex flex-wrap gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm"
+                    onClick={() =>
+                      window.medifollow?.startCall?.(String(patient._id || patient.id), {
+                        peerName: displayName,
+                        peerRole: "patient",
+                        video: true,
+                      })
+                    }
+                  >
+                    <i className="ri-vidicon-fill" />
+                    {t("chat.data.videoCall", "Video Call")}
+                  </Button>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    className="rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm bg-white"
+                    onClick={() =>
+                      window.medifollow?.startCall?.(String(patient._id || patient.id), {
+                        peerName: displayName,
+                        peerRole: "patient",
+                        video: false,
+                      })
+                    }
+                  >
+                    <i className="ri-phone-fill" />
+                    {t("chat.data.voiceCall", "Audio Call")}
+                  </Button>
+                </div>
               </Card.Header.Title>
-              <Link to="/dashboard-pages/care-coordinator-patients" className="btn btn-outline-secondary btn-sm">
+              <Link to="/dashboard-pages/care-coordinator-patients" className="btn btn-outline-secondary btn-sm align-self-start">
                 {t("careCoordinatorPatientDetail.backList")}
               </Link>
             </Card.Header>
