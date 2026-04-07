@@ -18,7 +18,6 @@ import CareCoordinatorPatientDetail from "../views/dashboard-pages/care-coordina
 import CareCoordinatorAppointments from "../views/dashboard-pages/care-coordinator-appointments"
 import CareCoordinatorCommunication from "../views/dashboard-pages/care-coordinator-communication"
 import Covid19Dashboard from "../views/dashboard-pages/covid-19-dashboard"
-import HealthcareNews from "../views/dashboard-pages/healthcare-news"
 
 // Email Page
 import Inbox from "../views/email/inbox"
@@ -231,10 +230,6 @@ export const DefaultRoute = [
       {
         path: '/dashboard-pages/dashboard-4',
         element: <Covid19Dashboard />
-      },
-      {
-        path: '/dashboard-pages/healthcare-news',
-        element: <HealthcareNews />
       },
 
       //  ------ Email Route ------ 
