@@ -43,6 +43,13 @@ const EditPatient = () => {
   const [formData, setFormData] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [deptOptions, setDeptOptions] = useState(HOSPITAL_DEPARTMENTS);
+  const [antecedents, setAntecedents] = useState({
+    diabetes: false,
+    hypertension: false,
+    heartDisease: false,
+    asthmaCopd: false,
+    cancer: false,
+  });
 
   useEffect(() => {
     fetchMergedDepartmentNames().then(setDeptOptions);
@@ -99,6 +106,13 @@ const EditPatient = () => {
         });
         const country = COUNTRIES.find((c) => c.name === data.country);
         setSelectedCountry(country || null);
+        setAntecedents({
+          diabetes: !!data.antecedentDiabetes,
+          hypertension: !!data.antecedentHypertension,
+          heartDisease: !!data.antecedentHeartDisease,
+          asthmaCopd: !!data.antecedentAsthmaCopd,
+          cancer: !!data.antecedentCancer,
+        });
       } catch (err) {
         setError(err.message || t("editPatient.notFound"));
       } finally {
@@ -169,6 +183,11 @@ const EditPatient = () => {
       dischargeNotes: form.dischargeNotes?.value || "",
       weight: form.weight?.value ? Number(form.weight.value) : undefined,
       height: form.height?.value ? Number(form.height.value) : undefined,
+      antecedentDiabetes: antecedents.diabetes,
+      antecedentHypertension: antecedents.hypertension,
+      antecedentHeartDisease: antecedents.heartDisease,
+      antecedentAsthmaCopd: antecedents.asthmaCopd,
+      antecedentCancer: antecedents.cancer,
     };
     if (password) payload.password = password;
 
@@ -388,6 +407,56 @@ const EditPatient = () => {
                     <Col md={6} className="form-group">
                       <Form.Label className="mb-0">{t("editPatient.postalCode")}</Form.Label>
                       <Form.Control type="text" className="my-2" name="pno" placeholder={t("editPatient.placeholderPostal")} defaultValue={formData.pno} />
+                    </Col>
+                  </Row>
+                  <hr />
+                  <h5 className="mb-2">{t("editPatient.antecedentsSection")}</h5>
+                  <p className="text-muted small mb-3">{t("editPatient.antecedentsLead")}</p>
+                  <Row className="cust-form-input">
+                    <Col md={6} className="form-group">
+                      <Form.Check
+                        type="switch"
+                        id="edit-antecedent-diabetes"
+                        checked={antecedents.diabetes}
+                        onChange={(e) => setAntecedents((a) => ({ ...a, diabetes: e.target.checked }))}
+                        label={t("editPatient.antecedentDiabetes")}
+                      />
+                    </Col>
+                    <Col md={6} className="form-group">
+                      <Form.Check
+                        type="switch"
+                        id="edit-antecedent-hypertension"
+                        checked={antecedents.hypertension}
+                        onChange={(e) => setAntecedents((a) => ({ ...a, hypertension: e.target.checked }))}
+                        label={t("editPatient.antecedentHypertension")}
+                      />
+                    </Col>
+                    <Col md={6} className="form-group">
+                      <Form.Check
+                        type="switch"
+                        id="edit-antecedent-heart"
+                        checked={antecedents.heartDisease}
+                        onChange={(e) => setAntecedents((a) => ({ ...a, heartDisease: e.target.checked }))}
+                        label={t("editPatient.antecedentHeartDisease")}
+                      />
+                    </Col>
+                    <Col md={6} className="form-group">
+                      <Form.Check
+                        type="switch"
+                        id="edit-antecedent-asthma"
+                        checked={antecedents.asthmaCopd}
+                        onChange={(e) => setAntecedents((a) => ({ ...a, asthmaCopd: e.target.checked }))}
+                        label={t("editPatient.antecedentAsthmaCopd")}
+                      />
+                    </Col>
+                    <Col md={6} className="form-group">
+                      <Form.Check
+                        type="switch"
+                        id="edit-antecedent-cancer"
+                        checked={antecedents.cancer}
+                        onChange={(e) => setAntecedents((a) => ({ ...a, cancer: e.target.checked }))}
+                        label={t("editPatient.antecedentCancer")}
+                      />
                     </Col>
                   </Row>
                   <hr />

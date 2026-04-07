@@ -84,6 +84,23 @@ export class Patient extends Document {
 
   @Prop()
   height: number;
+
+  // ─── Antécédents médicaux (saisie admin à la création / mise à jour) ─────
+  @Prop({ default: false })
+  antecedentDiabetes: boolean;
+
+  @Prop({ default: false })
+  antecedentHypertension: boolean;
+
+  @Prop({ default: false })
+  antecedentHeartDisease: boolean;
+
+  /** Asthme ou BPCO */
+  @Prop({ default: false })
+  antecedentAsthmaCopd: boolean;
+
+  @Prop({ default: false })
+  antecedentCancer: boolean;
 }
 
 export const PatientSchema = SchemaFactory.createForClass(Patient);

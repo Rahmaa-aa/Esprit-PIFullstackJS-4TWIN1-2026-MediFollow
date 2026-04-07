@@ -25,6 +25,17 @@ export class PatientService {
     const createPayload: any = { ...data, password: hashed };
     if (!createPayload.doctorId) delete createPayload.doctorId;
     if (!createPayload.nurseId) delete createPayload.nurseId;
+    for (const key of [
+      'antecedentDiabetes',
+      'antecedentHypertension',
+      'antecedentHeartDisease',
+      'antecedentAsthmaCopd',
+      'antecedentCancer',
+    ] as const) {
+      if (key in createPayload) {
+        createPayload[key] = !!createPayload[key];
+      }
+    }
 
     const patient = await this.patientModel.create(createPayload);
 
@@ -93,6 +104,17 @@ export class PatientService {
     }
     const updateData: any = { ...data };
     delete updateData._id;
+    for (const key of [
+      'antecedentDiabetes',
+      'antecedentHypertension',
+      'antecedentHeartDisease',
+      'antecedentAsthmaCopd',
+      'antecedentCancer',
+    ] as const) {
+      if (key in updateData) {
+        updateData[key] = !!updateData[key];
+      }
+    }
     if (data.password) {
       updateData.password = await bcrypt.hash(data.password, 10);
     } else {
