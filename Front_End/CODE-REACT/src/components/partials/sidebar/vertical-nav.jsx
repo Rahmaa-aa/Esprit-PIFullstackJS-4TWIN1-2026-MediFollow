@@ -292,11 +292,20 @@ const VerticalNav = () => {
                 </Nav.Item>
                 <Nav.Item as="li">
                     <Link
-                        to="/dashboard-pages/patient-brain-mri"
-                        className={`nav-link ${location.pathname === "/dashboard-pages/patient-brain-mri" ? "active" : ""}`}
+                        to="/patient/brain-mri"
+                        className={`nav-link ${location.pathname === "/patient/brain-mri" ? "active" : ""}`}
                     >
                         <i className="ri-brain-line"></i>
                         <span className="item-name">{t("sidebar.brainMriPatient")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/video-meeting"
+                        className={`nav-link ${location.pathname === "/video-meeting" ? "active" : ""}`}
+                    >
+                        <i className="ri-vidicon-line"></i>
+                        <span className="item-name">{t("sidebar.videoMeeting")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -325,6 +334,15 @@ const VerticalNav = () => {
                     </Link>
                 </Nav.Item>
                 {renderEmailAccordion()}
+                <Nav.Item as="li">
+                    <Link
+                        to="/video-meeting"
+                        className={`nav-link ${location.pathname === "/video-meeting" ? "active" : ""}`}
+                    >
+                        <i className="ri-vidicon-line"></i>
+                        <span className="item-name">{t("sidebar.videoMeeting")}</span>
+                    </Link>
+                </Nav.Item>
                 <Nav.Item as="li">
                     <Link to={`/nurse/nurse-profile/${nurseUser?.id}`} className={`nav-link ${location.pathname === `/nurse/nurse-profile/${nurseUser?.id}` ? "active" : ""}`}>
                         <i className="ri-nurse-fill"></i>
@@ -423,6 +441,15 @@ const VerticalNav = () => {
                     >
                         <i className="ri-calendar-2-line"></i>
                         <span className="item-name">{t("sidebar.appointmentCalendar")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/video-meeting"
+                        className={`nav-link ${location.pathname === "/video-meeting" ? "active" : ""}`}
+                    >
+                        <i className="ri-vidicon-line"></i>
+                        <span className="item-name">{t("sidebar.videoMeeting")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -689,6 +716,15 @@ const VerticalNav = () => {
                             >
                                 <i className="ri-calendar-check-line"></i>
                                 <span className="item-name">{t("sidebar.appointmentRequests")}</span>
+                            </Link>
+                        </Nav.Item>
+                        <Nav.Item as="li">
+                            <Link
+                                to="/video-meeting"
+                                className={`nav-link ${location.pathname === "/video-meeting" ? "active" : ""}`}
+                            >
+                                <i className="ri-vidicon-line"></i>
+                                <span className="item-name">{t("sidebar.videoMeeting")}</span>
                             </Link>
                         </Nav.Item>
                         <Nav.Item as="li">
