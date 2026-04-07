@@ -1,6 +1,11 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Patient } from '../patient/schemas/patient.schema';
 import { Doctor } from '../doctor/schemas/doctor.schema';
 import { Nurse } from '../nurse/schemas/nurse.schema';
@@ -66,6 +71,19 @@ export class DepartmentService {
     }
   }
 
+  /** Crée l’entrée catalogue si absente (idempotent). */
+  async ensureCatalogDepartment(rawName: string) {
+    const name = (rawName || '').trim();
+    if (!name) {
+      throw new BadRequestException('Le nom du département est requis');
+    }
+    const existing = await this.departmentCatalogModel.findOne({ name }).exec();
+    if (existing) {
+      return { id: String(existing._id), name: existing.name };
+    }
+    return this.createCatalogDepartment(name);
+  }
+
   async listSummaries() {
     const [pDepts, pServices, dDepts, nDepts, catalogNames, uDepts] = await Promise.all([
       this.patientModel.distinct('department').exec(),
@@ -81,6 +99,22 @@ export class DepartmentService {
     });
     const sorted = [...names].sort((a, b) => a.localeCompare(b, 'fr'));
 
+    const catalogDocs = await this.departmentCatalogModel.find().lean().exec();
+    const catalogByName = new Map(catalogDocs.map((c) => [c.name, c]));
+    const superAdminIds = catalogDocs
+      .map((c) => c.assignedSuperAdminId)
+      .filter(Boolean)
+      .map((id) => new Types.ObjectId(String(id)));
+    const superAdmins =
+      superAdminIds.length > 0
+        ? await this.userModel
+            .find({ _id: { $in: superAdminIds } })
+            .select('firstName lastName email name')
+            .lean()
+            .exec()
+        : [];
+    const superAdminById = new Map(superAdmins.map((s) => [String(s._id), s]));
+
     const summaries = await Promise.all(
       sorted.map(async (name) => {
         const [patientCount, doctorCount, nurseCount] = await Promise.all([
@@ -88,16 +122,128 @@ export class DepartmentService {
           this.doctorModel.countDocuments({ department: name }).exec(),
           this.nurseModel.countDocuments({ department: name }).exec(),
         ]);
+        const cat = catalogByName.get(name);
+        const catalogId = cat?._id ? String(cat._id) : null;
+        const assignedSuperAdminId = cat?.assignedSuperAdminId
+          ? String(cat.assignedSuperAdminId)
+          : null;
+        const sa = assignedSuperAdminId ? superAdminById.get(assignedSuperAdminId) : undefined;
+        const assignedSuperAdminLabel = sa
+          ? [sa.firstName, sa.lastName].filter(Boolean).join(' ').trim() ||
+            (sa as { name?: string }).name ||
+            sa.email
+          : null;
         return {
           name,
           patientCount,
           doctorCount,
           nurseCount,
           total: patientCount + doctorCount + nurseCount,
+          catalogId,
+          assignedSuperAdminId,
+          assignedSuperAdminLabel,
         };
       }),
     );
     return summaries;
+  }
+
+  async updateCatalogDepartment(catalogId: string, rawNewName: string) {
+    if (!Types.ObjectId.isValid(catalogId)) {
+      throw new BadRequestException('Identifiant catalogue invalide');
+    }
+    const doc = await this.departmentCatalogModel.findById(catalogId).exec();
+    if (!doc) {
+      throw new NotFoundException('Département catalogue introuvable');
+    }
+    const oldName = doc.name;
+    const newName = (rawNewName || '').trim();
+    if (!newName) {
+      throw new BadRequestException('Le nom du département est requis');
+    }
+    if (newName === oldName) {
+      return { id: String(doc._id), name: doc.name };
+    }
+    const duplicate = await this.departmentCatalogModel
+      .findOne({ name: newName, _id: { $ne: doc._id } })
+      .exec();
+    if (duplicate) {
+      throw new ConflictException('Ce nom existe déjà dans le catalogue');
+    }
+
+    await this.patientModel.updateMany({ department: oldName }, { $set: { department: newName } }).exec();
+    await this.patientModel
+      .updateMany(
+        {
+          $or: [{ department: null }, { department: '' }, { department: { $exists: false } }],
+          service: oldName,
+        },
+        { $set: { service: newName } },
+      )
+      .exec();
+    await this.doctorModel.updateMany({ department: oldName }, { $set: { department: newName } }).exec();
+    await this.nurseModel.updateMany({ department: oldName }, { $set: { department: newName } }).exec();
+    await this.userModel.updateMany({ department: oldName }, { $set: { department: newName } }).exec();
+
+    doc.name = newName;
+    await doc.save();
+    return { id: String(doc._id), name: doc.name };
+  }
+
+  async deleteCatalogDepartment(catalogId: string) {
+    if (!Types.ObjectId.isValid(catalogId)) {
+      throw new BadRequestException('Identifiant catalogue invalide');
+    }
+    const doc = await this.departmentCatalogModel.findById(catalogId).exec();
+    if (!doc) {
+      throw new NotFoundException('Département catalogue introuvable');
+    }
+    const name = doc.name;
+    const [patientCount, doctorCount, nurseCount] = await Promise.all([
+      this.patientModel.countDocuments(this.patientDeptFilter(name)).exec(),
+      this.doctorModel.countDocuments({ department: name }).exec(),
+      this.nurseModel.countDocuments({ department: name }).exec(),
+    ]);
+    const total = patientCount + doctorCount + nurseCount;
+    if (total > 0) {
+      throw new BadRequestException(
+        `Impossible de supprimer : ${total} profil(s) sont encore rattaché(s) à ce département`,
+      );
+    }
+    await doc.deleteOne();
+    return { ok: true };
+  }
+
+  async assignSuperAdminToCatalogDepartment(catalogId: string, superAdminUserId: string | null) {
+    if (!Types.ObjectId.isValid(catalogId)) {
+      throw new BadRequestException('Identifiant catalogue invalide');
+    }
+    const doc = await this.departmentCatalogModel.findById(catalogId).exec();
+    if (!doc) {
+      throw new NotFoundException('Département catalogue introuvable');
+    }
+    if (superAdminUserId === null || superAdminUserId === '') {
+      await this.departmentCatalogModel
+        .updateOne({ _id: doc._id }, { $unset: { assignedSuperAdminId: '' } })
+        .exec();
+      return { id: String(doc._id), name: doc.name, assignedSuperAdminId: null };
+    }
+    if (!Types.ObjectId.isValid(superAdminUserId)) {
+      throw new BadRequestException('Identifiant super administrateur invalide');
+    }
+    const user = await this.userModel.findById(superAdminUserId).select('role').lean().exec();
+    if (!user || user.role !== 'superadmin') {
+      throw new BadRequestException('Utilisateur super administrateur introuvable');
+    }
+    const saOid = new Types.ObjectId(superAdminUserId);
+    await this.departmentCatalogModel
+      .updateOne({ _id: doc._id }, { $set: { assignedSuperAdminId: saOid } })
+      .exec();
+    return {
+      id: String(doc._id),
+      name: doc.name,
+      assignedSuperAdminId: String(saOid),
+    };
   }
 
   async getUsersByDepartment(department: string) {

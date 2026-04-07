@@ -647,6 +647,14 @@ export const departmentApi = {
   summary: () => api.get("/departments/summary"),
   catalog: () => api.get("/departments/catalog"),
   createCatalog: (data) => api.post("/departments", data),
+  ensureCatalog: (data) => api.post("/departments/catalog/ensure", data),
+  updateCatalog: (catalogId, data) =>
+    api.patch(`/departments/catalog/${encodeURIComponent(catalogId)}`, data),
+  deleteCatalog: (catalogId) => api.delete(`/departments/catalog/${encodeURIComponent(catalogId)}`),
+  assignCatalogSuperAdmin: (catalogId, superAdminUserId) =>
+    api.patch(`/departments/catalog/${encodeURIComponent(catalogId)}/assign`, {
+      superAdminUserId,
+    }),
   /** Médecin connecté : infirmiers du même département (JWT). */
   getMyNursesAsDoctor: () => api.getWithDoctorToken("/departments/doctor/my-nurses"),
   /** Médecin connecté : médecins du même département (JWT). */

@@ -1,12 +1,24 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Button, Col, Container, Form, InputGroup, Row, Spinner } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import {
+  Alert,
+  Button,
+  Col,
+  Container,
+  Form,
+  InputGroup,
+  Modal,
+  Row,
+  Spinner,
+} from "react-bootstrap";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
-import { departmentApi } from "../../services/api";
+import { departmentApi, superAdminApi } from "../../services/api";
 import { useDepartmentSectionPaths } from "../../utils/departmentSectionPaths";
 
 const ACCENT_VARIANTS = ["primary", "success", "info", "warning", "danger", "secondary"];
+
+const TEAL = { background: "#009688", borderColor: "#009688" };
 
 const hashIndex = (str) => {
   let h = 0;
@@ -16,7 +28,17 @@ const hashIndex = (str) => {
 
 const AdminDepartments = () => {
   const { t } = useTranslation();
-  const { listPath, isSuperAdminDept } = useDepartmentSectionPaths();
+  const { pathname } = useLocation();
+  const { listPath } = useDepartmentSectionPaths();
+  /** Super admin session (JWT role) — show catalogue actions on both /admin/departments and /super-admin/departments */
+  const canManageDepartments = useMemo(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem("adminUser") || "null");
+      return u?.role === "superadmin";
+    } catch {
+      return false;
+    }
+  }, [pathname]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -24,6 +46,23 @@ const AdminDepartments = () => {
   const [newDeptName, setNewDeptName] = useState("");
   const [createSaving, setCreateSaving] = useState(false);
   const [createFeedback, setCreateFeedback] = useState({ type: "", message: "" });
+  const [superAdmins, setSuperAdmins] = useState([]);
+  const [editModal, setEditModal] = useState({ open: false, catalogId: "", name: "" });
+  const [editName, setEditName] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ open: false, catalogId: "", name: "" });
+  const [deleteSaving, setDeleteSaving] = useState(false);
+  const [assignModal, setAssignModal] = useState({
+    open: false,
+    catalogId: "",
+    departmentName: "",
+    superAdminUserId: "",
+  });
+  const [assignSaving, setAssignSaving] = useState(false);
+  const [modalError, setModalError] = useState("");
+  /** Which department row is running an async catalog action, and which control triggered it */
+  const [deptBusy, setDeptBusy] = useState({ name: "", action: "" });
+  const [actionError, setActionError] = useState("");
 
   const loadSummary = useCallback(async () => {
     setLoading(true);
@@ -41,6 +80,29 @@ const AdminDepartments = () => {
   useEffect(() => {
     loadSummary();
   }, [loadSummary]);
+
+  useEffect(() => {
+    if (!canManageDepartments) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const users = await superAdminApi.getAllUsers();
+        if (cancelled || !Array.isArray(users)) return;
+        setSuperAdmins(users.filter((u) => u.role === "superadmin" && u.isActive !== false));
+      } catch {
+        if (!cancelled) setSuperAdmins([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [canManageDepartments]);
+
+  const resolveCatalogId = useCallback(async (d) => {
+    if (d.catalogId) return d.catalogId;
+    const r = await departmentApi.ensureCatalog({ name: d.name });
+    return r.id;
+  }, []);
 
   const handleCreateDepartment = async (e) => {
     e.preventDefault();
@@ -68,6 +130,113 @@ const AdminDepartments = () => {
     }
   };
 
+  const openEdit = async (d) => {
+    if (!canManageDepartments) return;
+    setModalError("");
+    setActionError("");
+    setDeptBusy({ name: d.name, action: "edit" });
+    try {
+      const catalogId = await resolveCatalogId(d);
+      await loadSummary();
+      setEditName(d.name);
+      setEditModal({ open: true, catalogId, name: d.name });
+    } catch (err) {
+      setActionError(err?.message || t("adminDepartments.editError"));
+    } finally {
+      setDeptBusy({ name: "", action: "" });
+    }
+  };
+
+  const openDelete = async (d) => {
+    if (!canManageDepartments) return;
+    setModalError("");
+    setActionError("");
+    setDeptBusy({ name: d.name, action: "delete" });
+    try {
+      const catalogId = await resolveCatalogId(d);
+      await loadSummary();
+      setDeleteModal({ open: true, catalogId, name: d.name });
+    } catch (err) {
+      setActionError(err?.message || t("adminDepartments.deleteError"));
+    } finally {
+      setDeptBusy({ name: "", action: "" });
+    }
+  };
+
+  const openAssign = async (d) => {
+    if (!canManageDepartments) return;
+    setModalError("");
+    setActionError("");
+    setDeptBusy({ name: d.name, action: "assign" });
+    try {
+      const catalogId = await resolveCatalogId(d);
+      await loadSummary();
+      setAssignModal({
+        open: true,
+        catalogId,
+        departmentName: d.name,
+        superAdminUserId: d.assignedSuperAdminId || "",
+      });
+    } catch (err) {
+      setActionError(err?.message || t("adminDepartments.assignError"));
+    } finally {
+      setDeptBusy({ name: "", action: "" });
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    const name = editName.trim();
+    if (!name) {
+      setModalError(t("adminDepartments.editValidation"));
+      return;
+    }
+    setEditSaving(true);
+    setModalError("");
+    try {
+      await departmentApi.updateCatalog(editModal.catalogId, { name });
+      setEditModal({ open: false, catalogId: "", name: "" });
+      await loadSummary();
+    } catch (err) {
+      setModalError(err?.message || t("adminDepartments.editError"));
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleteSaving(true);
+    setModalError("");
+    try {
+      await departmentApi.deleteCatalog(deleteModal.catalogId);
+      setDeleteModal({ open: false, catalogId: "", name: "" });
+      await loadSummary();
+    } catch (err) {
+      setModalError(err?.message || t("adminDepartments.deleteError"));
+    } finally {
+      setDeleteSaving(false);
+    }
+  };
+
+  const handleSaveAssign = async () => {
+    setAssignSaving(true);
+    setModalError("");
+    try {
+      const superAdminUserId = assignModal.superAdminUserId || null;
+      await departmentApi.assignCatalogSuperAdmin(assignModal.catalogId, superAdminUserId);
+      setAssignModal({ open: false, catalogId: "", departmentName: "", superAdminUserId: "" });
+      await loadSummary();
+    } catch (err) {
+      setModalError(err?.message || t("adminDepartments.assignError"));
+    } finally {
+      setAssignSaving(false);
+    }
+  };
+
+  const superAdminLabel = (u) => {
+    const n = [u.firstName, u.lastName].filter(Boolean).join(" ").trim();
+    return n || u.name || u.email || u.id;
+  };
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return items;
@@ -90,10 +259,21 @@ const AdminDepartments = () => {
           background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(13, 202, 240, 0.06) 50%, rgba(25, 135, 84, 0.05) 100%);
           border: 1px solid rgba(13, 110, 253, 0.12);
         }
+        .admin-dept-page .dept-card-action-btn {
+          width: 32px;
+          height: 32px;
+          padding: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          line-height: 1;
+          box-shadow: none;
+        }
       `}</style>
 
       <Container fluid className="admin-dept-page pb-5">
-        {isSuperAdminDept && (
+        {canManageDepartments && (
           <Row className="mb-4">
             <Col>
               <Card className="border-0 shadow-sm rounded-3" style={{ borderLeft: "4px solid #009688" }}>
@@ -178,6 +358,12 @@ const AdminDepartments = () => {
           </Col>
         </Row>
 
+        {actionError && (
+          <Alert variant="danger" className="border-0 shadow-sm rounded-3 mb-4" dismissible onClose={() => setActionError("")}>
+            {actionError}
+          </Alert>
+        )}
+
         {error && (
           <div className="alert alert-danger border-0 shadow-sm rounded-3 d-flex align-items-center gap-2" role="alert">
             <i className="ri-error-warning-fill fs-5" />
@@ -232,13 +418,75 @@ const AdminDepartments = () => {
                         <div className={`rounded-2 bg-${accent} bg-opacity-25 text-${accent} d-flex align-items-center justify-content-center flex-shrink-0`} style={{ width: 44, height: 44 }}>
                           <i className="ri-hospital-fill" style={{ fontSize: "1.35rem" }} />
                         </div>
-                        <span className={`badge bg-${accent} bg-opacity-15 text-${accent} border border-${accent} border-opacity-25 rounded-pill px-2 py-1 fw-semibold`}>
-                          {d.total}
-                        </span>
+                        <div className="d-flex align-items-center gap-1 flex-shrink-0">
+                          {canManageDepartments && (
+                            <>
+                              <Button
+                                type="button"
+                                variant="light"
+                                className="dept-card-action-btn border-0 bg-white bg-opacity-80 text-secondary"
+                                style={{ color: "#009688" }}
+                                title={t("adminDepartments.ariaEdit")}
+                                disabled={deptBusy.name === d.name}
+                                onClick={() => {
+                                  void openEdit(d);
+                                }}
+                              >
+                                {deptBusy.name === d.name && deptBusy.action === "edit" ? (
+                                  <Spinner animation="border" size="sm" style={{ width: "1rem", height: "1rem" }} />
+                                ) : (
+                                  <i className="ri-pencil-line fs-6" />
+                                )}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="light"
+                                className="dept-card-action-btn border-0 bg-white bg-opacity-80"
+                                style={{ color: "#009688" }}
+                                title={t("adminDepartments.ariaAssign")}
+                                disabled={deptBusy.name === d.name}
+                                onClick={() => {
+                                  void openAssign(d);
+                                }}
+                              >
+                                {deptBusy.name === d.name && deptBusy.action === "assign" ? (
+                                  <Spinner animation="border" size="sm" style={{ width: "1rem", height: "1rem" }} />
+                                ) : (
+                                  <i className="ri-user-settings-line fs-6" />
+                                )}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="light"
+                                className="dept-card-action-btn border-0 bg-white bg-opacity-80 text-danger"
+                                title={t("adminDepartments.ariaDelete")}
+                                disabled={deptBusy.name === d.name}
+                                onClick={() => {
+                                  void openDelete(d);
+                                }}
+                              >
+                                {deptBusy.name === d.name && deptBusy.action === "delete" ? (
+                                  <Spinner animation="border" size="sm" style={{ width: "1rem", height: "1rem" }} />
+                                ) : (
+                                  <i className="ri-delete-bin-line fs-6" />
+                                )}
+                              </Button>
+                            </>
+                          )}
+                          <span className={`badge bg-${accent} bg-opacity-15 text-${accent} border border-${accent} border-opacity-25 rounded-pill px-2 py-1 fw-semibold`}>
+                            {d.total}
+                          </span>
+                        </div>
                       </div>
                       <h5 className="fw-bold mt-3 mb-0 text-break" title={d.name}>
                         {d.name}
                       </h5>
+                      {canManageDepartments && d.assignedSuperAdminLabel && (
+                        <p className="text-muted small mb-0 mt-2 text-break">
+                          <i className="ri-shield-user-line me-1" />
+                          {d.assignedSuperAdminLabel}
+                        </p>
+                      )}
                     </div>
                     <Card.Body className="d-flex flex-column pt-3 px-4 pb-4">
                       <ul className="list-unstyled small mb-4 flex-grow-1">
@@ -280,6 +528,90 @@ const AdminDepartments = () => {
             })}
           </Row>
         )}
+
+        <Modal show={editModal.open} onHide={() => !editSaving && setEditModal((m) => ({ ...m, open: false }))} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>{t("adminDepartments.editTitle")}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {modalError && (
+              <Alert variant="danger" className="py-2 small">
+                {modalError}
+              </Alert>
+            )}
+            <Form.Label className="small text-muted">{t("adminDepartments.createCatalogLabel")}</Form.Label>
+            <Form.Control
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              disabled={editSaving}
+            />
+          </Modal.Body>
+          <Modal.Footer className="border-0 pt-0">
+            <Button variant="light" className="rounded-pill" onClick={() => setEditModal((m) => ({ ...m, open: false }))} disabled={editSaving}>
+              {t("adminDepartments.modalCancel")}
+            </Button>
+            <Button className="rounded-pill" style={TEAL} onClick={handleSaveEdit} disabled={editSaving}>
+              {editSaving ? t("adminDepartments.createCatalogSaving") : t("adminDepartments.modalSave")}
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        <Modal show={deleteModal.open} onHide={() => !deleteSaving && setDeleteModal((m) => ({ ...m, open: false }))} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>{t("adminDepartments.deleteTitle")}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {modalError && (
+              <Alert variant="danger" className="py-2 small">
+                {modalError}
+              </Alert>
+            )}
+            <p className="mb-0 small text-muted">{t("adminDepartments.deleteBody", { name: deleteModal.name })}</p>
+          </Modal.Body>
+          <Modal.Footer className="border-0 pt-0">
+            <Button variant="light" className="rounded-pill" onClick={() => setDeleteModal((m) => ({ ...m, open: false }))} disabled={deleteSaving}>
+              {t("adminDepartments.modalCancel")}
+            </Button>
+            <Button variant="danger" className="rounded-pill" onClick={handleConfirmDelete} disabled={deleteSaving}>
+              {deleteSaving ? t("adminDepartments.deleteSaving") : t("adminDepartments.deleteConfirm")}
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        <Modal show={assignModal.open} onHide={() => !assignSaving && setAssignModal((m) => ({ ...m, open: false }))} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>{t("adminDepartments.assignTitle")}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {modalError && (
+              <Alert variant="danger" className="py-2 small">
+                {modalError}
+              </Alert>
+            )}
+            <p className="small text-muted mb-2">{assignModal.departmentName}</p>
+            <Form.Label className="small text-muted">{t("adminDepartments.assignLabel")}</Form.Label>
+            <Form.Select
+              value={assignModal.superAdminUserId}
+              onChange={(e) => setAssignModal((m) => ({ ...m, superAdminUserId: e.target.value }))}
+              disabled={assignSaving}
+            >
+              <option value="">{t("adminDepartments.assignNone")}</option>
+              {superAdmins.map((u) => (
+                <option key={String(u.id)} value={String(u.id)}>
+                  {superAdminLabel(u)}
+                </option>
+              ))}
+            </Form.Select>
+          </Modal.Body>
+          <Modal.Footer className="border-0 pt-0">
+            <Button variant="light" className="rounded-pill" onClick={() => setAssignModal((m) => ({ ...m, open: false }))} disabled={assignSaving}>
+              {t("adminDepartments.modalCancel")}
+            </Button>
+            <Button className="rounded-pill" style={TEAL} onClick={handleSaveAssign} disabled={assignSaving}>
+              {assignSaving ? t("adminDepartments.createCatalogSaving") : t("adminDepartments.modalSave")}
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </Container>
     </>
   );

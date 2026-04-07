@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -34,6 +36,19 @@ export class DepartmentController {
     return { names };
   }
 
+  /** Assure une entrée catalogue pour un nom déjà utilisé ailleurs (super admin, idempotent). */
+  @UseGuards(JwtAuthGuard)
+  @Post('catalog/ensure')
+  async ensureCatalogDepartment(
+    @Req() req: { user?: { role?: string } },
+    @Body() body: { name?: string },
+  ) {
+    if (req.user?.role !== 'superadmin') {
+      throw new ForbiddenException('Seul le super administrateur peut gérer le catalogue');
+    }
+    return this.departmentService.ensureCatalogDepartment(body.name || '');
+  }
+
   /** Ajout au catalogue (super administrateur uniquement). */
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -45,6 +60,51 @@ export class DepartmentController {
       throw new ForbiddenException('Seul le super administrateur peut créer un département');
     }
     return this.departmentService.createCatalogDepartment(body.name || '');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('catalog/:catalogId/assign')
+  async assignCatalogSuperAdmin(
+    @Req() req: { user?: { role?: string } },
+    @Param('catalogId') catalogId: string,
+    @Body() body: { superAdminUserId?: string | null },
+  ) {
+    if (req.user?.role !== 'superadmin') {
+      throw new ForbiddenException(
+        'Seul le super administrateur peut assigner un super administrateur au département',
+      );
+    }
+    const raw = body.superAdminUserId;
+    const id =
+      raw === null || raw === undefined || raw === ''
+        ? null
+        : String(raw);
+    return this.departmentService.assignSuperAdminToCatalogDepartment(catalogId, id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('catalog/:catalogId')
+  async updateCatalogDepartment(
+    @Req() req: { user?: { role?: string } },
+    @Param('catalogId') catalogId: string,
+    @Body() body: { name?: string },
+  ) {
+    if (req.user?.role !== 'superadmin') {
+      throw new ForbiddenException('Seul le super administrateur peut modifier un département du catalogue');
+    }
+    return this.departmentService.updateCatalogDepartment(catalogId, body.name || '');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('catalog/:catalogId')
+  async deleteCatalogDepartment(
+    @Req() req: { user?: { role?: string } },
+    @Param('catalogId') catalogId: string,
+  ) {
+    if (req.user?.role !== 'superadmin') {
+      throw new ForbiddenException('Seul le super administrateur peut supprimer un département du catalogue');
+    }
+    return this.departmentService.deleteCatalogDepartment(catalogId);
   }
 
   /** GET /api/departments/doctor/my-nurses */
