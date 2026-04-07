@@ -7,29 +7,111 @@ import { Nurse } from '../nurse/schemas/nurse.schema';
 import { NotificationService } from '../notification/notification.service';
 import { ChatService } from '../chat/chat.service';
 
-const computeRiskScore = (data: any): { score: number; flagged: boolean } => {
+function num(v: unknown): number | null {
+  if (v === '' || v == null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isNaN(n) ? null : n;
+}
+
+/** Dérive les ids `symptoms` à partir du subjectif structuré (photo 5). */
+function deriveSymptomsFromStructured(s: any): string[] {
+  if (!s || typeof s !== 'object') return [];
+  const out: string[] = [];
+  if ((num(s.fatigue) ?? 0) > 0) out.push('fatigue');
+  if ((num(s.chestPain) ?? 0) > 0) out.push('chestPain');
+  if ((num(s.shortBreath) ?? 0) > 0) out.push('shortBreath');
+  if ((num(s.nausea) ?? 0) > 0) out.push('nausea');
+  if (s.feltFever) out.push('fever');
+  if (s.palpitations) out.push('palpitations');
+  if (s.cough) out.push('cough');
+  if (s.dizzinessConfusion) out.push('dizziness');
+  return out;
+}
+
+function symptomStructuredIsActive(s: any): boolean {
+  if (!s || typeof s !== 'object') return false;
+  return (
+    (num(s.fatigue) ?? 0) > 0 ||
+    (num(s.chestPain) ?? 0) > 0 ||
+    (num(s.shortBreath) ?? 0) > 0 ||
+    (num(s.nausea) ?? 0) > 0 ||
+    !!s.feltFever ||
+    !!s.palpitations ||
+    !!s.cough ||
+    !!s.dizzinessConfusion
+  );
+}
+
+/** Dictionnaire vitaux / symptômes (seuils critiques document projet). */
+const computeRiskScore = (
+  data: any,
+  opts?: { previousWeightKg?: number | null },
+): { score: number; flagged: boolean } => {
   let score = 0;
 
-  const hr = data.vitals?.heartRate;
-  if (hr && (hr < 50 || hr > 110)) score += 20;
+  const hr = num(data.vitals?.heartRate);
+  if (hr != null && (hr < 50 || hr > 120)) score += 20;
 
-  const sys = data.vitals?.bloodPressureSystolic;
-  if (sys && (sys < 90 || sys > 160)) score += 20;
+  const sys = num(data.vitals?.bloodPressureSystolic);
+  const dia = num(data.vitals?.bloodPressureDiastolic);
+  if (sys != null && dia != null) {
+    if ((sys >= 180 && dia >= 120) || sys < 90 || dia < 60) score += 25;
+  } else {
+    if (sys != null && (sys >= 180 || sys < 90)) score += 15;
+    if (dia != null && (dia >= 120 || dia < 60)) score += 15;
+  }
 
-  const o2 = data.vitals?.oxygenSaturation;
-  if (o2 && o2 < 94) score += 25;
+  const o2 = num(data.vitals?.oxygenSaturation);
+  if (o2 != null) {
+    if (o2 < 90) score += 25;
+    else if (o2 < 95) score += 10;
+  }
 
-  const temp = data.vitals?.temperature;
-  if (temp && (temp < 36 || temp > 38.5)) score += 15;
+  const temp = num(data.vitals?.temperature);
+  if (temp != null && (temp >= 38.5 || temp < 35)) score += 15;
 
-  const highRiskSymptoms = ['shortness of breath', 'chest pain', 'fainting', 'severe headache'];
-  const symptomHits = (data.symptoms || []).filter((s: string) =>
-    highRiskSymptoms.some((h) => s.toLowerCase().includes(h.toLowerCase())),
-  ).length;
-  score += symptomHits * 15;
+  const rr = num(data.vitals?.respiratoryRate);
+  if (rr != null && (rr > 30 || rr < 8)) score += 20;
 
-  if (data.painLevel >= 7) score += 15;
-  else if (data.painLevel >= 5) score += 8;
+  const newW = num(data.vitals?.weight);
+  const prevW = num(opts?.previousWeightKg);
+  if (newW != null && prevW != null && prevW > 0) {
+    const delta = Math.abs(newW - prevW) / prevW;
+    if (delta >= 0.05) score += 15;
+  }
+
+  const s = data.symptomStructured;
+  if (symptomStructuredIsActive(s)) {
+    const fatigue = num(s.fatigue) ?? 0;
+    if (fatigue >= 3) score += 8;
+    if (fatigue >= 5) score += 5;
+    const chestPain = num(s.chestPain) ?? 0;
+    if (chestPain >= 3) score += 20;
+    if (chestPain >= 7) score += 10;
+    const shortBreath = num(s.shortBreath) ?? 0;
+    if (shortBreath >= 2) score += 15;
+    if (shortBreath >= 4) score += 5;
+    const nausea = num(s.nausea) ?? 0;
+    if (nausea >= 3) score += 8;
+    if (s.feltFever) score += 10;
+    if (s.palpitations) score += 10;
+    if (s.cough) score += 8;
+    if (s.dizzinessConfusion) score += 12;
+  } else {
+    const ids = new Set((data.symptoms || []).map((x: string) => String(x).toLowerCase()));
+    if ([...ids].some((id) => id === 'shortbreath' || String(id).includes('shortness'))) score += 15;
+    if ([...ids].some((id) => id === 'chestpain' || String(id).includes('chest pain'))) score += 20;
+    if (ids.has('fatigue')) score += 5;
+    if (ids.has('fever')) score += 10;
+    if (ids.has('palpitations')) score += 10;
+    if (ids.has('nausea')) score += 5;
+    if (ids.has('dizziness')) score += 8;
+    if (ids.has('cough')) score += 8;
+  }
+
+  const pain = num(data.painLevel) ?? 0;
+  if (pain >= 7) score += 15;
+  else if (pain >= 5) score += 8;
 
   if (data.mood === 'poor') score += 10;
 
@@ -55,9 +137,23 @@ function buildVitalAlertMessageFr(patientName: string, log: any): string {
   }
   if (v.oxygenSaturation != null) lines.push(`• SpO₂ : ${v.oxygenSaturation} %`);
   if (v.temperature != null && v.temperature !== '') lines.push(`• Température : ${v.temperature} °C`);
+  if (v.respiratoryRate != null && v.respiratoryRate !== '') lines.push(`• Respiration : ${v.respiratoryRate} /min`);
   if (v.weight != null && v.weight !== '') lines.push(`• Poids : ${v.weight} kg`);
   const sym = Array.isArray(log.symptoms) ? log.symptoms : [];
   if (sym.length) lines.push('', `Symptômes déclarés : ${sym.join(', ')}`);
+  const ss = log.symptomStructured;
+  if (ss && typeof ss === 'object' && symptomStructuredIsActive(ss)) {
+    const parts: string[] = [];
+    if ((num(ss.fatigue) ?? 0) > 0) parts.push(`fatigue ${ss.fatigue}/5`);
+    if ((num(ss.chestPain) ?? 0) > 0) parts.push(`douleur thoracique ${ss.chestPain}/10`);
+    if ((num(ss.shortBreath) ?? 0) > 0) parts.push(`essoufflement ${ss.shortBreath}/5`);
+    if ((num(ss.nausea) ?? 0) > 0) parts.push(`nausée ${ss.nausea}/5`);
+    if (ss.feltFever) parts.push('fièvre ressentie');
+    if (ss.palpitations) parts.push('palpitations');
+    if (ss.cough) parts.push('toux');
+    if (ss.dizzinessConfusion) parts.push('vertiges / confusion');
+    if (parts.length) lines.push('', `Subjectif (scores) : ${parts.join(' · ')}`);
+  }
   lines.push(`Douleur : ${log.painLevel ?? 0}/10`, `Ressenti : ${log.mood || '—'}`);
   lines.push(
     '',
@@ -125,14 +221,32 @@ export class HealthLogService {
     let recordedAt = data.recordedAt ? new Date(data.recordedAt) : new Date();
     if (Number.isNaN(recordedAt.getTime())) recordedAt = new Date();
 
-    const { score, flagged } = computeRiskScore(data);
+    const prevLog = await this.healthLogModel
+      .findOne({ patientId: pid })
+      .sort({ recordedAt: -1 })
+      .lean()
+      .exec();
+    const previousWeightKg =
+      prevLog?.vitals?.weight != null && (prevLog.vitals as any).weight !== ''
+        ? Number((prevLog.vitals as any).weight)
+        : null;
+
+    const structured =
+      data.symptomStructured && typeof data.symptomStructured === 'object' ? data.symptomStructured : {};
+    const derived = deriveSymptomsFromStructured(structured);
+    const symptoms =
+      derived.length > 0 ? derived : Array.isArray(data.symptoms) ? data.symptoms : [];
+
+    const mergedForScore = { ...data, symptomStructured: structured, symptoms };
+    const { score, flagged } = computeRiskScore(mergedForScore, { previousWeightKg });
 
     const payload = {
       patientId: pid,
       date,
       recordedAt,
       vitals: data.vitals || {},
-      symptoms: data.symptoms || [],
+      symptomStructured: structured,
+      symptoms,
       painLevel: data.painLevel ?? 0,
       mood: data.mood || 'good',
       notes: data.notes || '',

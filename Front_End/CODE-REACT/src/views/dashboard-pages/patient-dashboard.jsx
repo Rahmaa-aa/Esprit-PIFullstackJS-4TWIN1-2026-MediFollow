@@ -238,6 +238,20 @@ const PatientDashboard = () => {
 
     const hasChartData = chartSeriesPoints.length > 0;
 
+    /** Dernier poids enregistré (historique) — alerte « variation rapide » dans le relevé */
+    const lastRecordedWeightKg = useMemo(() => {
+        if (!history?.length) return null;
+        const sorted = [...history].sort(
+            (a, b) =>
+                new Date(b.recordedAt || b.createdAt || 0) - new Date(a.recordedAt || a.createdAt || 0),
+        );
+        for (const log of sorted) {
+            const w = log?.vitals?.weight;
+            if (w != null && w !== "") return Number(w);
+        }
+        return null;
+    }, [history]);
+
     /** Fenêtre fixe 30 jours pour l’axe X (évite le zoom sur quelques minutes si plusieurs points le même jour) */
     const vitalChartXAxisRange = useMemo(() => {
         const now = Date.now();
@@ -423,6 +437,7 @@ const PatientDashboard = () => {
                         <DailyCheckIn
                             patientId={pid}
                             existingLog={todayLog?.date === localDateString() ? todayLog : null}
+                            lastRecordedWeightKg={lastRecordedWeightKg}
                             onSubmitted={() => { loadTodayLog(); loadHistory(); }}
                         />
                     </div>

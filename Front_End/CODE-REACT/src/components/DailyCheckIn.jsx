@@ -2,8 +2,6 @@ import React, { useState, useMemo, useCallback } from "react";
 import { Modal, Form, ProgressBar } from "react-bootstrap";
 import { useTranslation } from "react-i18next";
 import { healthLogApi } from "../services/api";
-import { SYMPTOM_IDS, translateSymptom } from "../utils/symptomLabels";
-
 // Local date string (avoids UTC midnight timezone bug)
 const localDateString = () => {
   const d = new Date();
@@ -24,15 +22,22 @@ const MOOD_SPECS = [
   { value: "poor", icon: "ri-first-aid-kit-line", color: "#dc3545" },
 ];
 
-/** Plages autorisées (valeurs extrêmes mais plausibles) — contrôle min/max côté client */
+/** Plages autorisées (saisie) — valeurs extrêmes plausibles ; normes / seuils critiques : texte i18n + alertes ci-dessous */
 const VITAL_LIMITS = {
   bloodPressureSystolic: { min: 40, max: 250, unit: "mmHg" },
   bloodPressureDiastolic: { min: 20, max: 180, unit: "mmHg" },
   heartRate: { min: 25, max: 250, unit: "bpm" },
   temperature: { min: 30, max: 45, unit: "°C" },
   oxygenSaturation: { min: 0, max: 100, unit: "%" },
+  respiratoryRate: { min: 4, max: 60, unit: "/min" },
   weight: { min: 2, max: 400, unit: "kg" },
 };
+
+function parseVitalNumber(raw) {
+  if (raw === "" || raw == null || raw === undefined) return null;
+  const n = Number(raw);
+  return Number.isNaN(n) ? null : n;
+}
 
 function validateVitals(vitals, t) {
   const errors = {};
@@ -54,15 +59,69 @@ function validateVitals(vitals, t) {
   return errors;
 }
 
-const defaultForm = {
-  vitals: { bloodPressureSystolic: "", bloodPressureDiastolic: "", heartRate: "", temperature: "", oxygenSaturation: "", weight: "" },
-  symptoms: [],
+/** Seuils critiques (dictionnaire) — alertes informatives, ne bloquent pas la navigation */
+function getVitalCriticalWarnings(vitals, t, lastRecordedWeightKg) {
+  const w = [];
+  const temp = parseVitalNumber(vitals.temperature);
+  if (temp != null && (temp >= 38.5 || temp < 35)) w.push(t("dailyCheckIn.warnTempCritical"));
+
+  const hr = parseVitalNumber(vitals.heartRate);
+  if (hr != null && (hr < 50 || hr > 120)) w.push(t("dailyCheckIn.warnHrCritical"));
+
+  const sys = parseVitalNumber(vitals.bloodPressureSystolic);
+  const dia = parseVitalNumber(vitals.bloodPressureDiastolic);
+  if (sys != null && dia != null) {
+    if ((sys >= 180 && dia >= 120) || sys < 90 || dia < 60) w.push(t("dailyCheckIn.warnBpCritical"));
+  } else {
+    if (sys != null && (sys >= 180 || sys < 90)) w.push(t("dailyCheckIn.warnBpPartialSys"));
+    if (dia != null && (dia >= 120 || dia < 60)) w.push(t("dailyCheckIn.warnBpPartialDia"));
+  }
+
+  const o2 = parseVitalNumber(vitals.oxygenSaturation);
+  if (o2 != null && o2 < 90) w.push(t("dailyCheckIn.warnO2Critical"));
+  else if (o2 != null && o2 < 95) w.push(t("dailyCheckIn.warnO2Low"));
+
+  const rr = parseVitalNumber(vitals.respiratoryRate);
+  if (rr != null && (rr > 30 || rr < 8)) w.push(t("dailyCheckIn.warnRrCritical"));
+
+  const newW = parseVitalNumber(vitals.weight);
+  const prevW = parseVitalNumber(lastRecordedWeightKg);
+  if (newW != null && prevW != null && prevW > 0) {
+    const delta = Math.abs(newW - prevW) / prevW;
+    if (delta >= 0.05) w.push(t("dailyCheckIn.warnWeightRapid", { prev: prevW.toFixed(1), next: newW.toFixed(1) }));
+  }
+
+  return w;
+}
+
+const defaultSymptomStructured = () => ({
+  fatigue: 0,
+  chestPain: 0,
+  shortBreath: 0,
+  nausea: 0,
+  feltFever: false,
+  palpitations: false,
+  cough: false,
+  dizzinessConfusion: false,
+});
+
+const createDefaultForm = () => ({
+  vitals: {
+    bloodPressureSystolic: "",
+    bloodPressureDiastolic: "",
+    heartRate: "",
+    temperature: "",
+    oxygenSaturation: "",
+    respiratoryRate: "",
+    weight: "",
+  },
+  symptomStructured: defaultSymptomStructured(),
   painLevel: 0,
   mood: "good",
   notes: "",
-};
+});
 
-const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
+const DailyCheckIn = ({ patientId, onSubmitted, existingLog, lastRecordedWeightKg }) => {
   const { t, i18n } = useTranslation();
 
   const timeLocale = useMemo(() => {
@@ -98,7 +157,7 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
 
   const [show, setShow] = useState(false);
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState(defaultForm);
+  const [form, setForm] = useState(() => createDefaultForm());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -128,11 +187,10 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
     setStep((s) => s + 1);
   };
 
-  const toggleSymptom = (id) =>
-    setForm((f) => ({
-      ...f,
-      symptoms: f.symptoms.includes(id) ? f.symptoms.filter((x) => x !== id) : [...f.symptoms, id],
-    }));
+  const vitalCriticalWarnings = useMemo(
+    () => getVitalCriticalWarnings(form.vitals, t, lastRecordedWeightKg),
+    [form.vitals, t, lastRecordedWeightKg],
+  );
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -156,17 +214,30 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
       Object.entries(form.vitals).forEach(([k, v]) => {
         if (v !== "" && v !== null) cleanVitals[k] = Number(v);
       });
+      const ss = form.symptomStructured || {};
       await healthLogApi.submit({
         patientId: pid,
         localDate: localDateString(),
         recordedAt: new Date().toISOString(),
-        ...form,
         vitals: cleanVitals,
+        symptomStructured: {
+          fatigue: Math.min(5, Math.max(0, Number(ss.fatigue) || 0)),
+          chestPain: Math.min(10, Math.max(0, Number(ss.chestPain) || 0)),
+          shortBreath: Math.min(5, Math.max(0, Number(ss.shortBreath) || 0)),
+          nausea: Math.min(5, Math.max(0, Number(ss.nausea) || 0)),
+          feltFever: !!ss.feltFever,
+          palpitations: !!ss.palpitations,
+          cough: !!ss.cough,
+          dizzinessConfusion: !!ss.dizzinessConfusion,
+        },
+        painLevel: form.painLevel,
+        mood: form.mood,
+        notes: form.notes,
       });
       setSuccess(true);
       setShow(false);
       setStep(0);
-      setForm(defaultForm);
+      setForm(createDefaultForm());
       if (onSubmitted) onSubmitted();
     } catch (e) {
       console.error('[DailyCheckIn] Submit error:', e);
@@ -313,7 +384,7 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
           {step === 0 && (
             <div>
               <p className="text-muted small mb-3">{t("dailyCheckIn.enterVitals")}</p>
-              <p className="text-muted small mb-3" style={{ fontSize: "0.8rem" }}>
+              <p className="text-muted small mb-2" style={{ fontSize: "0.8rem" }}>
                 {t("dailyCheckIn.allowedRanges", {
                   sysMin: VITAL_LIMITS.bloodPressureSystolic.min,
                   sysMax: VITAL_LIMITS.bloodPressureSystolic.max,
@@ -325,10 +396,25 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
                   tempMax: VITAL_LIMITS.temperature.max,
                   o2Min: VITAL_LIMITS.oxygenSaturation.min,
                   o2Max: VITAL_LIMITS.oxygenSaturation.max,
+                  rrMin: VITAL_LIMITS.respiratoryRate.min,
+                  rrMax: VITAL_LIMITS.respiratoryRate.max,
                   wMin: VITAL_LIMITS.weight.min,
                   wMax: VITAL_LIMITS.weight.max,
                 })}
               </p>
+              <p className="text-muted small mb-3" style={{ fontSize: "0.75rem" }}>
+                {t("dailyCheckIn.dictionaryHint")}
+              </p>
+              {vitalCriticalWarnings.length > 0 && (
+                <div className="alert alert-warning py-2 small mb-3" role="status">
+                  <div className="fw-semibold mb-1">{t("dailyCheckIn.criticalAlertsTitle")}</div>
+                  <ul className="mb-0 ps-3">
+                    {vitalCriticalWarnings.map((msg, i) => (
+                      <li key={`${i}-${msg}`}>{msg}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="row g-3">
                 <div className="col-6">
                   <label className="form-label small fw-bold">
@@ -416,6 +502,23 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
                 </div>
                 <div className="col-6">
                   <label className="form-label small fw-bold">
+                    <i className="ri-pulse-line text-success me-1"></i>{t("dailyCheckIn.labelRespiratory")}
+                  </label>
+                  <Form.Control
+                    type="number"
+                    min={VITAL_LIMITS.respiratoryRate.min}
+                    max={VITAL_LIMITS.respiratoryRate.max}
+                    placeholder={t("dailyCheckIn.phRespiratory")}
+                    value={form.vitals.respiratoryRate}
+                    isInvalid={!!vitalsErrors.respiratoryRate}
+                    onChange={(e) => handleVital("respiratoryRate", e.target.value)}
+                  />
+                  <Form.Control.Feedback type="invalid" className="d-block small">
+                    {vitalsErrors.respiratoryRate}
+                  </Form.Control.Feedback>
+                </div>
+                <div className="col-6">
+                  <label className="form-label small fw-bold">
                     <i className="ri-scales-3-line text-secondary me-1"></i>{t("dailyCheckIn.labelWeight")}
                   </label>
                   <Form.Control
@@ -436,27 +539,160 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
             </div>
           )}
 
-          {/* Step 1: Symptoms */}
+          {/* Step 1: Symptoms — scores (int) + présence (bool), pas de texte libre pour l’analyse */}
           {step === 1 && (
             <div>
-              <p className="text-muted small mb-3">{t("dailyCheckIn.symptomsIntro")}</p>
-              <div className="d-flex flex-wrap gap-2">
-                {SYMPTOM_IDS.map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={`btn btn-sm d-inline-flex align-items-center gap-1 ${form.symptoms.includes(id) ? "btn-primary" : "btn-outline-secondary"}`}
-                    style={{ borderRadius: 20 }}
-                    onClick={() => toggleSymptom(id)}
-                  >
-                    {form.symptoms.includes(id) ? <i className="ri-check-line" aria-hidden /> : null}
-                    {translateSymptom(id, t)}
-                  </button>
-                ))}
+              <p className="text-muted small mb-3">{t("dailyCheckIn.symptomsIntroStructured")}</p>
+
+              <div className="mb-4 pb-3 border-bottom">
+                <h6 className="small text-uppercase text-muted mb-3">{t("dailyCheckIn.symptomGroupGeneral")}</h6>
+                <label className="form-label small fw-bold">
+                  {t("dailyCheckIn.sliderFatigue")} <span className="text-primary">{form.symptomStructured.fatigue}/5</span>
+                </label>
+                <Form.Range
+                  min={0}
+                  max={5}
+                  value={form.symptomStructured.fatigue}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      symptomStructured: { ...f.symptomStructured, fatigue: Number(e.target.value) },
+                    }))
+                  }
+                />
+                <div className="d-flex justify-content-between mb-3">
+                  <small className="text-muted">0</small>
+                  <small className="text-muted">5</small>
+                </div>
+                <div className="d-flex align-items-center justify-content-between gap-2">
+                  <span className="small fw-bold">{t("dailyCheckIn.toggleFeltFever")}</span>
+                  <Form.Check
+                    type="switch"
+                    id="feltFever"
+                    checked={form.symptomStructured.feltFever}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        symptomStructured: { ...f.symptomStructured, feltFever: e.target.checked },
+                      }))
+                    }
+                    label={form.symptomStructured.feltFever ? t("dailyCheckIn.boolTrue") : t("dailyCheckIn.boolFalse")}
+                  />
+                </div>
               </div>
-              {form.symptoms.length === 0 && (
-                <p className="text-muted small mt-3 mb-0">{t("dailyCheckIn.symptomsNone")}</p>
-              )}
+
+              <div className="mb-4 pb-3 border-bottom">
+                <h6 className="small text-uppercase text-muted mb-3">{t("dailyCheckIn.symptomGroupCardio")}</h6>
+                <label className="form-label small fw-bold">
+                  {t("dailyCheckIn.sliderChestPain")} <span className="text-primary">{form.symptomStructured.chestPain}/10</span>
+                </label>
+                <Form.Range
+                  min={0}
+                  max={10}
+                  value={form.symptomStructured.chestPain}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      symptomStructured: { ...f.symptomStructured, chestPain: Number(e.target.value) },
+                    }))
+                  }
+                />
+                <div className="d-flex justify-content-between mb-3">
+                  <small className="text-muted">0</small>
+                  <small className="text-muted">10</small>
+                </div>
+                <div className="d-flex align-items-center justify-content-between gap-2">
+                  <span className="small fw-bold">{t("dailyCheckIn.togglePalpitations")}</span>
+                  <Form.Check
+                    type="switch"
+                    id="palpitations"
+                    checked={form.symptomStructured.palpitations}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        symptomStructured: { ...f.symptomStructured, palpitations: e.target.checked },
+                      }))
+                    }
+                    label={form.symptomStructured.palpitations ? t("dailyCheckIn.boolTrue") : t("dailyCheckIn.boolFalse")}
+                  />
+                </div>
+              </div>
+
+              <div className="mb-4 pb-3 border-bottom">
+                <h6 className="small text-uppercase text-muted mb-3">{t("dailyCheckIn.symptomGroupResp")}</h6>
+                <label className="form-label small fw-bold">
+                  {t("dailyCheckIn.sliderShortBreath")} <span className="text-primary">{form.symptomStructured.shortBreath}/5</span>
+                </label>
+                <Form.Range
+                  min={0}
+                  max={5}
+                  value={form.symptomStructured.shortBreath}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      symptomStructured: { ...f.symptomStructured, shortBreath: Number(e.target.value) },
+                    }))
+                  }
+                />
+                <div className="d-flex justify-content-between mb-3">
+                  <small className="text-muted">0</small>
+                  <small className="text-muted">5</small>
+                </div>
+                <div className="d-flex align-items-center justify-content-between gap-2">
+                  <span className="small fw-bold">{t("dailyCheckIn.toggleCough")}</span>
+                  <Form.Check
+                    type="switch"
+                    id="cough"
+                    checked={form.symptomStructured.cough}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        symptomStructured: { ...f.symptomStructured, cough: e.target.checked },
+                      }))
+                    }
+                    label={form.symptomStructured.cough ? t("dailyCheckIn.boolTrue") : t("dailyCheckIn.boolFalse")}
+                  />
+                </div>
+              </div>
+
+              <div className="mb-2">
+                <h6 className="small text-uppercase text-muted mb-3">{t("dailyCheckIn.symptomGroupNeuro")}</h6>
+                <label className="form-label small fw-bold">
+                  {t("dailyCheckIn.sliderNausea")} <span className="text-primary">{form.symptomStructured.nausea}/5</span>
+                </label>
+                <Form.Range
+                  min={0}
+                  max={5}
+                  value={form.symptomStructured.nausea}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      symptomStructured: { ...f.symptomStructured, nausea: Number(e.target.value) },
+                    }))
+                  }
+                />
+                <div className="d-flex justify-content-between mb-3">
+                  <small className="text-muted">0</small>
+                  <small className="text-muted">5</small>
+                </div>
+                <div className="d-flex align-items-center justify-content-between gap-2">
+                  <span className="small fw-bold">{t("dailyCheckIn.toggleDizziness")}</span>
+                  <Form.Check
+                    type="switch"
+                    id="dizzinessConfusion"
+                    checked={form.symptomStructured.dizzinessConfusion}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        symptomStructured: { ...f.symptomStructured, dizzinessConfusion: e.target.checked },
+                      }))
+                    }
+                    label={form.symptomStructured.dizzinessConfusion ? t("dailyCheckIn.boolTrue") : t("dailyCheckIn.boolFalse")}
+                  />
+                </div>
+              </div>
+
+              <p className="text-muted small mt-3 mb-0">{t("dailyCheckIn.symptomsStructuredFooter")}</p>
             </div>
           )}
 
@@ -503,16 +739,22 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
                 {form.vitals.bloodPressureSystolic && <div className="col-6"><div className="bg-light rounded p-2 small"><b>{t("dailyCheckIn.reviewBP")}</b> {form.vitals.bloodPressureSystolic}/{form.vitals.bloodPressureDiastolic} mmHg</div></div>}
                 {form.vitals.temperature && <div className="col-6"><div className="bg-light rounded p-2 small"><b>{t("dailyCheckIn.reviewTemp")}</b> {form.vitals.temperature} °C</div></div>}
                 {form.vitals.oxygenSaturation && <div className="col-6"><div className="bg-light rounded p-2 small"><b>{t("dailyCheckIn.reviewO2")}</b> {form.vitals.oxygenSaturation}%</div></div>}
+                {form.vitals.respiratoryRate && <div className="col-6"><div className="bg-light rounded p-2 small"><b>{t("dailyCheckIn.reviewRespiratory")}</b> {form.vitals.respiratoryRate} /min</div></div>}
                 {form.vitals.weight && <div className="col-6"><div className="bg-light rounded p-2 small"><b>{t("dailyCheckIn.reviewWeight")}</b> {form.vitals.weight} kg</div></div>}
               </div>
-              {form.symptoms.length > 0 && (
-                <div className="mb-2">
-                  <b className="small">{t("dailyCheckIn.reviewSymptoms")}</b>
-                  <div className="d-flex flex-wrap gap-1 mt-1">
-                    {form.symptoms.map((s) => <span key={s} className="badge bg-warning text-dark">{translateSymptom(s, t)}</span>)}
-                  </div>
-                </div>
-              )}
+              <div className="mb-2 small">
+                <b>{t("dailyCheckIn.reviewSymptomsStructured")}</b>
+                <ul className="mb-0 mt-1 ps-3">
+                  <li>{t("dailyCheckIn.reviewLineFatigue", { n: form.symptomStructured.fatigue })}</li>
+                  <li>{t("dailyCheckIn.reviewLineFeltFever", { on: form.symptomStructured.feltFever ? t("dailyCheckIn.boolTrue") : t("dailyCheckIn.boolFalse") })}</li>
+                  <li>{t("dailyCheckIn.reviewLineChestPain", { n: form.symptomStructured.chestPain })}</li>
+                  <li>{t("dailyCheckIn.reviewLinePalpitations", { on: form.symptomStructured.palpitations ? t("dailyCheckIn.boolTrue") : t("dailyCheckIn.boolFalse") })}</li>
+                  <li>{t("dailyCheckIn.reviewLineShortBreath", { n: form.symptomStructured.shortBreath })}</li>
+                  <li>{t("dailyCheckIn.reviewLineCough", { on: form.symptomStructured.cough ? t("dailyCheckIn.boolTrue") : t("dailyCheckIn.boolFalse") })}</li>
+                  <li>{t("dailyCheckIn.reviewLineNausea", { n: form.symptomStructured.nausea })}</li>
+                  <li>{t("dailyCheckIn.reviewLineDizziness", { on: form.symptomStructured.dizzinessConfusion ? t("dailyCheckIn.boolTrue") : t("dailyCheckIn.boolFalse") })}</li>
+                </ul>
+              </div>
               <div className="small mb-1"><b>{t("dailyCheckIn.reviewPain")}</b> {form.painLevel}/10</div>
               <div className="small mb-1"><b>{t("dailyCheckIn.reviewMood")}</b> {moodsWithLabels.find((m) => m.value === form.mood)?.label}</div>
               {form.notes && <div className="small"><b>{t("dailyCheckIn.reviewNotes")}</b> {form.notes}</div>}
