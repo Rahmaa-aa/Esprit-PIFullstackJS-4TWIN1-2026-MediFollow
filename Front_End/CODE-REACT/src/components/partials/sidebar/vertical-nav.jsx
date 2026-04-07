@@ -300,6 +300,15 @@ const VerticalNav = () => {
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
+                    <Link
+                        to="/dashboard-pages/healthcare-news"
+                        className={`nav-link ${location.pathname === "/dashboard-pages/healthcare-news" ? "active" : ""}`}
+                    >
+                        <i className="ri-newspaper-fill"></i>
+                        <span className="item-name">Healthcare News</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
                     <Link to={`/patient/patient-profile/${patientUser?.id}`} className={`nav-link ${location.pathname === `/patient/patient-profile/${patientUser?.id}` ? "active" : ""}`}>
                         <i className="ri-user-heart-fill"></i>
                         <span className="item-name">{t("sidebar.myProfile")}</span>
@@ -325,6 +334,15 @@ const VerticalNav = () => {
                     </Link>
                 </Nav.Item>
                 {renderEmailAccordion()}
+                <Nav.Item as="li">
+                    <Link
+                        to="/dashboard-pages/healthcare-news"
+                        className={`nav-link ${location.pathname === "/dashboard-pages/healthcare-news" ? "active" : ""}`}
+                    >
+                        <i className="ri-newspaper-fill"></i>
+                        <span className="item-name">Healthcare News</span>
+                    </Link>
+                </Nav.Item>
                 <Nav.Item as="li">
                     <Link to={`/nurse/nurse-profile/${nurseUser?.id}`} className={`nav-link ${location.pathname === `/nurse/nurse-profile/${nurseUser?.id}` ? "active" : ""}`}>
                         <i className="ri-nurse-fill"></i>
@@ -432,6 +450,15 @@ const VerticalNav = () => {
                     >
                         <i className="ri-brain-line"></i>
                         <span className="item-name">{t("sidebar.brainMri")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/dashboard-pages/healthcare-news"
+                        className={`nav-link ${location.pathname === "/dashboard-pages/healthcare-news" ? "active" : ""}`}
+                    >
+                        <i className="ri-newspaper-fill"></i>
+                        <span className="item-name">Healthcare News</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
