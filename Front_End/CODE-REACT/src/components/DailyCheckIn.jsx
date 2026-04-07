@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Modal, Form, ProgressBar } from "react-bootstrap";
 import { useTranslation } from "react-i18next";
-import { healthLogApi } from "../services/api";
+import { healthLogApi, patientApi } from "../services/api";
 import { SYMPTOM_IDS, translateSymptom } from "../utils/symptomLabels";
 
 // Local date string (avoids UTC midnight timezone bug)
@@ -163,6 +163,10 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog }) => {
         ...form,
         vitals: cleanVitals,
       });
+
+      // Automatically generate real-time insight after logging vitals/symptoms
+      await patientApi.generateInsight(pid);
+
       setSuccess(true);
       setShow(false);
       setStep(0);

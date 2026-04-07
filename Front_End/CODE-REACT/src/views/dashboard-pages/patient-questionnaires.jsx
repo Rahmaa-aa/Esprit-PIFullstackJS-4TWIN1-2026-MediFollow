@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Alert, Button, Card, Container, Form, Spinner } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { questionnaireApi } from "../../services/api";
+import { questionnaireApi, patientApi } from "../../services/api";
 
 function translateMilestoneStatus(status, t) {
   if (status == null || status === "") return "";
@@ -46,7 +46,20 @@ function QuestionForm({ item, onSubmitted }) {
         body.dayOffset = item.dayOffset;
       }
       await questionnaireApi.patientSubmit(body);
+
+      // Generate insight on submission
+      try {
+        const u = JSON.parse(localStorage.getItem("patientUser") || "{}");
+        const patientId = u?.id || u?._id;
+        if (patientId) {
+          await patientApi.generateInsight(patientId);
+        }
+      } catch (err) {
+        console.error("Failed to generate insight:", err);
+      }
+
       onSubmitted();
+
     } catch (ex) {
       setErr(ex.message || t("patientQuestionnaires.genericError"));
     } finally {

@@ -619,6 +619,8 @@ export const patientApi = {
   delete: (id) => api.delete(`/patients/${id}`),
   toggleActive: (id) => api.put(`/patients/${id}/toggle-active`, {}),
   getCareTeam: (id) => api.get(`/patients/${id}/care-team`),
+  getMoodInsights: (id) => api.get(`/patients/${id}/mood-insights`),
+  generateInsight: (id) => api.post(`/patients/${id}/generate-insight`, {}),
 };
 
 /** Photo de bilan : OCR + classification (JWT patient, multipart). */
