@@ -186,7 +186,20 @@ const PatientDashboard = () => {
         }
     };
 
+    const loadPatientContent = async () => {
+        if (!pid) return;
+        try {
+            const p = await patientApi.getById(pid);
+            if (p) {
+                setPatientUser(prev => ({ ...prev, currentStreak: p.currentStreak, lastLogDate: p.lastLogDate }));
+                const stored = JSON.parse(localStorage.getItem("patientUser") || "{}");
+                localStorage.setItem("patientUser", JSON.stringify({ ...stored, currentStreak: p.currentStreak, lastLogDate: p.lastLogDate }));
+            }
+        } catch (e) { console.error('[Dashboard] Failed to load patient:', e); }
+    };
+
     useEffect(() => {
+        loadPatientContent();
         loadTodayLog();
         loadHistory();
         loadMedications();
@@ -389,8 +402,16 @@ const PatientDashboard = () => {
                     <Card className="border-0 shadow-sm">
                         <Card.Body className="text-center pt-4">
                             <img src={userData.profileImage} alt={t("patientDashboard.profilePhotoAlt")} className="avatar-130 img-fluid rounded-circle mb-3" style={{ border: "3px solid #089bab" }} />
-                            <h5 className="fw-bold mb-0">{userData.name}</h5>
-                            <p className="text-muted small mb-1">
+                            <div className="d-flex align-items-center justify-content-center gap-2 mb-0">
+                                <h5 className="fw-bold mb-0">{userData.name}</h5>
+                                {(patientUser?.currentStreak > 0) && (
+                                    <span className="badge rounded-pill d-flex align-items-center" style={{ fontSize: '0.75rem', backgroundColor: '#ffecd1', color: '#ff7300', border: '1px solid #ff7300' }}>
+                                        <i className="ri-fire-fill me-1" style={{ fontSize: '0.9rem' }}></i> 
+                                        {patientUser.currentStreak} {t("patientDashboard.streakDays", "Day Streak")}
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-muted small mb-1 mt-1">
                                 {userData.age != null ? `${userData.age} ${t("patientDashboard.yearsShort")}` : ""}
                                 {userData.age != null && userData.location !== "—" ? " • " : ""}
                                 {userData.location}
@@ -423,7 +444,7 @@ const PatientDashboard = () => {
                         <DailyCheckIn
                             patientId={pid}
                             existingLog={todayLog?.date === localDateString() ? todayLog : null}
-                            onSubmitted={() => { loadTodayLog(); loadHistory(); }}
+                            onSubmitted={() => { loadPatientContent(); loadTodayLog(); loadHistory(); }}
                         />
                     </div>
 
