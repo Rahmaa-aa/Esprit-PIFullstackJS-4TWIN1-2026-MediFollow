@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { patientApi, doctorApi, nurseApi } from "../../services/api";
 import { HOSPITAL_DEPARTMENTS, hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
 import { fetchMergedDepartmentNames } from "../../utils/mergedDepartmentNames";
+import { fetchHospitalAdminDepartmentName } from "../../utils/hospitalAdminDepartment";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 
@@ -27,7 +28,7 @@ const GENDER_I18N = {
   Autre: "patientDashboard.genderOther",
 };
 
-const AddPatient = () => {
+const AddPatient = ({ hospitalAdminMode = false }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -38,15 +39,57 @@ const AddPatient = () => {
   const [nurses, setNurses] = useState([]);
   const [patientDepartment, setPatientDepartment] = useState("");
   const [deptOptions, setDeptOptions] = useState(HOSPITAL_DEPARTMENTS);
+  const [fixedDepartment, setFixedDepartment] = useState("");
 
   useEffect(() => {
+    if (hospitalAdminMode) return;
     doctorApi.getAll().then((d) => setDoctors(Array.isArray(d) ? d : [])).catch(() => setDoctors([]));
     nurseApi.getAll().then((n) => setNurses(Array.isArray(n) ? n : [])).catch(() => setNurses([]));
-  }, []);
+  }, [hospitalAdminMode]);
 
   useEffect(() => {
+    if (hospitalAdminMode) return;
     fetchMergedDepartmentNames().then(setDeptOptions);
-  }, []);
+  }, [hospitalAdminMode]);
+
+  useEffect(() => {
+    if (!hospitalAdminMode) return;
+    let cancelled = false;
+    (async () => {
+      let u = null;
+      try {
+        u = JSON.parse(localStorage.getItem("adminUser") || "null");
+      } catch {
+        u = null;
+      }
+      if (!u || u.role !== "admin") {
+        navigate("/admin/dashboard", { replace: true });
+        return;
+      }
+      const d = await fetchHospitalAdminDepartmentName();
+      if (cancelled) return;
+      setFixedDepartment(d);
+      setPatientDepartment(d);
+      try {
+        const [docList, nurList] = await Promise.all([
+          doctorApi.getAll(),
+          nurseApi.getAll(),
+        ]);
+        if (!cancelled) {
+          setDoctors(Array.isArray(docList) ? docList : []);
+          setNurses(Array.isArray(nurList) ? nurList : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setDoctors([]);
+          setNurses([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hospitalAdminMode, navigate]);
 
   const doctorsForSelect = useMemo(() => {
     if (!patientDepartment) return doctors;
@@ -97,6 +140,13 @@ const AddPatient = () => {
 
     const profileImage = profilePreview.startsWith("data:") ? profilePreview : generatePath("/assets/images/user/11.png");
 
+    const departmentVal = hospitalAdminMode ? fixedDepartment : form.department?.value;
+    if (hospitalAdminMode && !String(departmentVal || "").trim()) {
+      setError(t("addPatient.departmentRequiredAdmin"));
+      setLoading(false);
+      return;
+    }
+
     try {
       await patientApi.create({
         firstName: form.fname?.value,
@@ -116,14 +166,14 @@ const AddPatient = () => {
         country: form.selectcountry?.value,
         pinCode: form.pno?.value,
         alternateContact: form.altconno?.value,
-        department: form.department?.value,
-        service: form.department?.value || form.service?.value,
+        department: departmentVal,
+        service: departmentVal || form.service?.value,
         doctorId: form.doctorId?.value || undefined,
         nurseId: form.nurseId?.value || undefined,
         password,
         profileImage,
       });
-      navigate("/patient/patient-list");
+      navigate(hospitalAdminMode ? "/admin/patient-list" : "/patient/patient-list");
     } catch (err) {
       if (err.status === 401) {
         navigate("/auth/lock-screen");
@@ -190,21 +240,30 @@ const AddPatient = () => {
                 </Form.Group>
                 <Form.Group className="form-group cust-form-input">
                   <Form.Label className="mb-0">{t("addPatient.department")}</Form.Label>
-                  <Form.Control
-                    as="select"
-                    className="my-2"
-                    name="department"
-                    required
-                    value={patientDepartment}
-                    onChange={(e) => setPatientDepartment(e.target.value)}
-                  >
-                    <option value="">{t("addPatient.selectDepartment")}</option>
-                    {deptOptions.map((s) => (
-                      <option key={s} value={s}>
-                        {hospitalDepartmentLabel(s, t)}
-                      </option>
-                    ))}
-                  </Form.Control>
+                  {hospitalAdminMode ? (
+                    <Form.Control
+                      className="my-2"
+                      readOnly
+                      disabled
+                      value={fixedDepartment ? hospitalDepartmentLabel(fixedDepartment, t) : t("addPatient.deptLoading")}
+                    />
+                  ) : (
+                    <Form.Control
+                      as="select"
+                      className="my-2"
+                      name="department"
+                      required
+                      value={patientDepartment}
+                      onChange={(e) => setPatientDepartment(e.target.value)}
+                    >
+                      <option value="">{t("addPatient.selectDepartment")}</option>
+                      {deptOptions.map((s) => (
+                        <option key={s} value={s}>
+                          {hospitalDepartmentLabel(s, t)}
+                        </option>
+                      ))}
+                    </Form.Control>
+                  )}
                 </Form.Group>
             </Card.Body>
           </Card>

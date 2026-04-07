@@ -43,8 +43,8 @@ const VerticalNav = () => {
     const isCareCoordinatorPatientsActive =
         location.pathname === "/dashboard-pages/care-coordinator-patients" ||
         /^\/dashboard-pages\/care-coordinator-patient\/[^/]+$/.test(location.pathname)
-    const showHospitalAdminMenu =
-        adminUser && !["auditor", "carecoordinator"].includes(adminUser.role)
+    /** Administrateur hospitalier (JWT `admin`) — pas super admin / auditeur / coordinateur. */
+    const isHospitalAdmin = adminUser?.role === "admin"
 
     const emailItems = [
         { path: "/email/inbox", nameKey: "emailInbox", icon: "ri-inbox-fill" },
@@ -652,6 +652,140 @@ const VerticalNav = () => {
         );
     }
 
+    /** Menu hospitalier : écrans réels uniquement (sans démos template). */
+    if (isHospitalAdmin) {
+        return (
+            <ul className="navbar-nav iq-main-menu" id="sidebar-menu">
+                <Nav.Item as="li" className="static-item ms-2">
+                    <Link className="nav-link static-item disabled text-start" tabIndex="-1">
+                        <span className="default-icon">{t("sidebar.hospitalAdminSection")}</span>
+                        <OverlayTrigger
+                            key="hospital-admin-home"
+                            placement="right"
+                            overlay={<Tooltip id="hospital-admin-home">{t("sidebar.homeTooltip")}</Tooltip>}
+                        >
+                            <span className="mini-icon">-</span>
+                        </OverlayTrigger>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link to="/admin/dashboard" className={`nav-link ${location.pathname === "/admin/dashboard" ? "active" : ""}`}>
+                        <i className="ri-dashboard-2-fill"></i>
+                        <span className="item-name">{t("sidebar.adminDashboard")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/admin/departments"
+                        className={`nav-link ${location.pathname.startsWith("/admin/departments") ? "active" : ""}`}
+                    >
+                        <i className="ri-building-2-fill"></i>
+                        <span className="item-name">{t("sidebar.departments")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/admin/appointment-requests"
+                        className={`nav-link ${location.pathname === "/admin/appointment-requests" ? "active" : ""}`}
+                    >
+                        <i className="ri-calendar-check-line"></i>
+                        <span className="item-name">{t("sidebar.appointmentRequests")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/admin/questionnaire-bank"
+                        className={`nav-link ${location.pathname === "/admin/questionnaire-bank" ? "active" : ""}`}
+                    >
+                        <i className="ri-draft-line"></i>
+                        <span className="item-name">{t("sidebar.questionnaireBank")}</span>
+                    </Link>
+                </Nav.Item>
+                <li>
+                    <hr className="hr-horizontal" />
+                </li>
+                <Nav.Item as="li" className="static-item ms-2">
+                    <Link className="nav-link static-item disabled text-start" tabIndex="-1">
+                        <span className="default-icon">{t("sidebar.hospitalAdminStaffSection")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/admin/doctor-list"
+                        className={`nav-link ${location.pathname.startsWith("/admin/doctor-list") || location.pathname === "/admin/add-doctor" ? "active" : ""}`}
+                    >
+                        <i className="ri-stethoscope-line"></i>
+                        <span className="item-name">{t("sidebar.doctorAll")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/admin/nurse-list"
+                        className={`nav-link ${location.pathname.startsWith("/admin/nurse-list") || location.pathname === "/admin/add-nurse" ? "active" : ""}`}
+                    >
+                        <i className="ri-nurse-line"></i>
+                        <span className="item-name">{t("sidebar.nurseAll")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/admin/patient-list"
+                        className={`nav-link ${location.pathname.startsWith("/admin/patient-list") || location.pathname === "/admin/add-patient" ? "active" : ""}`}
+                    >
+                        <i className="ri-user-heart-line"></i>
+                        <span className="item-name">{t("sidebar.patientAll")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/admin/admins"
+                        className={`nav-link ${location.pathname.startsWith("/admin/admins") ? "active" : ""}`}
+                    >
+                        <i className="ri-user-star-line"></i>
+                        <span className="item-name">{t("sidebar.hospitalAdminStaffAdmins")}</span>
+                    </Link>
+                </Nav.Item>
+                <li>
+                    <hr className="hr-horizontal" />
+                </li>
+                <Nav.Item as="li" className="static-item ms-2">
+                    <Nav.Link className="static-item disabled text-start" tabIndex="-1">
+                        <span className="default-icon">{t("sidebar.sectionApps")}</span>
+                        <span className="mini-icon">-</span>
+                    </Nav.Link>
+                </Nav.Item>
+                {renderEmailAccordion()}
+                <Nav.Item as="li">
+                    <Link
+                        to="/notifications"
+                        className={`nav-link ${location.pathname === "/notifications" ? "active" : ""}`}
+                    >
+                        <i className="ri-notification-3-fill"></i>
+                        <span className="item-name">{t("sidebar.notificationsCenter")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link className={`nav-link ${location.pathname === "/chat" ? "active" : ""}`} to="/chat">
+                        <i className="ri-message-fill"></i>
+                        <span className="item-name">{t("sidebar.chat")}</span>
+                    </Link>
+                </Nav.Item>
+                <li>
+                    <hr className="hr-horizontal" />
+                </li>
+                <Nav.Item as="li">
+                    <Link
+                        to="/admin/profile"
+                        className={`nav-link ${location.pathname === "/admin/profile" || location.pathname === "/admin/edit-profile" ? "active" : ""}`}
+                    >
+                        <i className="ri-user-settings-fill"></i>
+                        <span className="item-name">{t("sidebar.myProfile")}</span>
+                    </Link>
+                </Nav.Item>
+            </ul>
+        );
+    }
+
     return (
         <>
             <ul className="navbar-nav iq-main-menu" id="sidebar-menu">
@@ -689,43 +823,6 @@ const VerticalNav = () => {
 
                     </Link>
                 </Nav.Item>
-                {showHospitalAdminMenu && (
-                    <>
-                        <Nav.Item as="li">
-                            <Link to="/admin/dashboard" className={`nav-link ${location.pathname === "/admin/dashboard" ? "active" : ""}`}>
-                                <i className="ri-dashboard-2-fill"></i>
-                                <span className="item-name">{t("sidebar.adminDashboard")}</span>
-                            </Link>
-                        </Nav.Item>
-                        <Nav.Item as="li">
-                            <Link
-                                to="/admin/departments"
-                                className={`nav-link ${location.pathname.startsWith("/admin/departments") ? "active" : ""}`}
-                            >
-                                <i className="ri-building-2-fill"></i>
-                                <span className="item-name">{t("sidebar.departments")}</span>
-                            </Link>
-                        </Nav.Item>
-                        <Nav.Item as="li">
-                            <Link
-                                to="/admin/appointment-requests"
-                                className={`nav-link ${location.pathname === "/admin/appointment-requests" ? "active" : ""}`}
-                            >
-                                <i className="ri-calendar-check-line"></i>
-                                <span className="item-name">{t("sidebar.appointmentRequests")}</span>
-                            </Link>
-                        </Nav.Item>
-                        <Nav.Item as="li">
-                            <Link
-                                to="/admin/questionnaire-bank"
-                                className={`nav-link ${location.pathname === "/admin/questionnaire-bank" ? "active" : ""}`}
-                            >
-                                <i className="ri-draft-line"></i>
-                                <span className="item-name">{t("sidebar.questionnaireBank")}</span>
-                            </Link>
-                        </Nav.Item>
-                    </>
-                )}
                 <Nav.Item as="li">
                     <Link
                         to="/dashboard-pages/dashboard-1" className={`nav-link ${location.pathname === "/dashboard-pages/dashboard-1" ? "active" : ""}`}>

@@ -43,6 +43,12 @@ function getSession() {
             if (u?.role === "carecoordinator") {
                 return { id: String(u.id || u._id || ""), role: "carecoordinator" };
             }
+            if (u?.role === "admin") {
+                return { id: String(u.id || u._id || ""), role: "admin" };
+            }
+            if (u?.role === "superadmin") {
+                return { id: String(u.id || u._id || ""), role: "superadmin" };
+            }
         }
         if (localStorage.getItem("patientUser")) {
             const u = JSON.parse(localStorage.getItem("patientUser"));
@@ -83,6 +89,7 @@ function collectStaffMemberOptions(dc) {
     add(dc.doctorsAll, "doctor");
     add(dc.nursesAll, "nurse");
     add(dc.coordinators, "carecoordinator");
+    add(dc.hospitalAdmins, "admin");
     for (const p of dc.assignedPatients || []) {
         if (!p?.id) continue;
         const k = `patient:${p.id}`;
@@ -102,6 +109,14 @@ function buildSidebarRows(dc, session, groups = [], t) {
     const rows = [];
     let box = 1;
     const departmentLabel = dc.department || "—";
+
+    if (session.role === "superadmin") {
+        rows.push({
+            type: "section",
+            title: t("chat.superAdminChatHint"),
+        });
+        return { rows, departmentLabel };
+    }
 
     const pushSection = (title) => {
         rows.push({ type: "section", title });
@@ -206,6 +221,32 @@ function buildSidebarRows(dc, session, groups = [], t) {
             }
         }
 
+        const hospAdmins = dc.hospitalAdmins || [];
+        if (hospAdmins.length) {
+            if (!dc.assignedDoctor && !dc.assignedNurse && !coordDept.length) pushSection(t("chat.sections.referents"));
+            for (const a of hospAdmins) {
+                pushItem({
+                    thread: "patientStaff",
+                    patientId: selfId,
+                    peerRole: "admin",
+                    peerId: a.id,
+                    title: a.displayName,
+                    subtitle: a.subtitle || t("chat.sections.peerHospitalAdminDefault"),
+                    data: {
+                        title: a.displayName,
+                        userimg: imgUrl(a.profileImage),
+                        userdetailname: a.displayName,
+                        useraddress: a.department || departmentLabel,
+                        usersortname: a.firstName || "",
+                        usertelnumber: "—",
+                        userdob: "—",
+                        usergender: "—",
+                        userlanguage: "—",
+                    },
+                });
+            }
+        }
+
         const groupsPatient = Array.isArray(groups) ? groups : [];
         if (groupsPatient.length) {
             pushSection(t("chat.sections.groups"));
@@ -233,7 +274,7 @@ function buildSidebarRows(dc, session, groups = [], t) {
         return { rows, departmentLabel };
     }
 
-    if (session.role === "carecoordinator") {
+    if (session.role === "carecoordinator" || session.role === "admin") {
         const medSame = dc.doctors || [];
         const nurSame = dc.nurses || [];
         const plist = dc.assignedPatients || [];
@@ -300,6 +341,57 @@ function buildSidebarRows(dc, session, groups = [], t) {
                     userlanguage: "—",
                 },
             });
+        }
+        if (session.role === "admin") {
+            const coords = dc.coordinators || [];
+            if (coords.length) {
+                pushSection(t("chat.sections.coordinators"));
+                for (const c of coords) {
+                    pushItem({
+                        thread: "peer",
+                        peerRole: "carecoordinator",
+                        peerId: c.id,
+                        title: c.displayName,
+                        subtitle: c.subtitle || t("chat.sections.peerCoordinatorDefault"),
+                        data: {
+                            title: c.displayName,
+                            userimg: imgUrl(c.profileImage),
+                            userdetailname: c.displayName,
+                            useraddress: c.department || departmentLabel,
+                            usersortname: c.firstName || "",
+                            usertelnumber: "—",
+                            userdob: "—",
+                            usergender: "—",
+                            userlanguage: "—",
+                        },
+                    });
+                }
+            }
+        }
+        const hospPeers = dc.hospitalAdmins || [];
+        if (hospPeers.length) {
+            pushSection(t("chat.sections.hospitalAdmins"));
+            for (const a of hospPeers) {
+                if (String(a.id) === String(session.id)) continue;
+                pushItem({
+                    thread: "peer",
+                    peerRole: "admin",
+                    peerId: a.id,
+                    title: a.displayName,
+                    subtitle: a.subtitle || t("chat.sections.peerHospitalAdminDefault"),
+                    data: {
+                        title: a.displayName,
+                        userimg: imgUrl(a.profileImage),
+                        userdetailname: a.displayName,
+                        useraddress: a.department || departmentLabel,
+                        usersortname: a.firstName || "",
+                        usertelnumber: "—",
+                        userdob: "—",
+                        usergender: "—",
+                        userlanguage: "—",
+                    },
+                });
+            }
         }
         return { rows, departmentLabel };
     }
@@ -425,6 +517,30 @@ function buildSidebarRows(dc, session, groups = [], t) {
                 });
             }
         }
+        const hospAdminsDept = dc.hospitalAdmins || [];
+        if (hospAdminsDept.length) {
+            pushSection(t("chat.sections.hospitalAdmins"));
+            for (const a of hospAdminsDept) {
+                pushItem({
+                    thread: "peer",
+                    peerRole: "admin",
+                    peerId: a.id,
+                    title: a.displayName,
+                    subtitle: a.subtitle || t("chat.sections.peerHospitalAdminDefault"),
+                    data: {
+                        title: a.displayName,
+                        userimg: imgUrl(a.profileImage),
+                        userdetailname: a.displayName,
+                        useraddress: a.department || departmentLabel,
+                        usersortname: a.firstName || "",
+                        usertelnumber: "—",
+                        userdob: "—",
+                        usergender: "—",
+                        userlanguage: "—",
+                    },
+                });
+            }
+        }
         pushSection(t("chat.sections.allDoctors"));
         for (const d of doctorsAll) {
             if (idSameDoc.has(d.id)) continue;
@@ -505,7 +621,7 @@ function rowMatchesStaffSearch(def, rawQuery) {
 
 /** Filtre les lignes sidebar ; masque les sections vides. */
 function filterSidebarRowsForStaffSearch(rows, query, role) {
-    if (role !== "doctor" && role !== "nurse" && role !== "carecoordinator") return rows;
+    if (role !== "doctor" && role !== "nurse" && role !== "carecoordinator" && role !== "admin") return rows;
     if (!(query || "").trim()) return rows;
     const out = [];
     let i = 0;
@@ -667,6 +783,15 @@ const Chat = () => {
     const [createGroupError, setCreateGroupError] = useState("");
     const [creatingGroup, setCreatingGroup] = useState(false);
     const voiceCallRef = useRef(null);
+
+    const staffSearchRoles = useMemo(
+        () =>
+            session.role === "doctor" ||
+            session.role === "nurse" ||
+            session.role === "carecoordinator" ||
+            session.role === "admin",
+        [session.role],
+    );
 
     const SidebarToggle = () => {
         if (window.innerWidth < 990) {
@@ -1077,8 +1202,7 @@ const Chat = () => {
     };
 
     useEffect(() => {
-        const items =
-            session.role === "doctor" || session.role === "nurse" ? visibleSidebarItems : itemsOnlyAll;
+        const items = staffSearchRoles ? visibleSidebarItems : itemsOnlyAll;
         if (items.length === 0) return;
         const valid = new Set(items.map((i) => i.eventKey));
         if (!valid.has(activeKey)) {
@@ -1086,7 +1210,7 @@ const Chat = () => {
             setActiveKey(first.eventKey);
             loadThread(first.eventKey, first.def);
         }
-    }, [session.role, visibleSidebarItems, itemsOnlyAll, activeKey, loadThread]);
+    }, [staffSearchRoles, visibleSidebarItems, itemsOnlyAll, activeKey, loadThread]);
 
     if (!session.id) {
         const userData = STATIC_USER_DATA;
@@ -1329,8 +1453,7 @@ const Chat = () => {
         );
     }
 
-    const staffSearchActive =
-        (session.role === "doctor" || session.role === "nurse") && sidebarSearchQuery.trim().length > 0;
+    const staffSearchActive = staffSearchRoles && sidebarSearchQuery.trim().length > 0;
 
     return (
         <>
@@ -1364,7 +1487,7 @@ const Chat = () => {
                                     ></i>
                                 </div>
                             </div>
-                            {(session.role === "doctor" || session.role === "nurse") && (
+                            {staffSearchRoles && (
                                 <div className="form-group input-group mb-0 search-input chat-sidebar-search px-3 pb-3">
                                     <input
                                         type="text"
@@ -1619,7 +1742,17 @@ const Chat = () => {
                                         key={k}
                                         type="checkbox"
                                         id={`mg-${k.replace(/[^a-zA-Z0-9_-]/g, "_")}`}
-                                        label={`${m.label} (${m.role === "doctor" ? t("chat.roles.doctor") : m.role === "nurse" ? t("chat.roles.nurse") : t("chat.roles.patient")})`}
+                                        label={`${m.label} (${
+                                            m.role === "doctor"
+                                                ? t("chat.roles.doctor")
+                                                : m.role === "nurse"
+                                                  ? t("chat.roles.nurse")
+                                                  : m.role === "admin"
+                                                    ? t("chat.roles.admin")
+                                                    : m.role === "carecoordinator"
+                                                      ? t("chat.roles.carecoordinator")
+                                                      : t("chat.roles.patient")
+                                        })`}
                                         checked={selectedMemberKeys.has(k)}
                                         onChange={() => handleToggleMemberKey(k)}
                                         className="mb-1"

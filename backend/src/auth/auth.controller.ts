@@ -14,10 +14,14 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { DepartmentService } from '../department/department.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private departmentService: DepartmentService,
+  ) {}
 
   @Post('login')
   async login(@Body() body: { email: string; password: string }) {
@@ -130,7 +134,7 @@ export class AuthController {
     return this.authService.createAdmin(email, password);
   }
 
-  /** Création d’un compte administrateur (JWT super admin uniquement). */
+  /** Création d’un compte administrateur (super admin ou admin hospitalier = même département). */
   @UseGuards(JwtAuthGuard)
   @Post('admins')
   async createAdminAccount(
@@ -146,56 +150,106 @@ export class AuthController {
       phone?: string;
     },
   ) {
-    if (req.user.role !== 'superadmin') {
-      throw new ForbiddenException('Seul le super administrateur peut créer un compte administrateur');
-    }
     const email = body.email?.trim();
     if (!email || !body.password) {
       throw new BadRequestException('Email et mot de passe requis');
     }
-    return this.authService.createAdminWithCredentialsEmail(
-      email,
-      body.password,
-      body.name?.trim(),
-      body.department?.trim(),
-      body.firstName?.trim(),
-      body.lastName?.trim(),
-      body.phone?.trim(),
+    if (req.user.role === 'superadmin') {
+      return this.authService.createAdminWithCredentialsEmail(
+        email,
+        body.password,
+        body.name?.trim(),
+        body.department?.trim(),
+        body.firstName?.trim(),
+        body.lastName?.trim(),
+        body.phone?.trim(),
+      );
+    }
+    if (req.user.role === 'admin') {
+      const dept = await this.departmentService.resolveHospitalAdminDepartmentName(req.user);
+      if (!dept) {
+        throw new ForbiddenException('Aucun département assigné : impossible de créer un administrateur');
+      }
+      return this.authService.createAdminWithCredentialsEmail(
+        email,
+        body.password,
+        body.name?.trim(),
+        dept,
+        body.firstName?.trim(),
+        body.lastName?.trim(),
+        body.phone?.trim(),
+        { skipCatalogAssigneeGuardAndSync: true },
+      );
+    }
+    throw new ForbiddenException(
+      'Seuls le super administrateur et l’administrateur hospitalier peuvent créer un compte administrateur',
     );
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('admins')
-  async getAdmins() {
-    return this.authService.getUsersByRole('admin');
+  async getAdmins(@Request() req: any) {
+    const list = await this.authService.getUsersByRole('admin');
+    if (req.user.role === 'superadmin') return list;
+    if (req.user.role === 'admin') {
+      const dept = await this.departmentService.resolveHospitalAdminDepartmentName(req.user);
+      if (!dept) return [];
+      return list.filter((u: { department?: string }) => String(u.department || '').trim() === dept);
+    }
+    throw new ForbiddenException('Accès refusé');
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('admins/:id')
-  async getAdminById(@Param('id') id: string) {
+  async getAdminById(@Request() req: any, @Param('id') id: string) {
     const u = await this.authService.getUserById(id);
     if (u.role !== 'admin') {
       throw new NotFoundException('Administrateur non trouvé');
+    }
+    if (req.user.role === 'admin') {
+      const dept = await this.departmentService.resolveHospitalAdminDepartmentName(req.user);
+      if (!dept || String(u.department || '').trim() !== dept) {
+        throw new NotFoundException('Administrateur non trouvé');
+      }
+    } else if (req.user.role !== 'superadmin') {
+      throw new ForbiddenException('Accès refusé');
     }
     return u;
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('admins/:id')
-  async updateAdmin(@Param('id') id: string, @Body() body: any) {
+  async updateAdmin(@Request() req: any, @Param('id') id: string, @Body() body: any) {
     const u = await this.authService.getUserById(id);
     if (u.role !== 'admin') {
       throw new NotFoundException('Administrateur non trouvé');
+    }
+    if (req.user.role === 'admin') {
+      const dept = await this.departmentService.resolveHospitalAdminDepartmentName(req.user);
+      if (!dept || String(u.department || '').trim() !== dept) {
+        throw new ForbiddenException('Vous ne pouvez modifier que les administrateurs de votre département');
+      }
+      body = { ...body, department: dept };
+    } else if (req.user.role !== 'superadmin') {
+      throw new ForbiddenException('Accès refusé');
     }
     return this.authService.updateUser(id, body);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('admins/:id')
-  async deleteAdmin(@Param('id') id: string) {
+  async deleteAdmin(@Request() req: any, @Param('id') id: string) {
     const u = await this.authService.getUserById(id);
     if (u.role !== 'admin') {
       throw new NotFoundException('Administrateur non trouvé');
+    }
+    if (req.user.role === 'admin') {
+      const dept = await this.departmentService.resolveHospitalAdminDepartmentName(req.user);
+      if (!dept || String(u.department || '').trim() !== dept) {
+        throw new ForbiddenException('Vous ne pouvez supprimer que les administrateurs de votre département');
+      }
+    } else if (req.user.role !== 'superadmin') {
+      throw new ForbiddenException('Accès refusé');
     }
     return this.authService.deleteUser(id);
   }

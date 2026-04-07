@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Col, Row, Form, InputGroup } from "react-bootstrap";
 import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { superAdminApi } from "../../services/api";
 import ConfirmActionModal from "../../components/ConfirmActionModal";
 import { hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
@@ -17,6 +17,8 @@ function departmentBadgeLabel(department, t) {
 
 const AdminList = () => {
   const { t } = useTranslation();
+  const { pathname } = useLocation();
+  const adminsBase = pathname.startsWith("/admin/admins") ? "/admin/admins" : "/super-admin/admins";
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -100,7 +102,7 @@ const AdminList = () => {
                 <h4 className="card-title mb-0">{t("adminList.pageTitle")}</h4>
                 <p className="text-muted mb-0 small">{t("adminList.foundAdmins", { count: filtered.length })}</p>
               </div>
-              <Link to="/super-admin/admins/add" className="btn btn-primary btn-sm">
+              <Link to={`${adminsBase}/add`} className="btn btn-primary btn-sm">
                 <i className="ri-add-line me-1"></i>
                 {t("adminList.addAdmin")}
               </Link>
@@ -153,14 +155,14 @@ const AdminList = () => {
                           </div>
                           <div className="d-flex justify-content-center gap-2 mt-3">
                             <Link
-                              to={`/super-admin/admins/${a.id}`}
+                              to={`${adminsBase}/${a.id}`}
                               className="btn btn-sm btn-primary-subtle"
                               title={t("adminList.viewTitle")}
                             >
                               <i className="ri-eye-line"></i>
                             </Link>
                             <Link
-                              to={`/super-admin/admins/edit/${a.id}`}
+                              to={`${adminsBase}/edit/${a.id}`}
                               className="btn btn-sm btn-info-subtle"
                               title={t("adminList.editTitle")}
                             >

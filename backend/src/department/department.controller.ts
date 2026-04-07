@@ -24,8 +24,8 @@ export class DepartmentController {
 
   @UseGuards(JwtAuthGuard)
   @Get('summary')
-  async summary() {
-    return this.departmentService.listSummaries();
+  async summary(@Req() req: { user?: { id?: unknown; role?: string; department?: string } }) {
+    return this.departmentService.listSummariesForRequester(req.user || {});
   }
 
   /** Noms fusionnés pour les formulaires (patient, médecin, infirmier, coordinateur). */
@@ -150,8 +150,23 @@ export class DepartmentController {
 
   @UseGuards(JwtAuthGuard)
   @Get('users')
-  async usersByDepartment(@Query('department') department: string) {
-    return this.departmentService.getUsersByDepartment(department || '');
+  async usersByDepartment(
+    @Req() req: { user?: { id?: unknown; role?: string; department?: string } },
+    @Query('department') department: string,
+  ) {
+    let dept = String(department || '').trim();
+    const u = req.user;
+    if (u?.role === 'admin') {
+      const forced = await this.departmentService.resolveHospitalAdminDepartmentName(u);
+      if (!forced) {
+        throw new ForbiddenException('Aucun département assigné à votre compte administrateur');
+      }
+      if (dept && dept !== forced) {
+        throw new ForbiddenException('Accès limité à votre département');
+      }
+      dept = forced;
+    }
+    return this.departmentService.getUsersByDepartment(dept);
   }
 
   /** Statistiques agrégées pour le tableau de bord coordinateur. */

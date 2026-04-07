@@ -528,7 +528,10 @@ export class AuthService {
         id: u._id,
         email: u.email,
         name: u.name,
+        firstName: u.firstName,
+        lastName: u.lastName,
         role: u.role,
+        department: u.department || '',
         profileImage: u.profileImage,
         alternateEmail: u.alternateEmail,
         languages: u.languages || [],
@@ -729,6 +732,7 @@ export class AuthService {
     firstName?: string,
     lastName?: string,
     phone?: string,
+    options?: { skipCatalogAssigneeGuardAndSync?: boolean },
   ) {
     const dept = department?.trim() || undefined;
     const displayName =
@@ -736,7 +740,7 @@ export class AuthService {
 
     const existing = await this.userModel.findOne({ email }).exec();
 
-    if (dept) {
+    if (dept && !options?.skipCatalogAssigneeGuardAndSync) {
       const cat = await this.departmentCatalogModel.findOne({ name: dept }).exec();
       if (
         cat?.assignedAdminId &&
@@ -772,7 +776,7 @@ export class AuthService {
       const user = await this.userModel.create(data);
       userId = user._id as Types.ObjectId;
     }
-    if (dept) {
+    if (dept && !options?.skipCatalogAssigneeGuardAndSync) {
       await this.syncAdminCatalogEntry(userId, dept);
     }
     const final = await this.userModel.findById(userId).exec();
@@ -794,8 +798,9 @@ export class AuthService {
     firstName?: string,
     lastName?: string,
     phone?: string,
+    options?: { skipCatalogAssigneeGuardAndSync?: boolean },
   ) {
-    const result = await this.createAdmin(email, password, name, department, firstName, lastName, phone);
+    const result = await this.createAdmin(email, password, name, department, firstName, lastName, phone, options);
     let credentialsEmailSent = false;
     try {
       credentialsEmailSent = await this.emailService.sendAdminCredentials(

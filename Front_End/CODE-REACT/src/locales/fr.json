@@ -175,6 +175,7 @@
     "sectionDashboard": "Tableau de bord",
     "homeTooltip": "Accueil",
     "adminDashboard": "Tableau de bord admin",
+    "hospitalAdminSection": "Administration hospitalière",
     "careCoordinatorDashboard": "Tableau de bord coordinateur",
     "careCoordinatorPatients": "Patients du département",
     "careCoordinatorAppointments": "Rendez-vous du département",
@@ -182,6 +183,8 @@
     "departments": "Départements",
     "appointmentRequests": "Demandes de RDV",
     "questionnaireBank": "Banque questionnaires",
+    "hospitalAdminStaffSection": "Personnel du département",
+    "hospitalAdminStaffAdmins": "Administrateurs hospitaliers",
     "auditorSection": "Auditeur",
     "auditorDashboard": "Audit & activité",
     "auditorLogs": "Journaux d’audit",
@@ -1638,6 +1641,39 @@
     "signInButton": "Se connecter",
     "userSignInLink": "Connexion utilisateur"
   },
+  "hospitalAdminDashboard": {
+    "pageTitle": "Tableau de bord administrateur",
+    "subtitle": "Aperçu en direct MediFollow : départements couverts, rendez-vous et questionnaires.",
+    "loading": "Chargement du tableau de bord…",
+    "loadError": "Impossible de charger les données du tableau de bord.",
+    "superAdminHint": "Vous êtes connecté en super administrateur. Le hub plateforme se trouve sur le tableau de bord super admin.",
+    "openSuperDashboard": "Ouvrir le tableau de bord super admin",
+    "scopeFiltered": "Les chiffres ci-dessous portent sur {{count}} département(s) lié(s) à votre compte administrateur.",
+    "scopeOverview": "Les chiffres agrègent tous les départements visibles dans le récapitulatif de l’hôpital.",
+    "statPatients": "Patients",
+    "statStaff": "Personnel soignant",
+    "statPending": "Demandes de rendez-vous en attente",
+    "statQuestionnaires": "Éléments questionnaires",
+    "viewDetails": "Voir détails",
+    "viewAll": "Tout voir",
+    "distributionTitle": "Patients et personnel (périmètre)",
+    "distributionSubtitle": "Inscriptions patients vs médecins et infirmiers (résumé par département).",
+    "chartPatients": "Patients",
+    "chartStaff": "Personnel",
+    "chartSeries": "Effectifs",
+    "recentPendingTitle": "Demandes récentes en attente",
+    "emptyRecentPending": "Aucune demande de rendez-vous en attente.",
+    "upcomingTitle": "Rendez-vous confirmés à venir",
+    "emptyUpcoming": "Aucun rendez-vous confirmé à venir.",
+    "manageAppointments": "Gérer",
+    "thPatient": "Patient",
+    "thDateTime": "Date et heure",
+    "quickLinksTitle": "Raccourcis",
+    "linkDepartments": "Départements",
+    "linkAppointments": "Rendez-vous",
+    "linkQuestionnaires": "Questionnaires",
+    "linkProfile": "Mon profil"
+  },
   "adminDepartments": {
     "eyebrow": "Administration",
     "pageTitle": "Départements hospitaliers",
@@ -1964,6 +2000,8 @@
     "placeholderAddress2": "Complément",
     "department": "Département hospitalier :",
     "selectDepartment": "Sélectionner un département",
+    "departmentRequiredAdmin": "Votre département n’a pas pu être déterminé. Vérifiez votre affectation ou reconnectez-vous.",
+    "deptLoading": "Chargement du département…",
     "country": "Pays :",
     "phone": "Téléphone :",
     "altContact": "Contact alternatif :",
@@ -2596,6 +2634,7 @@
     }
   },
   "chat": {
+    "superAdminChatHint": "En tant que super administrateur, vous pouvez écrire à des contacts de tous les services. Choisissez une conversation ci-dessous.",
     "sections": {
       "myFollowUp": "Mon suivi",
       "patientThreadTitle": "Mon fil patient",
@@ -2677,7 +2716,9 @@
     "roles": {
       "doctor": "Médecin",
       "nurse": "IDE",
-      "patient": "Patient"
+      "patient": "Patient",
+      "admin": "Administrateur hospitalier",
+      "carecoordinator": "Coordinateur de soins"
     },
     "voice": {
       "contactFallback": "Contact",

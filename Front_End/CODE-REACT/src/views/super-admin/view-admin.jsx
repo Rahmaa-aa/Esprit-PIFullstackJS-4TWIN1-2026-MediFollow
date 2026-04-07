@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Row, Col, Card, Button, Badge, Spinner, Alert } from "react-bootstrap";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { superAdminApi } from "../../services/api";
 import { hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
@@ -22,6 +22,8 @@ const ViewAdmin = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const adminsBase = pathname.startsWith("/admin/admins") ? "/admin/admins" : "/super-admin/admins";
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -74,11 +76,11 @@ const ViewAdmin = () => {
               {t("superAdminViewAdmin.profileTitle")}
             </h5>
             <div className="d-flex gap-2">
-              <Link to={`/super-admin/admins/edit/${id}`} className="btn btn-sm btn-light">
+              <Link to={`${adminsBase}/edit/${id}`} className="btn btn-sm btn-light">
                 <i className="ri-edit-line me-1"></i>
                 {t("superAdminViewAdmin.edit")}
               </Link>
-              <Button variant="outline-light" size="sm" onClick={() => navigate("/super-admin/admins")}>
+              <Button variant="outline-light" size="sm" onClick={() => navigate(adminsBase)}>
                 <i className="ri-arrow-left-line me-1"></i>
                 {t("superAdminViewAdmin.back")}
               </Button>

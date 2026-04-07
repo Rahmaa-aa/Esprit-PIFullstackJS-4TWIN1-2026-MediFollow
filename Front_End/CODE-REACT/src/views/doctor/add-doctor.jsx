@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { doctorApi } from "../../services/api";
 import { HOSPITAL_DEPARTMENTS, hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
 import { fetchMergedDepartmentNames } from "../../utils/mergedDepartmentNames";
+import { fetchHospitalAdminDepartmentName } from "../../utils/hospitalAdminDepartment";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 
@@ -37,7 +38,7 @@ const COUNTRIES = [
   { name: "Tunisie", labelKey: "countryTunisia", code: "TN", dialCode: "+216", flagUrl: `${FLAG_CDN}/tn.png` },
 ];
 
-const AddDoctor = () => {
+const AddDoctor = ({ hospitalAdminMode = false }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -45,10 +46,35 @@ const AddDoctor = () => {
   const [profilePreview, setProfilePreview] = useState(generatePath("/assets/images/user/11.png"));
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [deptOptions, setDeptOptions] = useState(HOSPITAL_DEPARTMENTS);
+  const [fixedDepartment, setFixedDepartment] = useState("");
 
   useEffect(() => {
-    fetchMergedDepartmentNames().then(setDeptOptions);
-  }, []);
+    if (!hospitalAdminMode) {
+      fetchMergedDepartmentNames().then(setDeptOptions);
+    }
+  }, [hospitalAdminMode]);
+
+  useEffect(() => {
+    if (!hospitalAdminMode) return;
+    let cancelled = false;
+    (async () => {
+      let u = null;
+      try {
+        u = JSON.parse(localStorage.getItem("adminUser") || "null");
+      } catch {
+        u = null;
+      }
+      if (!u || u.role !== "admin") {
+        navigate("/admin/dashboard", { replace: true });
+        return;
+      }
+      const d = await fetchHospitalAdminDepartmentName();
+      if (!cancelled) setFixedDepartment(d);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hospitalAdminMode, navigate]);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -82,6 +108,13 @@ const AddDoctor = () => {
 
     const profileImage = profilePreview.startsWith("data:") ? profilePreview : generatePath("/assets/images/user/11.png");
 
+    const department = hospitalAdminMode ? fixedDepartment : form.cname?.value;
+    if (hospitalAdminMode && !String(department || "").trim()) {
+      setError(t("addDoctor.departmentRequiredAdmin"));
+      setLoading(false);
+      return;
+    }
+
     try {
       await doctorApi.create({
         firstName: form.fname?.value,
@@ -89,7 +122,7 @@ const AddDoctor = () => {
         email: form.email?.value,
         password,
         specialty: form.selectuserrole?.value,
-        department: form.cname?.value,
+        department,
         phone: (() => {
           const country = COUNTRIES.find((c) => c.name === form.selectcountry?.value);
           const prefix = country?.dialCode ? `${country.dialCode} ` : "";
@@ -106,7 +139,7 @@ const AddDoctor = () => {
         linkedinUrl: form.lurl?.value,
         profileImage,
       });
-      navigate("/doctor/doctor-list");
+      navigate(hospitalAdminMode ? "/admin/doctor-list" : "/doctor/doctor-list");
     } catch (err) {
       if (err.status === 401) {
         navigate("/auth/lock-screen");
@@ -210,14 +243,23 @@ const AddDoctor = () => {
                     </Col>
                     <Col sm={12} className="form-group">
                       <Form.Label className="mb-0">{t("addDoctor.department")}</Form.Label>
-                      <Form.Control as="select" className="my-2" name="cname" required>
-                        <option value="">{t("addDoctor.selectDepartment")}</option>
-                        {deptOptions.map((d) => (
-                          <option key={d} value={d}>
-                            {hospitalDepartmentLabel(d, t)}
-                          </option>
-                        ))}
-                      </Form.Control>
+                      {hospitalAdminMode ? (
+                        <Form.Control
+                          className="my-2"
+                          readOnly
+                          disabled
+                          value={fixedDepartment ? hospitalDepartmentLabel(fixedDepartment, t) : t("addDoctor.deptLoading")}
+                        />
+                      ) : (
+                        <Form.Control as="select" className="my-2" name="cname" required>
+                          <option value="">{t("addDoctor.selectDepartment")}</option>
+                          {deptOptions.map((d) => (
+                            <option key={d} value={d}>
+                              {hospitalDepartmentLabel(d, t)}
+                            </option>
+                          ))}
+                        </Form.Control>
+                      )}
                     </Col>
                     <Col sm={12} className="form-group">
                       <Form.Label className="mb-0">{t("addDoctor.country")}</Form.Label>

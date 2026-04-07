@@ -175,6 +175,7 @@
     "sectionDashboard": "لوحة التحكم",
     "homeTooltip": "الرئيسية",
     "adminDashboard": "لوحة تحكم المشرف",
+    "hospitalAdminSection": "إدارة المستشفى",
     "careCoordinatorDashboard": "لوحة منسّق الرعاية",
     "careCoordinatorPatients": "مرضى القسم",
     "careCoordinatorAppointments": "مواعيد القسم",
@@ -182,6 +183,8 @@
     "departments": "الأقسام",
     "appointmentRequests": "طلبات المواعيد",
     "questionnaireBank": "بنك الاستبيانات",
+    "hospitalAdminStaffSection": "طاقم القسم",
+    "hospitalAdminStaffAdmins": "مديرو المستشفى",
     "auditorSection": "المدقّق",
     "auditorDashboard": "التدقيق والنشاط",
     "auditorLogs": "سجلات التدقيق",
@@ -1646,6 +1649,39 @@
     "signInButton": "تسجيل الدخول",
     "userSignInLink": "دخول المستخدم"
   },
+  "hospitalAdminDashboard": {
+    "pageTitle": "لوحة تحكم المشرف",
+    "subtitle": "نظرة مباشرة من MediFollow: الأقسام والمواعيد والاستبيانات.",
+    "loading": "جاري تحميل لوحة التحكم…",
+    "loadError": "تعذر تحميل بيانات لوحة التحكم.",
+    "superAdminHint": "أنت مسجل كمشرف عام. مركز المنصة موجود في لوحة المشرف العام.",
+    "openSuperDashboard": "فتح لوحة المشرف العام",
+    "scopeFiltered": "الأرقام أدناه تركز على {{count}} قسم مرتبط(ة) بحساب المشرف.",
+    "scopeOverview": "الأرقام تجمع جميع الأقسام الظاهرة في ملخص المستشفى.",
+    "statPatients": "المرضى",
+    "statStaff": "طاقم الرعاية",
+    "statPending": "طلبات مواعيد قيد الانتظار",
+    "statQuestionnaires": "عناصر الاستبيان",
+    "viewDetails": "عرض التفاصيل",
+    "viewAll": "عرض الكل",
+    "distributionTitle": "المرضى والطاقم (النطاق)",
+    "distributionSubtitle": "تسجيلات المرضى مقابل الأطباء والممرضين (ملخص الأقسام).",
+    "chartPatients": "المرضى",
+    "chartStaff": "الطاقم",
+    "chartSeries": "الأعداد",
+    "recentPendingTitle": "أحدث الطلبات المعلقة",
+    "emptyRecentPending": "لا توجد طلبات مواعيد معلقة.",
+    "upcomingTitle": "مواعيد مؤكدة قادمة",
+    "emptyUpcoming": "لا توجد مواعيد مؤكدة قادمة.",
+    "manageAppointments": "إدارة",
+    "thPatient": "المريض",
+    "thDateTime": "التاريخ والوقت",
+    "quickLinksTitle": "اختصارات",
+    "linkDepartments": "الأقسام",
+    "linkAppointments": "المواعيد",
+    "linkQuestionnaires": "الاستبيانات",
+    "linkProfile": "ملفي الشخصي"
+  },
   "adminDepartments": {
     "eyebrow": "الإدارة",
     "pageTitle": "الأقسام الطبية",
@@ -1988,6 +2024,8 @@
     "placeholderAddress2": "تكميلي",
     "department": "قسم المستشفى:",
     "selectDepartment": "اختر قسمًا",
+    "departmentRequiredAdmin": "تعذّر تحديد قسمك. تحقق من التعيين أو أعد تسجيل الدخول.",
+    "deptLoading": "جاري تحميل القسم…",
     "country": "البلد:",
     "phone": "الهاتف:",
     "altContact": "جهة اتصال بديلة:",
@@ -2632,6 +2670,7 @@
     }
   },
   "chat": {
+    "superAdminChatHint": "بصفتك المشرف الأعلى يمكنك مراسلة جهات الاتصال في كل الأقسام. اختر محادثة أدناه.",
     "sections": {
       "myFollowUp": "متابعتي",
       "patientThreadTitle": "سلسلة رسائلي كمريض",
@@ -2654,12 +2693,14 @@
       "nursesSameDept": "ممرضون — نفس القسم",
       "allDoctors": "جميع الأطباء",
       "allNurses": "جميع الممرضين",
-      "groupShort": "مج"
+      "groupShort": "مج",
+      "hospitalAdmins": "مديرو المستشفى",
+      "peerHospitalAdminDefault": "مدير مستشفى"
     },
     "sidebar": {
       "teamSameService": "الفريق — نفس القسم",
       "searchPlaceholder": "بحث (اسم، أحرف أولى…)",
-      "searchAriaLabel": "البحث عن مريض أو طبيب أو ممرض",
+      "searchAriaLabel": "البحث عن مريض أو طبيب أو ممرض أو منسّق رعاية أو مدير مستشفى",
       "createGroup": "إنشاء مجموعة",
       "allHidden": "جميع المحادثات مخفية.",
       "restoreHidden": "استعادة المحادثات المخفية",
@@ -2713,7 +2754,9 @@
     "roles": {
       "doctor": "طبيب",
       "nurse": "ممرض",
-      "patient": "مريض"
+      "patient": "مريض",
+      "admin": "مدير مستشفى",
+      "carecoordinator": "منسّق رعاية"
     },
     "voice": {
       "contactFallback": "جهة اتصال",

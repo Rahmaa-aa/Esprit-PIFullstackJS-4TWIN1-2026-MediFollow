@@ -266,7 +266,7 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
     /** Détection d’émotions (FER / faceExpressionNet) sur le flux du patient : local si patient, distant si soignant. */
     useEffect(() => {
         const role = session?.role;
-        const staffRoles = ["doctor", "nurse", "carecoordinator"];
+        const staffRoles = ["doctor", "nurse", "carecoordinator", "admin"];
         const isAnalyzing =
             mediaMode === "video" &&
             !camOff &&

@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from '../auth/auth.module';
 import { DoctorAvailabilityModule } from '../doctor-availability/doctor-availability.module';
 import { NotificationModule } from '../notification/notification.module';
+import { DepartmentModule } from '../department/department.module';
 import { Appointment, AppointmentSchema } from './schemas/appointment.schema';
 import { Patient, PatientSchema } from '../patient/schemas/patient.schema';
 import { AppointmentService } from './appointment.service';
@@ -17,6 +18,7 @@ import { AppointmentController } from './appointment.controller';
     AuthModule,
     DoctorAvailabilityModule,
     NotificationModule,
+    DepartmentModule,
   ],
   controllers: [AppointmentController],
   providers: [AppointmentService],

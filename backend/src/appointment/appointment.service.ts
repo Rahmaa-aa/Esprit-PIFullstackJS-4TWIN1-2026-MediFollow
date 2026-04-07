@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Appointment } from './schemas/appointment.schema';
@@ -10,6 +10,7 @@ import {
   normalizeTime,
 } from '../doctor-availability/doctor-availability.service';
 import { NotificationService } from '../notification/notification.service';
+import { DepartmentService } from '../department/department.service';
 
 @Injectable()
 export class AppointmentService {
@@ -18,6 +19,7 @@ export class AppointmentService {
     @InjectModel(Patient.name) private patientModel: Model<Patient>,
     private doctorAvailabilityService: DoctorAvailabilityService,
     private notificationService: NotificationService,
+    private departmentService: DepartmentService,
   ) {}
 
   private toObjectId(id: string) {
@@ -188,6 +190,91 @@ export class AppointmentService {
       .exec();
   }
 
+  /** Demandes en attente : superadmin = tout ; admin hospitalier = patients de son département. */
+  async findPendingForAdminUser(user: { id?: unknown; role?: string; department?: string }) {
+    const role = user?.role;
+    if (role === 'superadmin') {
+      return this.findPending();
+    }
+    if (role !== 'admin') {
+      return [];
+    }
+    const dept = await this.departmentService.resolveHospitalAdminDepartmentName(user);
+    if (!dept) return [];
+    const patients = await this.patientModel.find(this.patientDeptFilter(dept)).select('_id').lean().exec();
+    const ids = patients.map((p: { _id: Types.ObjectId }) => p._id);
+    if (!ids.length) return [];
+    return this.appointmentModel
+      .find({ status: 'pending', patientId: { $in: ids } })
+      .sort({ createdAt: -1 })
+      .populate('patientId', 'firstName lastName email phone')
+      .lean()
+      .exec();
+  }
+
+  /** RDV confirmés à venir : superadmin = tout ; admin = périmètre département. */
+  async findConfirmedUpcomingForAdminUser(user: { id?: unknown; role?: string; department?: string }) {
+    const role = user?.role;
+    if (role === 'superadmin') {
+      return this.findConfirmedUpcomingForAdmin();
+    }
+    if (role !== 'admin') {
+      return [];
+    }
+    const dept = await this.departmentService.resolveHospitalAdminDepartmentName(user);
+    if (!dept) return [];
+    const today = this.localTodayYmd();
+    const patients = await this.patientModel.find(this.patientDeptFilter(dept)).select('_id').lean().exec();
+    const ids = patients.map((p: { _id: Types.ObjectId }) => p._id);
+    if (!ids.length) return [];
+    return this.appointmentModel
+      .find({
+        patientId: { $in: ids },
+        status: { $in: ['confirmed', 'scheduled'] },
+        date: { $gte: today },
+      })
+      .populate('patientId', 'firstName lastName email phone')
+      .sort({ date: 1, time: 1 })
+      .limit(100)
+      .lean()
+      .exec();
+  }
+
+  private async assertHospitalAdminCanManageAppointment(
+    user: { id?: unknown; role?: string; department?: string },
+    appointmentId: string,
+  ) {
+    if (user?.role === 'superadmin') return;
+    if (user?.role !== 'admin') {
+      throw new ForbiddenException('Accès administrateur requis');
+    }
+    const dept = await this.departmentService.resolveHospitalAdminDepartmentName(user);
+    if (!dept) {
+      throw new ForbiddenException('Aucun département assigné à votre profil');
+    }
+    const appt = await this.appointmentModel.findById(appointmentId).lean().exec();
+    if (!appt) {
+      throw new NotFoundException('Rendez-vous introuvable');
+    }
+    const rawPid = (appt as { patientId?: unknown }).patientId;
+    const pidStr =
+      rawPid && typeof rawPid === 'object' && rawPid !== null && '_id' in (rawPid as object)
+        ? String((rawPid as { _id: unknown })._id)
+        : String(rawPid ?? '');
+    if (!pidStr) {
+      throw new BadRequestException('Rendez-vous sans patient');
+    }
+    const match = await this.patientModel
+      .exists({
+        _id: this.toObjectId(pidStr),
+        ...this.patientDeptFilter(dept),
+      })
+      .exec();
+    if (!match) {
+      throw new ForbiddenException("Ce rendez-vous n'appartient pas à votre département");
+    }
+  }
+
   /** Patients du département (department ou service) — aligné DepartmentService. */
   private patientDeptFilter(name: string) {
     return {
@@ -220,6 +307,15 @@ export class AppointmentService {
       .limit(500)
       .lean()
       .exec();
+  }
+
+  async updateAsAdminUser(
+    user: { id?: unknown; role?: string; department?: string },
+    id: string,
+    data: any,
+  ) {
+    await this.assertHospitalAdminCanManageAppointment(user, id);
+    return this.update(id, data);
   }
 
   async update(id: string, data: any) {

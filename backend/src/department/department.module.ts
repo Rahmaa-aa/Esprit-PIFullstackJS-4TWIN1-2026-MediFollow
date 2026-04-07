@@ -27,5 +27,6 @@ import { DepartmentCatalog, DepartmentCatalogSchema } from './schemas/department
   ],
   controllers: [DepartmentController],
   providers: [DepartmentService, CareCoordinatorFollowupService],
+  exports: [DepartmentService, CareCoordinatorFollowupService],
 })
 export class DepartmentModule {}

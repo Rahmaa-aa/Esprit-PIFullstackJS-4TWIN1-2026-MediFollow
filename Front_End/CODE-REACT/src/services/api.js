@@ -26,7 +26,7 @@ const getValidToken = () => {
     if (localStorage.getItem("adminUser")) {
       try {
         const u = JSON.parse(localStorage.getItem("adminUser") || "null");
-        if (u?.role === "carecoordinator") {
+        if (["carecoordinator", "admin", "superadmin", "auditor"].includes(u?.role)) {
           const t = okToken(localStorage.getItem("adminToken"));
           if (t) return t;
         }
@@ -709,16 +709,22 @@ export const superAdminApi = {
   updateCareCoordinator: (id, data) => api.put(`/auth/care-coordinators/${id}`, data),
   deleteCareCoordinator: (id) => api.delete(`/auth/care-coordinators/${id}`),
 };
+
+/** Session plateforme (admin hospitalier, coordinateur, super admin) pour /chat avec adminToken. */
+function chatUsesAdminToken() {
+  try {
+    const u = JSON.parse(localStorage.getItem("adminUser") || "null");
+    return ["carecoordinator", "admin", "superadmin"].includes(u?.role);
+  } catch {
+    return false;
+  }
+}
+
 /** Messagerie équipe soignante (JWT patient / médecin / infirmier). */
 export const chatApi = {
   getDepartmentContacts: () => {
-    try {
-      const u = JSON.parse(localStorage.getItem("adminUser") || "null");
-      if (u?.role === "carecoordinator") {
-        return api.getWithAdminToken("/chat/department-contacts");
-      }
-    } catch {
-      /* ignore */
+    if (chatUsesAdminToken()) {
+      return api.getWithAdminToken("/chat/department-contacts");
     }
     if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
       return api.getWithDoctorToken("/chat/department-contacts");
@@ -755,13 +761,8 @@ export const chatApi = {
     return api.post("/chat/groups", payload);
   },
   getConversations: () => {
-    try {
-      const u = JSON.parse(localStorage.getItem("adminUser") || "null");
-      if (u?.role === "carecoordinator") {
-        return api.getWithAdminToken("/chat/conversations");
-      }
-    } catch {
-      /* ignore */
+    if (chatUsesAdminToken()) {
+      return api.getWithAdminToken("/chat/conversations");
     }
     if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
       return api.getWithDoctorToken("/chat/conversations");
@@ -781,7 +782,10 @@ export const chatApi = {
       arg1 &&
       typeof arg1 === "object" &&
       !Array.isArray(arg1) &&
-      (arg1.peerRole === "doctor" || arg1.peerRole === "nurse" || arg1.peerRole === "carecoordinator") &&
+      (arg1.peerRole === "doctor" ||
+        arg1.peerRole === "nurse" ||
+        arg1.peerRole === "carecoordinator" ||
+        arg1.peerRole === "admin") &&
       arg1.peerId;
     const q = new URLSearchParams();
     if (isGroup) {
@@ -799,13 +803,8 @@ export const chatApi = {
       if (params.limit != null) q.set("limit", String(params.limit));
       const qs = q.toString();
       const path = `/chat/messages/${encodeURIComponent(patientId)}${qs ? `?${qs}` : ""}`;
-      try {
-        const u = JSON.parse(localStorage.getItem("adminUser") || "null");
-        if (u?.role === "carecoordinator") {
-          return api.getWithAdminToken(path);
-        }
-      } catch {
-        /* ignore */
+      if (chatUsesAdminToken()) {
+        return api.getWithAdminToken(path);
       }
       if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
         return api.getWithDoctorToken(path);
@@ -820,13 +819,8 @@ export const chatApi = {
     }
     const path = `/chat/messages?${q.toString()}`;
     if (isGroup || isPeer) {
-      try {
-        const u = JSON.parse(localStorage.getItem("adminUser") || "null");
-        if (u?.role === "carecoordinator") {
-          return api.getWithAdminToken(path);
-        }
-      } catch {
-        /* ignore */
+      if (chatUsesAdminToken()) {
+        return api.getWithAdminToken(path);
       }
       if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
         return api.getWithDoctorToken(path);
@@ -851,13 +845,8 @@ export const chatApi = {
       data.peerRole = payload.peerRole;
       data.peerId = payload.peerId;
     }
-    try {
-      const u = JSON.parse(localStorage.getItem("adminUser") || "null");
-      if (u?.role === "carecoordinator") {
-        return api.postWithAdminToken("/chat/messages", data);
-      }
-    } catch {
-      /* ignore */
+    if (chatUsesAdminToken()) {
+      return api.postWithAdminToken("/chat/messages", data);
     }
     if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
       return api.postWithDoctorToken("/chat/messages", data);
@@ -876,13 +865,8 @@ export const chatApi = {
   sendMediaMessage: (formData) => api.postMultipart("/chat/messages/media", formData),
   markRead: (patientId) => {
     const path = `/chat/read/${encodeURIComponent(patientId)}`;
-    try {
-      const u = JSON.parse(localStorage.getItem("adminUser") || "null");
-      if (u?.role === "carecoordinator") {
-        return api.patchWithAdminToken(path, {});
-      }
-    } catch {
-      /* ignore */
+    if (chatUsesAdminToken()) {
+      return api.patchWithAdminToken(path, {});
     }
     if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
       return api.patchWithDoctorToken(path, {});
@@ -897,13 +881,8 @@ export const chatApi = {
   },
   markReadPeer: (peerRole, peerId) => {
     const path = `/chat/read-peer?peerRole=${encodeURIComponent(peerRole)}&peerId=${encodeURIComponent(peerId)}`;
-    try {
-      const u = JSON.parse(localStorage.getItem("adminUser") || "null");
-      if (u?.role === "carecoordinator") {
-        return api.patchWithAdminToken(path, {});
-      }
-    } catch {
-      /* ignore */
+    if (chatUsesAdminToken()) {
+      return api.patchWithAdminToken(path, {});
     }
     if (typeof localStorage !== "undefined" && localStorage.getItem("doctorUser")) {
       return api.patchWithDoctorToken(path, {});
@@ -1170,7 +1149,7 @@ export const appointmentApi = {
     api.getWithAdminToken("/appointments/coordinator/my-department"),
   update: (id, data) => api.put(`/appointments/${id}`, data),
   /** Mise à jour côté admin (jeton admin explicite) */
-  updateAsAdmin: (id, data) => api.putWithAdminToken(`/appointments/${id}`, data),
+  updateAsAdmin: (id, data) => api.putWithAdminToken(`/appointments/admin/${encodeURIComponent(id)}`, data),
   remove: (id) => api.delete(`/appointments/${id}`),
 };
 

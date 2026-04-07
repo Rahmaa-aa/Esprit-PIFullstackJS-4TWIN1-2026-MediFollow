@@ -175,6 +175,7 @@
     "sectionDashboard": "Dashboard",
     "homeTooltip": "Home",
     "adminDashboard": "Admin dashboard",
+    "hospitalAdminSection": "Hospital administration",
     "careCoordinatorDashboard": "Care coordinator dashboard",
     "careCoordinatorPatients": "Department patients",
     "careCoordinatorAppointments": "Department appointments",
@@ -182,6 +183,8 @@
     "departments": "Departments",
     "appointmentRequests": "Appointment requests",
     "questionnaireBank": "Questionnaire bank",
+    "hospitalAdminStaffSection": "Department staff",
+    "hospitalAdminStaffAdmins": "Hospital administrators",
     "auditorSection": "Auditor",
     "auditorDashboard": "Audit & activity",
     "auditorLogs": "Audit logs",
@@ -1006,6 +1009,7 @@
     "departmentEmptyOption": "No department available — add one under Departments or unassign an admin first.",
     "departmentLoadError": "Could not load departments. Refresh the page or try again later.",
     "departmentRequired": "Select a department.",
+    "departmentRequiredAdmin": "Your department could not be determined. Check your assignment or try logging in again.",
     "passwordMismatch": "Passwords do not match.",
     "passwordMin": "Password must be at least 6 characters.",
     "createSuccess": "Administrator account created.",
@@ -1638,6 +1642,39 @@
     "signInButton": "Sign in",
     "userSignInLink": "User sign-in"
   },
+  "hospitalAdminDashboard": {
+    "pageTitle": "Administrator dashboard",
+    "subtitle": "Live overview from MediFollow: departments you cover, appointments, and questionnaires.",
+    "loading": "Loading dashboard…",
+    "loadError": "Unable to load dashboard data.",
+    "superAdminHint": "You are signed in as super admin. The platform hub lives on the super admin dashboard.",
+    "openSuperDashboard": "Open super admin dashboard",
+    "scopeFiltered": "Figures below focus on {{count}} department(s) linked to your administrator account.",
+    "scopeOverview": "Figures aggregate all departments visible in your hospital summary.",
+    "statPatients": "Patients",
+    "statStaff": "Care staff",
+    "statPending": "Pending appointment requests",
+    "statQuestionnaires": "Questionnaire items",
+    "viewDetails": "View details",
+    "viewAll": "View all",
+    "distributionTitle": "Patients and staff in scope",
+    "distributionSubtitle": "Patient registrations vs physicians and nurses (from department summary).",
+    "chartPatients": "Patients",
+    "chartStaff": "Staff",
+    "chartSeries": "Headcount",
+    "recentPendingTitle": "Recent pending requests",
+    "emptyRecentPending": "No pending appointment requests.",
+    "upcomingTitle": "Upcoming confirmed appointments",
+    "emptyUpcoming": "No upcoming confirmed appointments.",
+    "manageAppointments": "Manage",
+    "thPatient": "Patient",
+    "thDateTime": "Date & time",
+    "quickLinksTitle": "Shortcuts",
+    "linkDepartments": "Departments",
+    "linkAppointments": "Appointments",
+    "linkQuestionnaires": "Questionnaires",
+    "linkProfile": "My profile"
+  },
   "adminDepartments": {
     "eyebrow": "Administration",
     "pageTitle": "Hospital departments",
@@ -1936,7 +1973,10 @@
     "specialtyOrthopedicsSpecial": "Orthopedics — specialty",
     "specialtyAnesthesiologists": "Anesthesiologists",
     "specialtyGeneral": "General",
-    "specialtyMD": "M.D."
+    "specialtyMD": "M.D.",
+    "departmentRequiredAdmin": "Your department could not be determined. Check your assignment or try logging in again.",
+    "deptLoading": "Loading department…",
+    "departmentLockedHint": "Set automatically for your hospital department."
   },
   "addNurse": {
     "pageTitleAdd": "Add nurse",
@@ -1964,6 +2004,8 @@
     "placeholderAddress2": "Additional line",
     "department": "Hospital department:",
     "selectDepartment": "Select a department",
+    "departmentRequiredAdmin": "Your department could not be determined. Check your assignment or try logging in again.",
+    "deptLoading": "Loading department…",
     "country": "Country:",
     "phone": "Phone:",
     "altContact": "Alternate contact:",
@@ -2007,7 +2049,9 @@
     "specialtyOncologyNurse": "Oncology",
     "specialtyPsychiatryNurse": "Psychiatry",
     "specialtyMidwifery": "Midwifery",
-    "specialtyGeneral": "General"
+    "specialtyGeneral": "General",
+    "departmentRequiredAdmin": "Your department could not be determined. Check your assignment or try logging in again.",
+    "deptLoading": "Loading department…"
   },
   "patientList": {
     "loadError": "Unable to load patients.",
@@ -2095,7 +2139,9 @@
     "countryUSA": "United States",
     "countryMorocco": "Morocco",
     "countryAlgeria": "Algeria",
-    "countryTunisia": "Tunisia"
+    "countryTunisia": "Tunisia",
+    "departmentRequiredAdmin": "Your department could not be determined. Check your assignment or try logging in again.",
+    "deptLoading": "Loading department…"
   },
   "nurseList": {
     "loadError": "Unable to load nurses.",
@@ -2596,6 +2642,7 @@
     }
   },
   "chat": {
+    "superAdminChatHint": "As super admin you can message any department contact. Pick a thread below.",
     "sections": {
       "myFollowUp": "My follow-up",
       "patientThreadTitle": "My patient thread",
@@ -2618,12 +2665,14 @@
       "nursesSameDept": "Nurses — same department",
       "allDoctors": "All physicians",
       "allNurses": "All nurses",
-      "groupShort": "Gr"
+      "groupShort": "Gr",
+      "hospitalAdmins": "Hospital administrators",
+      "peerHospitalAdminDefault": "Hospital administrator"
     },
     "sidebar": {
       "teamSameService": "Team — same department",
       "searchPlaceholder": "Search (name, initials…)",
-      "searchAriaLabel": "Search for a patient, physician or nurse",
+      "searchAriaLabel": "Search for a patient, physician, nurse, care coordinator, or hospital administrator",
       "createGroup": "Create group",
       "allHidden": "All conversations are hidden.",
       "restoreHidden": "Restore hidden conversations",
@@ -2677,7 +2726,9 @@
     "roles": {
       "doctor": "Physician",
       "nurse": "RN",
-      "patient": "Patient"
+      "patient": "Patient",
+      "admin": "Hospital administrator",
+      "carecoordinator": "Care coordinator"
     },
     "voice": {
       "contactFallback": "Contact",

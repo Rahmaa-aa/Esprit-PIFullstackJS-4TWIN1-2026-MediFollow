@@ -29,7 +29,7 @@ function peerThreadKey(
 /** Fil dédié patient ↔ médecin, infirmier ou coordinateur (distinct du fil « équipe » partagé). */
 function patientStaffThreadKey(
   patientId: string,
-  staffRole: 'doctor' | 'nurse' | 'carecoordinator',
+  staffRole: 'doctor' | 'nurse' | 'carecoordinator' | 'admin',
   staffId: string,
 ): string {
   return peerThreadKey({ role: 'patient', id: patientId }, { role: staffRole, id: staffId });
@@ -104,6 +104,17 @@ export class ChatService {
       if (this.deptMatches(pDept, coordDept)) return;
       throw new ForbiddenException('Patient hors département');
     }
+    if (role === 'admin') {
+      let adminDept = String((user as JwtUser).department || '').trim();
+      if (!adminDept) {
+        const row = await this.userModel.findById(uid).select('department').lean().exec();
+        adminDept = String((row as any)?.department || '').trim();
+      }
+      if (!adminDept) throw new ForbiddenException('Département manquant');
+      const pDept = ((p as any).department || (p as any).service || '').trim();
+      if (this.deptMatches(pDept, adminDept)) return;
+      throw new ForbiddenException('Patient hors département');
+    }
     throw new ForbiddenException('Rôle non autorisé pour la messagerie soignant');
   }
 
@@ -118,32 +129,63 @@ export class ChatService {
   }
 
   /** Fil pair : médecin / infirmier / coordinateur ↔ professionnels du même département. */
-  async assertPeerStaff(user: JwtUser, peerRole: 'doctor' | 'nurse' | 'carecoordinator', peerId: string): Promise<void> {
+  async assertPeerStaff(
+    user: JwtUser,
+    peerRole: 'doctor' | 'nurse' | 'carecoordinator' | 'admin',
+    peerId: string,
+  ): Promise<void> {
     const ur = user.role as string;
     if (ur === 'patient') throw new ForbiddenException('Messagerie pair réservée au personnel');
-    if (peerRole !== 'doctor' && peerRole !== 'nurse' && peerRole !== 'carecoordinator') {
+    if (peerRole !== 'doctor' && peerRole !== 'nurse' && peerRole !== 'carecoordinator' && peerRole !== 'admin') {
       throw new BadRequestException('Rôle pair invalide');
     }
     const uid = this.uid(user);
     if (uid === peerId && ur === peerRole) throw new BadRequestException('Destinataire invalide');
 
-    if (ur === 'carecoordinator') {
-      if (peerRole !== 'doctor' && peerRole !== 'nurse') throw new BadRequestException('Rôle pair invalide');
-      let coordDept = String((user as JwtUser).department || '').trim();
-      if (!coordDept) {
-        const row = await this.userModel.findById(uid).select('department').lean().exec();
-        coordDept = String((row as any)?.department || '').trim();
+    const deptOfPlatformUser = async (role: string, id: string): Promise<string> => {
+      if (role === 'carecoordinator' || role === 'admin') {
+        const row = await this.userModel.findById(id).select('department').lean().exec();
+        return String((row as any)?.department || '').trim();
       }
-      if (!coordDept) throw new ForbiddenException('Département manquant');
+      if (role === 'doctor') return this.deptOfDoctor(id);
+      return this.deptOfNurse(id);
+    };
+
+    if (ur === 'carecoordinator' || ur === 'admin') {
       if (peerRole === 'doctor') {
+        let myDept = String((user as JwtUser).department || '').trim();
+        if (!myDept) myDept = await deptOfPlatformUser(ur, uid);
+        if (!myDept) throw new ForbiddenException('Département manquant');
         const d = await this.doctorModel.findById(peerId).select('department').lean().exec();
         if (!d) throw new NotFoundException('Médecin introuvable');
-        if (!this.deptMatches(String((d as any).department || '').trim(), coordDept)) throw new ForbiddenException();
-      } else {
+        if (!this.deptMatches(String((d as any).department || '').trim(), myDept)) throw new ForbiddenException();
+        return;
+      }
+      if (peerRole === 'nurse') {
+        let myDept = String((user as JwtUser).department || '').trim();
+        if (!myDept) myDept = await deptOfPlatformUser(ur, uid);
+        if (!myDept) throw new ForbiddenException('Département manquant');
         const n = await this.nurseModel.findById(peerId).select('department').lean().exec();
         if (!n) throw new NotFoundException('Infirmier introuvable');
-        if (!this.deptMatches(String((n as any).department || '').trim(), coordDept)) throw new ForbiddenException();
+        if (!this.deptMatches(String((n as any).department || '').trim(), myDept)) throw new ForbiddenException();
+        return;
       }
+      if (peerRole === 'carecoordinator') {
+        let myDept = String((user as JwtUser).department || '').trim();
+        if (!myDept) myDept = await deptOfPlatformUser(ur, uid);
+        if (!myDept) throw new ForbiddenException('Département manquant');
+        const coord = await this.userModel.findById(peerId).select('department role').lean().exec();
+        if (!coord || String((coord as any).role) !== 'carecoordinator') throw new NotFoundException('Coordinateur introuvable');
+        if (!this.deptMatches(String((coord as any).department || '').trim(), myDept)) throw new ForbiddenException();
+        return;
+      }
+      /* peer admin */
+      let myDept = String((user as JwtUser).department || '').trim();
+      if (!myDept) myDept = await deptOfPlatformUser(ur, uid);
+      if (!myDept) throw new ForbiddenException('Département manquant');
+      const adm = await this.userModel.findById(peerId).select('department role').lean().exec();
+      if (!adm || String((adm as any).role) !== 'admin') throw new NotFoundException('Administrateur introuvable');
+      if (!this.deptMatches(String((adm as any).department || '').trim(), myDept)) throw new ForbiddenException();
       return;
     }
 
@@ -153,6 +195,26 @@ export class ChatService {
       const coord = await this.userModel.findById(peerId).select('department role').lean().exec();
       if (!coord || String((coord as any).role) !== 'carecoordinator') throw new NotFoundException('Coordinateur introuvable');
       if (!this.deptMatches(String((coord as any).department || '').trim(), staffDept)) throw new ForbiddenException();
+      return;
+    }
+
+    if (peerRole === 'admin') {
+      if (ur !== 'doctor' && ur !== 'nurse' && ur !== 'carecoordinator') throw new ForbiddenException();
+      let staffDept: string;
+      if (ur === 'doctor') {
+        staffDept = await this.deptOfDoctor(uid);
+      } else if (ur === 'nurse') {
+        staffDept = await this.deptOfNurse(uid);
+      } else {
+        staffDept = String((user as JwtUser).department || '').trim();
+        if (!staffDept) {
+          const urow = await this.userModel.findById(uid).select('department').lean().exec();
+          staffDept = String((urow as { department?: string } | null)?.department || '').trim();
+        }
+      }
+      const adm = await this.userModel.findById(peerId).select('department role').lean().exec();
+      if (!adm || String((adm as any).role) !== 'admin') throw new NotFoundException('Administrateur introuvable');
+      if (!this.deptMatches(String((adm as any).department || '').trim(), staffDept)) throw new ForbiddenException();
       return;
     }
 
@@ -173,7 +235,7 @@ export class ChatService {
   /** Patient ↔ médecin, infirmier ou coordinateur (référent ou même département). */
   async assertPatientCanMessageStaff(
     patientId: string,
-    peerRole: 'doctor' | 'nurse' | 'carecoordinator',
+    peerRole: 'doctor' | 'nurse' | 'carecoordinator' | 'admin',
     peerId: string,
   ): Promise<void> {
     const id = this.pid(patientId);
@@ -201,6 +263,14 @@ export class ChatService {
       if (!coordDept) throw new ForbiddenException();
       if (dept && this.deptMatches(dept, coordDept)) return;
       throw new ForbiddenException('Coordinateur non autorisé pour ce patient');
+    }
+    if (peerRole === 'admin') {
+      const adm = await this.userModel.findById(peerId).select('department role').lean().exec();
+      if (!adm || String((adm as any).role) !== 'admin') throw new NotFoundException('Administrateur introuvable');
+      const admDept = String((adm as any).department || '').trim();
+      if (!admDept) throw new ForbiddenException();
+      if (dept && this.deptMatches(dept, admDept)) return;
+      throw new ForbiddenException('Administrateur non autorisé pour ce patient');
     }
   }
 
@@ -344,7 +414,7 @@ export class ChatService {
   private async unreadCountPeer(
     key: string,
     readerId: string,
-    readerRole: 'patient' | 'doctor' | 'nurse' | 'carecoordinator',
+    readerRole: 'patient' | 'doctor' | 'nurse' | 'carecoordinator' | 'admin',
   ): Promise<number> {
     const rs = await this.readStateModel
       .findOne({ peerThreadKey: key, readerId, readerRole })
@@ -434,7 +504,7 @@ export class ChatService {
       return out;
     }
 
-    if (role === 'carecoordinator') {
+    if (role === 'carecoordinator' || role === 'admin' || role === 'superadmin') {
       return [];
     }
 
@@ -547,6 +617,20 @@ export class ChatService {
     };
   }
 
+  private mapHospitalAdmin(a: any) {
+    const name = `${a.firstName || ''} ${a.lastName || ''}`.trim() || a.name || a.email || 'Administrateur';
+    return {
+      id: String(a._id),
+      role: 'admin' as const,
+      firstName: a.firstName,
+      lastName: a.lastName,
+      displayName: name,
+      profileImage: a.profileImage || '/assets/images/user/11.png',
+      subtitle: a.department || '',
+      department: a.department || '',
+    };
+  }
+
   /** Profils du même département + patients assignés (staff) pour alimenter la sidebar /chat */
   async getDepartmentContacts(user: JwtUser) {
     const role = user.role as string;
@@ -559,11 +643,13 @@ export class ChatService {
       let doctors: any[] = [];
       let nurses: any[] = [];
       let coordinators: any[] = [];
+      let hospitalAdmins: any[] = [];
       if (dept) {
-        [doctors, nurses, coordinators] = await Promise.all([
+        [doctors, nurses, coordinators, hospitalAdmins] = await Promise.all([
           this.doctorModel.find({ department: dept }).select('-password').sort({ lastName: 1 }).lean().exec(),
           this.nurseModel.find({ department: dept }).select('-password').sort({ lastName: 1 }).lean().exec(),
           this.userModel.find({ role: 'carecoordinator', department: dept }).select('-password').sort({ lastName: 1 }).lean().exec(),
+          this.userModel.find({ role: 'admin', department: dept }).select('-password').sort({ lastName: 1 }).lean().exec(),
         ]);
       }
       const assignedDoctorId = (p as any).doctorId ? String((p as any).doctorId) : '';
@@ -591,13 +677,14 @@ export class ChatService {
         doctors: doctors.map((d) => this.mapDoc(d)),
         nurses: nurses.map((n) => this.mapNurse(n)),
         coordinators: coordinators.map((c) => this.mapCoordinatorUser(c)),
+        hospitalAdmins: hospitalAdmins.map((a) => this.mapHospitalAdmin(a)),
         assignedPatients: [],
       };
     }
 
     if (role === 'doctor') {
       const dept = await this.deptOfDoctor(uid);
-      const [sameDoctors, sameNurses, allDoctors, allNurses, patients, coordinators] = await Promise.all([
+      const [sameDoctors, sameNurses, allDoctors, allNurses, patients, coordinators, hospitalAdmins] = await Promise.all([
         dept
           ? this.doctorModel.find({ department: dept }).select('-password').sort({ lastName: 1 }).lean().exec()
           : [],
@@ -608,6 +695,9 @@ export class ChatService {
         dept
           ? this.userModel.find({ role: 'carecoordinator', department: dept }).select('-password').sort({ lastName: 1 }).lean().exec()
           : [],
+        dept
+          ? this.userModel.find({ role: 'admin', department: dept }).select('-password').sort({ lastName: 1 }).lean().exec()
+          : [],
       ]);
       return {
         department: dept,
@@ -617,6 +707,7 @@ export class ChatService {
         doctorsAll: allDoctors.filter((d) => String(d._id) !== uid).map((d) => this.mapDoc(d)),
         nursesAll: allNurses.map((n) => this.mapNurse(n)),
         coordinators: coordinators.map((c) => this.mapCoordinatorUser(c)),
+        hospitalAdmins: hospitalAdmins.map((a) => this.mapHospitalAdmin(a)),
         assignedPatients: patients.map((p: any) => ({
           id: String(p._id),
           role: 'patient' as const,
@@ -629,7 +720,7 @@ export class ChatService {
 
     if (role === 'nurse') {
       const dept = await this.deptOfNurse(uid);
-      const [sameDoctors, sameNurses, allDoctors, allNurses, patients, coordinators] = await Promise.all([
+      const [sameDoctors, sameNurses, allDoctors, allNurses, patients, coordinators, hospitalAdmins] = await Promise.all([
         dept
           ? this.doctorModel.find({ department: dept }).select('-password').sort({ lastName: 1 }).lean().exec()
           : [],
@@ -640,6 +731,9 @@ export class ChatService {
         dept
           ? this.userModel.find({ role: 'carecoordinator', department: dept }).select('-password').sort({ lastName: 1 }).lean().exec()
           : [],
+        dept
+          ? this.userModel.find({ role: 'admin', department: dept }).select('-password').sort({ lastName: 1 }).lean().exec()
+          : [],
       ]);
       return {
         department: dept,
@@ -649,6 +743,7 @@ export class ChatService {
         doctorsAll: allDoctors.map((d) => this.mapDoc(d)),
         nursesAll: allNurses.filter((n) => String(n._id) !== uid).map((n) => this.mapNurse(n)),
         coordinators: coordinators.map((c) => this.mapCoordinatorUser(c)),
+        hospitalAdmins: hospitalAdmins.map((a) => this.mapHospitalAdmin(a)),
         assignedPatients: patients.map((p: any) => ({
           id: String(p._id),
           role: 'patient' as const,
@@ -662,7 +757,7 @@ export class ChatService {
     if (role === 'carecoordinator') {
       const dept = String((user as JwtUser).department || '').trim();
       if (!dept) throw new BadRequestException('Département manquant');
-      const [sameDoctors, sameNurses, deptPatients] = await Promise.all([
+      const [sameDoctors, sameNurses, deptPatients, hospitalAdmins] = await Promise.all([
         this.doctorModel.find({ department: dept }).select('-password').sort({ lastName: 1 }).lean().exec(),
         this.nurseModel.find({ department: dept }).select('-password').sort({ lastName: 1 }).lean().exec(),
         this.patientModel
@@ -673,12 +768,14 @@ export class ChatService {
           .sort({ lastName: 1, firstName: 1 })
           .lean()
           .exec(),
+        this.userModel.find({ role: 'admin', department: dept }).select('-password').sort({ lastName: 1 }).lean().exec(),
       ]);
       return {
         department: dept,
         myRole: 'carecoordinator',
         doctors: sameDoctors.map((d) => this.mapDoc(d)),
         nurses: sameNurses.map((n) => this.mapNurse(n)),
+        hospitalAdmins: hospitalAdmins.map((a) => this.mapHospitalAdmin(a)),
         assignedPatients: deptPatients.map((p: any) => ({
           id: String(p._id),
           role: 'patient' as const,
@@ -686,6 +783,56 @@ export class ChatService {
           profileImage: p.profileImage || '/assets/images/user/11.png',
           subtitle: 'Patient',
         })),
+      };
+    }
+
+    if (role === 'admin') {
+      let dept = String((user as JwtUser).department || '').trim();
+      if (!dept) {
+        const row = await this.userModel.findById(uid).select('department').lean().exec();
+        dept = String((row as any)?.department || '').trim();
+      }
+      if (!dept) throw new BadRequestException('Département manquant');
+      const [sameDoctors, sameNurses, deptPatients, coordinators, hospitalAdmins] = await Promise.all([
+        this.doctorModel.find({ department: dept }).select('-password').sort({ lastName: 1 }).lean().exec(),
+        this.nurseModel.find({ department: dept }).select('-password').sort({ lastName: 1 }).lean().exec(),
+        this.patientModel
+          .find({
+            $or: [{ department: dept }, { service: dept }],
+          })
+          .select('firstName lastName profileImage department service')
+          .sort({ lastName: 1, firstName: 1 })
+          .lean()
+          .exec(),
+        this.userModel.find({ role: 'carecoordinator', department: dept }).select('-password').sort({ lastName: 1 }).lean().exec(),
+        this.userModel.find({ role: 'admin', department: dept }).select('-password').sort({ lastName: 1 }).lean().exec(),
+      ]);
+      return {
+        department: dept,
+        myRole: 'admin',
+        doctors: sameDoctors.map((d) => this.mapDoc(d)),
+        nurses: sameNurses.map((n) => this.mapNurse(n)),
+        coordinators: coordinators.map((c) => this.mapCoordinatorUser(c)),
+        hospitalAdmins: hospitalAdmins.filter((a) => String((a as any)._id) !== uid).map((a) => this.mapHospitalAdmin(a)),
+        assignedPatients: deptPatients.map((p: any) => ({
+          id: String(p._id),
+          role: 'patient' as const,
+          displayName: `${p.firstName || ''} ${p.lastName || ''}`.trim(),
+          profileImage: p.profileImage || '/assets/images/user/11.png',
+          subtitle: 'Patient',
+        })),
+      };
+    }
+
+    if (role === 'superadmin') {
+      return {
+        department: '',
+        myRole: 'superadmin',
+        doctors: [],
+        nurses: [],
+        coordinators: [],
+        hospitalAdmins: [],
+        assignedPatients: [],
       };
     }
 
@@ -749,7 +896,7 @@ export class ChatService {
       mimeType?: string;
       fileName?: string;
     },
-    routing: { patientId?: string; peerRole?: 'doctor' | 'nurse' | 'carecoordinator'; peerId?: string; groupId?: string },
+    routing: { patientId?: string; peerRole?: 'doctor' | 'nurse' | 'carecoordinator' | 'admin'; peerId?: string; groupId?: string },
   ) {
     const kind = content.kind;
     const text = String(content.text ?? '').trim();
@@ -782,7 +929,7 @@ export class ChatService {
     }
 
     const role = user.role as string;
-    if (!['patient', 'doctor', 'nurse', 'carecoordinator'].includes(role)) {
+    if (!['patient', 'doctor', 'nurse', 'carecoordinator', 'admin'].includes(role)) {
       throw new ForbiddenException();
     }
     const uid = this.uid(user);
@@ -834,7 +981,8 @@ export class ChatService {
 
     if (role === 'patient' && routing.peerRole && routing.peerId) {
       const pr = routing.peerRole;
-      if (pr !== 'doctor' && pr !== 'nurse' && pr !== 'carecoordinator') throw new BadRequestException('Rôle pair invalide');
+      if (pr !== 'doctor' && pr !== 'nurse' && pr !== 'carecoordinator' && pr !== 'admin')
+        throw new BadRequestException('Rôle pair invalide');
       await this.assertPatientCanMessageStaff(uid, pr, routing.peerId);
       const key = patientStaffThreadKey(uid, pr, routing.peerId);
       const doc = await this.messageModel.create({
@@ -853,8 +1001,12 @@ export class ChatService {
       await this.assertPeerStaff(user, routing.peerRole, routing.peerId);
       const ur = user.role as string;
       const key = peerThreadKey({ role: ur, id: uid }, { role: routing.peerRole, id: routing.peerId });
-      const senderRole: 'doctor' | 'nurse' | 'carecoordinator' =
-        role === 'carecoordinator' ? 'carecoordinator' : (role as 'doctor' | 'nurse');
+      const senderRole: 'doctor' | 'nurse' | 'carecoordinator' | 'admin' =
+        role === 'carecoordinator'
+          ? 'carecoordinator'
+          : role === 'admin'
+            ? 'admin'
+            : (role as 'doctor' | 'nurse');
       const doc = await this.messageModel.create({
         ...base,
         peerThreadKey: key,
@@ -885,8 +1037,12 @@ export class ChatService {
     if (!patientId) throw new BadRequestException('patientId ou pair requis');
     await this.assertParticipant(user, patientId);
     const id = this.pid(patientId);
-    const staffRole: 'doctor' | 'nurse' | 'carecoordinator' =
-      role === 'carecoordinator' ? 'carecoordinator' : (role as 'doctor' | 'nurse');
+    const staffRole: 'doctor' | 'nurse' | 'carecoordinator' | 'admin' =
+      role === 'carecoordinator'
+        ? 'carecoordinator'
+        : role === 'admin'
+          ? 'admin'
+          : (role as 'doctor' | 'nurse');
     const key = patientStaffThreadKey(patientId, staffRole, uid);
     const doc = await this.messageModel.create({
       ...base,
@@ -902,15 +1058,15 @@ export class ChatService {
 
   private async notifyRecipientsAfterMessage(
     user: JwtUser,
-    routing: { patientId?: string; peerRole?: 'doctor' | 'nurse' | 'carecoordinator'; peerId?: string; groupId?: string },
+    routing: { patientId?: string; peerRole?: 'doctor' | 'nurse' | 'carecoordinator' | 'admin'; peerId?: string; groupId?: string },
     payload: { kind: string; text: string },
     mapped: { patientId?: string },
   ) {
     const ur = user.role as string;
-    if (!['patient', 'doctor', 'nurse', 'carecoordinator'].includes(ur)) return;
+    if (!['patient', 'doctor', 'nurse', 'carecoordinator', 'admin'].includes(ur)) return;
     const senderName = await this.notificationService.resolveChatSenderName(ur, this.uid(user));
     await this.notificationService.notifyChatDispatch({
-      senderRole: ur as 'patient' | 'doctor' | 'nurse' | 'carecoordinator',
+      senderRole: ur as 'patient' | 'doctor' | 'nurse' | 'carecoordinator' | 'admin',
       senderId: this.uid(user),
       senderName,
       routing,
@@ -957,11 +1113,11 @@ export class ChatService {
       return this.fetchMessagesQuery(q, beforeIso, limit);
     }
 
-    if (role === 'doctor' || role === 'nurse' || role === 'carecoordinator') {
+    if (role === 'doctor' || role === 'nurse' || role === 'carecoordinator' || role === 'admin') {
       await this.assertParticipant(user, patientId);
       const key = patientStaffThreadKey(
         patientId,
-        role as 'doctor' | 'nurse' | 'carecoordinator',
+        role as 'doctor' | 'nurse' | 'carecoordinator' | 'admin',
         uid,
       );
       return this.fetchMessagesQuery({ peerThreadKey: key }, beforeIso, limit);
@@ -973,7 +1129,7 @@ export class ChatService {
   /** Patient ouvrant un fil avec un médecin, un infirmier ou un coordinateur (peerRole + peerId). */
   async getMessagesPatientStaff(
     user: JwtUser,
-    peerRole: 'doctor' | 'nurse' | 'carecoordinator',
+    peerRole: 'doctor' | 'nurse' | 'carecoordinator' | 'admin',
     peerId: string,
     beforeIso?: string,
     limit = 50,
@@ -985,7 +1141,13 @@ export class ChatService {
     return this.fetchMessagesQuery({ peerThreadKey: key }, beforeIso, limit);
   }
 
-  async getMessagesPeer(user: JwtUser, peerRole: 'doctor' | 'nurse' | 'carecoordinator', peerId: string, beforeIso?: string, limit = 50) {
+  async getMessagesPeer(
+    user: JwtUser,
+    peerRole: 'doctor' | 'nurse' | 'carecoordinator' | 'admin',
+    peerId: string,
+    beforeIso?: string,
+    limit = 50,
+  ) {
     await this.assertPeerStaff(user, peerRole, peerId);
     const ur = user.role as string;
     const key = peerThreadKey({ role: ur, id: this.uid(user) }, { role: peerRole, id: peerId });
@@ -999,7 +1161,7 @@ export class ChatService {
       body?: string;
       kind?: 'text' | 'call';
       patientId?: string;
-      peerRole?: 'doctor' | 'nurse' | 'carecoordinator';
+      peerRole?: 'doctor' | 'nurse' | 'carecoordinator' | 'admin';
       peerId?: string;
       groupId?: string;
     },
@@ -1034,8 +1196,11 @@ export class ChatService {
     }
     const audioUrl = `/api/chat/media/${file.filename}`;
     const peerRole =
-      fields.peerRole === 'doctor' || fields.peerRole === 'nurse' || fields.peerRole === 'carecoordinator'
-        ? (fields.peerRole as 'doctor' | 'nurse' | 'carecoordinator')
+      fields.peerRole === 'doctor' ||
+      fields.peerRole === 'nurse' ||
+      fields.peerRole === 'carecoordinator' ||
+      fields.peerRole === 'admin'
+        ? (fields.peerRole as 'doctor' | 'nurse' | 'carecoordinator' | 'admin')
         : undefined;
     return this.routePostMessage(
       user,
@@ -1094,8 +1259,11 @@ export class ChatService {
     const mediaUrl = `/api/chat/media/${file.filename}`;
     const caption = String(fields.caption ?? '').trim().slice(0, 4000);
     const peerRole =
-      fields.peerRole === 'doctor' || fields.peerRole === 'nurse' || fields.peerRole === 'carecoordinator'
-        ? (fields.peerRole as 'doctor' | 'nurse' | 'carecoordinator')
+      fields.peerRole === 'doctor' ||
+      fields.peerRole === 'nurse' ||
+      fields.peerRole === 'carecoordinator' ||
+      fields.peerRole === 'admin'
+        ? (fields.peerRole as 'doctor' | 'nurse' | 'carecoordinator' | 'admin')
         : undefined;
     const orig = (file.originalname || file.filename || 'fichier').slice(0, 900);
 
@@ -1119,8 +1287,8 @@ export class ChatService {
 
   async markRead(user: JwtUser, patientId: string) {
     await this.assertParticipant(user, patientId);
-    const role = user.role as 'patient' | 'doctor' | 'nurse' | 'carecoordinator';
-    if (!['patient', 'doctor', 'nurse', 'carecoordinator'].includes(role)) throw new ForbiddenException();
+    const role = user.role as 'patient' | 'doctor' | 'nurse' | 'carecoordinator' | 'admin';
+    if (!['patient', 'doctor', 'nurse', 'carecoordinator', 'admin'].includes(role)) throw new ForbiddenException();
     const uid = this.uid(user);
     const now = new Date();
 
@@ -1143,7 +1311,11 @@ export class ChatService {
     return { ok: true, lastReadAt: now };
   }
 
-  async markReadPatientStaff(user: JwtUser, peerRole: 'doctor' | 'nurse' | 'carecoordinator', peerId: string) {
+  async markReadPatientStaff(
+    user: JwtUser,
+    peerRole: 'doctor' | 'nurse' | 'carecoordinator' | 'admin',
+    peerId: string,
+  ) {
     if (user.role !== 'patient') throw new ForbiddenException();
     const pid = this.uid(user);
     await this.assertPatientCanMessageStaff(pid, peerRole, peerId);
@@ -1157,7 +1329,11 @@ export class ChatService {
     return { ok: true, lastReadAt: now };
   }
 
-  async markReadPeer(user: JwtUser, peerRole: 'doctor' | 'nurse' | 'carecoordinator', peerId: string) {
+  async markReadPeer(
+    user: JwtUser,
+    peerRole: 'doctor' | 'nurse' | 'carecoordinator' | 'admin',
+    peerId: string,
+  ) {
     await this.assertPeerStaff(user, peerRole, peerId);
     const ur = user.role as string;
     const key = peerThreadKey({ role: ur, id: this.uid(user) }, { role: peerRole, id: peerId });

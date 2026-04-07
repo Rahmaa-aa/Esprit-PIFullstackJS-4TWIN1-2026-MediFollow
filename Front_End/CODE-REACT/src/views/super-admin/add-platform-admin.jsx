@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { departmentApi, superAdminApi } from "../../services/api";
 import { hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
+import { fetchHospitalAdminDepartmentName } from "../../utils/hospitalAdminDepartment";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 
@@ -18,7 +19,7 @@ const COUNTRIES = [
   { name: "Tunisie", labelKey: "countryTunisia", code: "TN", dialCode: "+216", flagUrl: `${FLAG_CDN}/tn.png` },
 ];
 
-const AddPlatformAdmin = () => {
+const AddPlatformAdmin = ({ hospitalAdminMode = false }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -28,10 +29,15 @@ const AddPlatformAdmin = () => {
   const [profilePreview, setProfilePreview] = useState(generatePath("/assets/images/user/11.png"));
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [deptOptions, setDeptOptions] = useState([]);
-  const [deptLoading, setDeptLoading] = useState(true);
+  const [deptLoading, setDeptLoading] = useState(!hospitalAdminMode);
   const [deptLoadError, setDeptLoadError] = useState(false);
+  const [fixedDepartment, setFixedDepartment] = useState("");
 
   useEffect(() => {
+    if (hospitalAdminMode) {
+      setDeptLoading(false);
+      return;
+    }
     let cancelled = false;
     setDeptLoading(true);
     setDeptLoadError(false);
@@ -52,7 +58,29 @@ const AddPlatformAdmin = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hospitalAdminMode]);
+
+  useEffect(() => {
+    if (!hospitalAdminMode) return;
+    let cancelled = false;
+    (async () => {
+      let u = null;
+      try {
+        u = JSON.parse(localStorage.getItem("adminUser") || "null");
+      } catch {
+        u = null;
+      }
+      if (!u || u.role !== "admin") {
+        navigate("/admin/dashboard", { replace: true });
+        return;
+      }
+      const d = await fetchHospitalAdminDepartmentName();
+      if (!cancelled) setFixedDepartment(d);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hospitalAdminMode, navigate]);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -85,9 +113,11 @@ const AddPlatformAdmin = () => {
       return;
     }
 
-    const department = form.department?.value?.trim() || "";
+    const department = hospitalAdminMode ? fixedDepartment.trim() : form.department?.value?.trim() || "";
     if (!department) {
-      setError(t("addPlatformAdmin.departmentRequired"));
+      setError(
+        hospitalAdminMode ? t("addPlatformAdmin.departmentRequiredAdmin") : t("addPlatformAdmin.departmentRequired"),
+      );
       setLoading(false);
       return;
     }
@@ -109,7 +139,7 @@ const AddPlatformAdmin = () => {
       });
       setEmailSent(res.credentialsEmailSent === true);
       setSuccess(t("addPlatformAdmin.createSuccess"));
-      setTimeout(() => navigate("/super-admin/admins"), 2200);
+      setTimeout(() => navigate(hospitalAdminMode ? "/admin/admins" : "/super-admin/admins"), 2200);
     } catch (err) {
       setError(err.message || t("addPlatformAdmin.createError"));
     } finally {
@@ -185,31 +215,45 @@ const AddPlatformAdmin = () => {
                     </Col>
                     <Col sm={12} className="form-group">
                       <Form.Label className="mb-0">{t("addNurse.department")}</Form.Label>
-                      <Form.Control
-                        as="select"
-                        className="my-2"
-                        name="department"
-                        required
-                        disabled={deptLoading || deptOptions.length === 0}
-                      >
-                        <option value="">
-                          {deptLoading
-                            ? t("addPlatformAdmin.departmentLoading")
-                            : deptOptions.length === 0
-                              ? t("addPlatformAdmin.departmentEmptyOption")
-                              : t("addNurse.selectDepartment")}
-                        </option>
-                        {deptOptions.map((d) => (
-                          <option key={d} value={d}>
-                            {hospitalDepartmentLabel(d, t)}
-                          </option>
-                        ))}
-                      </Form.Control>
-                      <Form.Text className="text-muted">
-                        {deptLoadError
-                          ? t("addPlatformAdmin.departmentLoadError")
-                          : t("addPlatformAdmin.departmentHelp")}
-                      </Form.Text>
+                      {hospitalAdminMode ? (
+                        <>
+                          <Form.Control
+                            className="my-2"
+                            readOnly
+                            disabled
+                            value={fixedDepartment ? hospitalDepartmentLabel(fixedDepartment, t) : t("addDoctor.deptLoading")}
+                          />
+                          <Form.Text className="text-muted">{t("addDoctor.departmentLockedHint")}</Form.Text>
+                        </>
+                      ) : (
+                        <>
+                          <Form.Control
+                            as="select"
+                            className="my-2"
+                            name="department"
+                            required
+                            disabled={deptLoading || deptOptions.length === 0}
+                          >
+                            <option value="">
+                              {deptLoading
+                                ? t("addPlatformAdmin.departmentLoading")
+                                : deptOptions.length === 0
+                                  ? t("addPlatformAdmin.departmentEmptyOption")
+                                  : t("addNurse.selectDepartment")}
+                            </option>
+                            {deptOptions.map((d) => (
+                              <option key={d} value={d}>
+                                {hospitalDepartmentLabel(d, t)}
+                              </option>
+                            ))}
+                          </Form.Control>
+                          <Form.Text className="text-muted">
+                            {deptLoadError
+                              ? t("addPlatformAdmin.departmentLoadError")
+                              : t("addPlatformAdmin.departmentHelp")}
+                          </Form.Text>
+                        </>
+                      )}
                     </Col>
                     <Col sm={12} className="form-group">
                       <Form.Label className="mb-0">{t("addNurse.country")}</Form.Label>
@@ -265,7 +309,11 @@ const AddPlatformAdmin = () => {
                     </Col>
                   </Row>
                   <div className="d-flex gap-2 mt-3">
-                    <Button type="button" variant="outline-danger" onClick={() => navigate("/super-admin/admins")}>
+                    <Button
+                      type="button"
+                      variant="outline-danger"
+                      onClick={() => navigate(hospitalAdminMode ? "/admin/admins" : "/super-admin/admins")}
+                    >
                       {t("addNurse.cancel")}
                     </Button>
                     <Button type="submit" className="btn btn-primary-subtle" disabled={loading}>

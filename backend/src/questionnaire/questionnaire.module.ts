@@ -9,11 +9,13 @@ import {
 import { QuestionnaireAddon, QuestionnaireAddonSchema } from './schemas/questionnaire-addon.schema';
 import { QuestionnaireSubmission, QuestionnaireSubmissionSchema } from './schemas/questionnaire-submission.schema';
 import { Patient, PatientSchema } from '../patient/schemas/patient.schema';
+import { DepartmentModule } from '../department/department.module';
 import { QuestionnaireService } from './questionnaire.service';
 import { QuestionnaireController } from './questionnaire.controller';
 
 @Module({
   imports: [
+    DepartmentModule,
     MongooseModule.forFeature([
       { name: QuestionnaireTemplate.name, schema: QuestionnaireTemplateSchema },
       { name: ProtocolTemplate.name, schema: ProtocolTemplateSchema },

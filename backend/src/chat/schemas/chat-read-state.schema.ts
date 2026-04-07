@@ -13,8 +13,8 @@ export class ChatReadState extends Document {
   @Prop({ required: true })
   readerId: string;
 
-  @Prop({ required: true, enum: ['patient', 'doctor', 'nurse', 'carecoordinator'] })
-  readerRole: 'patient' | 'doctor' | 'nurse' | 'carecoordinator';
+  @Prop({ required: true, enum: ['patient', 'doctor', 'nurse', 'carecoordinator', 'admin'] })
+  readerRole: 'patient' | 'doctor' | 'nurse' | 'carecoordinator' | 'admin';
 
   @Prop({ type: Date, required: true })
   lastReadAt: Date;

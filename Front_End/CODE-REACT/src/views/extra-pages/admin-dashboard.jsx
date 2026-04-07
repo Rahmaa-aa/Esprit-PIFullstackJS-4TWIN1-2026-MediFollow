@@ -1,194 +1,394 @@
-import React, { useState } from "react";
-import { Row, Col, Card, Table, Badge, ProgressBar } from "react-bootstrap";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Row, Col, Card, Table, Badge, Alert, Spinner } from "react-bootstrap";
 import CountUp from "react-countup";
 import Chart from "react-apexcharts";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { appointmentApi, departmentApi, questionnaireApi } from "../../services/api";
 
-const generatePath = (path) => {
-  return window.origin + import.meta.env.BASE_URL + path;
+/** Maps API `type` slugs — align with admin-appointment-requests.jsx */
+const APPOINTMENT_TYPE_I18N_KEYS = {
+  checkup: "patientAppointmentRequest.typeCheckup",
+  lab: "patientAppointmentRequest.typeLab",
+  specialist: "patientAppointmentRequest.typeSpecialist",
+  imaging: "patientAppointmentRequest.typeImaging",
+  physiotherapy: "patientAppointmentRequest.typePhysiotherapy",
 };
 
+function appointmentTypeLabel(type, t) {
+  if (type == null || type === "") return "—";
+  const key = APPOINTMENT_TYPE_I18N_KEYS[String(type).toLowerCase()];
+  return key ? t(key) : String(type);
+}
+
+function userId(u) {
+  if (!u) return "";
+  return String(u.id ?? u._id ?? "");
+}
+
+function patientLabel(row) {
+  const p = row.patientId;
+  if (p && typeof p === "object") {
+    return `${p.firstName || ""} ${p.lastName || ""}`.trim() || p.email || "—";
+  }
+  return "—";
+}
+
 const AdminDashboard = () => {
-  const [chartOptions] = useState({
-    series: [
-      { name: "Utilisateurs", data: [31, 40, 28, 51, 42, 109, 100] },
-      { name: "Rendez-vous", data: [11, 32, 45, 32, 34, 52, 41] },
-    ],
-    chart: { height: 280, type: "area", toolbar: { show: false } },
-    colors: ["#089bab", "#FC9F5B"],
-    dataLabels: { enabled: false },
-    stroke: { curve: "smooth" },
-    xaxis: {
-      categories: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
-    },
-    legend: { position: "top" },
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+
+  const [adminUser] = useState(() => {
+    try {
+      const s = localStorage.getItem("adminUser");
+      return s ? JSON.parse(s) : null;
+    } catch {
+      return null;
+    }
   });
 
-  const stats = [
-    { title: "Utilisateurs", value: 1250, icon: "ri-user-3-fill", color: "primary", link: "/doctor/doctor-list" },
-    { title: "Rendez-vous", value: 342, icon: "ri-calendar-check-fill", color: "success", link: "/calendar" },
-    { title: "Patients", value: 892, icon: "ri-team-fill", color: "info", link: "/dashboard-pages/patient-dashboard" },
-    { title: "Revenus", value: "24.5K", icon: "ri-money-dollar-circle-fill", color: "warning", suffix: "€" },
-  ];
+  const isAdminSession = adminUser && ["admin", "superadmin"].includes(adminUser.role);
 
-  const recentActivities = [
-    { user: "Dr. Paul Molive", action: "Nouveau rendez-vous", time: "Il y a 5 min", type: "success" },
-    { user: "Marie Dupont", action: "Inscription patient", time: "Il y a 15 min", type: "info" },
-    { user: "Admin", action: "Mise à jour des paramètres", time: "Il y a 1h", type: "warning" },
-    { user: "Dr. Jane Smith", action: "Annulation RDV", time: "Il y a 2h", type: "danger" },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [summaries, setSummaries] = useState([]);
+  const [pending, setPending] = useState([]);
+  const [confirmed, setConfirmed] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [protocols, setProtocols] = useState([]);
+
+  const dateLocale = useMemo(() => {
+    const l = (i18n.language || "en").split("-")[0];
+    if (l === "fr") return "fr-FR";
+    if (l === "ar") return "ar-SA";
+    return "en-US";
+  }, [i18n.language]);
+
+  const formatShort = useCallback(
+    (iso) => {
+      if (!iso) return "—";
+      try {
+        return new Date(iso).toLocaleString(dateLocale, { dateStyle: "short", timeStyle: "short" });
+      } catch {
+        return "—";
+      }
+    },
+    [dateLocale],
+  );
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [sum, pend, conf, tpl, pro] = await Promise.all([
+        departmentApi.summary().catch(() => []),
+        appointmentApi.getPendingForAdmin().catch(() => []),
+        appointmentApi.getConfirmedForAdmin().catch(() => []),
+        questionnaireApi.adminListTemplates().catch(() => []),
+        questionnaireApi.adminListProtocols().catch(() => []),
+      ]);
+      setSummaries(Array.isArray(sum) ? sum : []);
+      setPending(Array.isArray(pend) ? pend : []);
+      setConfirmed(Array.isArray(conf) ? conf : []);
+      setTemplates(Array.isArray(tpl) ? tpl : []);
+      setProtocols(Array.isArray(pro) ? pro : []);
+    } catch (e) {
+      setError(e.message || t("hospitalAdminDashboard.loadError"));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    if (!adminUser) {
+      navigate("/auth/sign-in", { replace: true });
+      return;
+    }
+    if (!isAdminSession) {
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+    load();
+  }, [adminUser, isAdminSession, navigate, load]);
+
+  const scopedSummaries = useMemo(() => {
+    const all = summaries;
+    if (adminUser?.role === "superadmin") return all;
+    if (adminUser?.role !== "admin") return all;
+    const uid = userId(adminUser);
+    const deptName = String(adminUser.department || "").trim();
+    const byAssign = all.filter((s) => s.assignedAdminId && String(s.assignedAdminId) === uid);
+    if (byAssign.length) return byAssign;
+    if (deptName) {
+      const byName = all.filter((s) => s.name === deptName);
+      if (byName.length) return byName;
+    }
+    return all;
+  }, [summaries, adminUser]);
+
+  const aggregates = useMemo(() => {
+    let patients = 0;
+    let doctors = 0;
+    let nurses = 0;
+    scopedSummaries.forEach((s) => {
+      patients += s.patientCount || 0;
+      doctors += s.doctorCount || 0;
+      nurses += s.nurseCount || 0;
+    });
+    const staff = doctors + nurses;
+    return { patients, doctors, nurses, staff, departments: scopedSummaries.length };
+  }, [scopedSummaries]);
+
+  const questionnaireCount = templates.length + protocols.length;
+
+  const barOptions = useMemo(() => {
+    return {
+      chart: { type: "bar", toolbar: { show: false }, fontFamily: "inherit" },
+      plotOptions: { bar: { horizontal: false, columnWidth: "42%", borderRadius: 4 } },
+      dataLabels: { enabled: false },
+      colors: ["#089bab", "#6c757d"],
+      xaxis: {
+        categories: [t("hospitalAdminDashboard.chartPatients"), t("hospitalAdminDashboard.chartStaff")],
+      },
+      legend: { show: false },
+      yaxis: { labels: { formatter: (v) => Math.round(v) } },
+    };
+  }, [t]);
+
+  const barSeries = useMemo(
+    () => [{ name: t("hospitalAdminDashboard.chartSeries"), data: [aggregates.patients, aggregates.staff] }],
+    [aggregates.patients, aggregates.staff, t],
+  );
+
+  const recentPending = useMemo(() => pending.slice(0, 6), [pending]);
+  const upcomingConfirmed = useMemo(() => confirmed.slice(0, 6), [confirmed]);
+
+  if (!adminUser || !isAdminSession) return null;
 
   return (
     <>
+      {adminUser.role === "superadmin" && (
+        <Alert variant="info" className="d-flex flex-wrap align-items-center justify-content-between gap-2 border-0 shadow-sm">
+          <span className="mb-0">{t("hospitalAdminDashboard.superAdminHint")}</span>
+          <Link to="/super-admin/dashboard" className="btn btn-sm btn-primary">
+            {t("hospitalAdminDashboard.openSuperDashboard")}
+          </Link>
+        </Alert>
+      )}
+
       <Row>
         <Col sm={12}>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div>
-              <h4 className="mb-1">Tableau de bord Administrateur</h4>
-              <p className="text-muted mb-0">Bienvenue, voici un aperçu de votre plateforme MediFollow.</p>
+              <h4 className="mb-1">{t("hospitalAdminDashboard.pageTitle")}</h4>
+              <p className="text-muted mb-0">{t("hospitalAdminDashboard.subtitle")}</p>
+              {!loading && adminUser.role === "admin" && (
+                <p className="text-muted small mb-0 mt-1">
+                  {scopedSummaries.length < summaries.length
+                    ? t("hospitalAdminDashboard.scopeFiltered", { count: scopedSummaries.length })
+                    : t("hospitalAdminDashboard.scopeOverview")}
+                </p>
+              )}
             </div>
           </div>
         </Col>
       </Row>
 
-      <Row>
-        {stats.map((stat, i) => (
-          <Col key={i} xl={3} md={6} className="mb-4">
-            <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <p className="text-muted mb-1">{stat.title}</p>
-                    <h3 className="mb-0">
-                      {typeof stat.value === "number" ? (
-                        <CountUp end={stat.value} duration={2} />
-                      ) : (
-                        stat.value
-                      )}
-                      {stat.suffix}
-                    </h3>
-                  </div>
-                  <div className={`rounded-circle p-3 bg-${stat.color}-subtle`}>
-                    <i className={`ri-2x text-${stat.color} ${stat.icon}`}></i>
-                  </div>
-                </div>
-                {stat.link && (
-                  <Link to={stat.link} className="btn btn-sm btn-link p-0 mt-2 text-decoration-none">
-                    Voir détails <i className="ri-arrow-right-line"></i>
-                  </Link>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      {error && (
+        <Alert variant="danger" className="border-0 shadow-sm">
+          {error}
+        </Alert>
+      )}
 
-      <Row>
-        <Col lg={8} className="mb-4">
-          <Card className="border-0 shadow-sm">
-            <Card.Header className="bg-white border-0">
-              <h5 className="mb-0">Activité hebdomadaire</h5>
-            </Card.Header>
-            <Card.Body>
-              <Chart options={chartOptions} series={chartOptions.series} type="area" height={280} />
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={4} className="mb-4">
-          <Card className="border-0 shadow-sm">
-            <Card.Header className="bg-white border-0">
-              <h5 className="mb-0">Activité récente</h5>
-            </Card.Header>
-            <Card.Body className="p-0">
-              <Table responsive className="mb-0">
-                <tbody>
-                  {recentActivities.map((act, i) => (
-                    <tr key={i}>
-                      <td className="border-0 py-3">
-                        <div>
-                          <strong>{act.user}</strong>
-                          <p className="mb-0 small text-muted">{act.action}</p>
-                        </div>
-                      </td>
-                      <td className="border-0 py-3 text-end">
-                        <Badge bg={act.type} className="me-1">{act.time}</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+      {loading ? (
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="primary" role="status" aria-label={t("hospitalAdminDashboard.loading")} />
+        </div>
+      ) : (
+        <>
+          <Row>
+            {[
+              {
+                title: t("hospitalAdminDashboard.statPatients"),
+                value: aggregates.patients,
+                icon: "ri-team-fill",
+                color: "info",
+                link: "/admin/departments",
+              },
+              {
+                title: t("hospitalAdminDashboard.statStaff"),
+                value: aggregates.staff,
+                icon: "ri-user-settings-fill",
+                color: "primary",
+                link: "/admin/departments",
+              },
+              {
+                title: t("hospitalAdminDashboard.statPending"),
+                value: pending.length,
+                icon: "ri-calendar-todo-fill",
+                color: "warning",
+                link: "/admin/appointment-requests",
+              },
+              {
+                title: t("hospitalAdminDashboard.statQuestionnaires"),
+                value: questionnaireCount,
+                icon: "ri-file-list-3-fill",
+                color: "success",
+                link: "/admin/questionnaire-bank",
+              },
+            ].map((stat, i) => (
+              <Col key={i} xl={3} md={6} className="mb-4">
+                <Card className="border-0 shadow-sm h-100">
+                  <Card.Body>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <p className="text-muted mb-1 small">{stat.title}</p>
+                        <h3 className="mb-0">
+                          <CountUp end={typeof stat.value === "number" ? stat.value : 0} duration={1.2} />
+                        </h3>
+                      </div>
+                      <div className={`rounded-circle p-3 bg-${stat.color}-subtle`}>
+                        <i className={`ri-2x text-${stat.color} ${stat.icon}`}></i>
+                      </div>
+                    </div>
+                    {stat.link && (
+                      <Link to={stat.link} className="btn btn-sm btn-link p-0 mt-2 text-decoration-none">
+                        {t("hospitalAdminDashboard.viewDetails")} <i className="ri-arrow-right-line"></i>
+                      </Link>
+                    )}
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
 
-      <Row>
-        <Col lg={6} className="mb-4">
-          <Card className="border-0 shadow-sm">
-            <Card.Header className="bg-white border-0">
-              <h5 className="mb-0">Taux d'occupation</h5>
-            </Card.Header>
-            <Card.Body>
-              <div className="mb-3">
-                <div className="d-flex justify-content-between mb-1">
-                  <span>Consultations</span>
-                  <span>78%</span>
-                </div>
-                <ProgressBar variant="primary" now={78} className="mb-2" style={{ height: "8px" }} />
-              </div>
-              <div className="mb-3">
-                <div className="d-flex justify-content-between mb-1">
-                  <span>Urgences</span>
-                  <span>45%</span>
-                </div>
-                <ProgressBar variant="warning" now={45} className="mb-2" style={{ height: "8px" }} />
-              </div>
-              <div>
-                <div className="d-flex justify-content-between mb-1">
-                  <span>Chirurgie</span>
-                  <span>62%</span>
-                </div>
-                <ProgressBar variant="success" now={62} style={{ height: "8px" }} />
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={6} className="mb-4">
-          <Card className="border-0 shadow-sm">
-            <Card.Header className="bg-white border-0">
-              <h5 className="mb-0">Accès rapides</h5>
-            </Card.Header>
-            <Card.Body>
-              <Row className="g-2">
-                <Col xs={6}>
-                  <Link to="/doctor/doctor-list" className="btn btn-outline-primary w-100 py-3">
-                    <i className="ri-user-add-fill d-block mb-1"></i>
-                    Gestion médecins
+          <Row>
+            <Col lg={8} className="mb-4">
+              <Card className="border-0 shadow-sm">
+                <Card.Header className="bg-white border-0">
+                  <h5 className="mb-0">{t("hospitalAdminDashboard.distributionTitle")}</h5>
+                  <p className="text-muted small mb-0">{t("hospitalAdminDashboard.distributionSubtitle")}</p>
+                </Card.Header>
+                <Card.Body>
+                  <Chart options={barOptions} series={barSeries} type="bar" height={280} />
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col lg={4} className="mb-4">
+              <Card className="border-0 shadow-sm">
+                <Card.Header className="bg-white border-0 d-flex justify-content-between align-items-center">
+                  <h5 className="mb-0">{t("hospitalAdminDashboard.recentPendingTitle")}</h5>
+                  <Link to="/admin/appointment-requests" className="btn btn-sm btn-outline-primary">
+                    {t("hospitalAdminDashboard.viewAll")}
                   </Link>
-                </Col>
-                <Col xs={6}>
-                  <Link to="/calendar" className="btn btn-outline-success w-100 py-3">
-                    <i className="ri-calendar-fill d-block mb-1"></i>
-                    Calendrier
+                </Card.Header>
+                <Card.Body className="p-0">
+                  {recentPending.length === 0 ? (
+                    <p className="text-muted small px-3 py-4 mb-0">{t("hospitalAdminDashboard.emptyRecentPending")}</p>
+                  ) : (
+                    <Table responsive className="mb-0">
+                      <tbody>
+                        {recentPending.map((row) => (
+                          <tr key={row._id}>
+                            <td className="border-0 py-3">
+                              <div>
+                                <strong>{patientLabel(row)}</strong>
+                                <p className="mb-0 small text-muted">{row.title || "—"}</p>
+                              </div>
+                            </td>
+                            <td className="border-0 py-3 text-end">
+                              <Badge bg="secondary" className="me-1">
+                                {appointmentTypeLabel(row.type, t)}
+                              </Badge>
+                              <div className="small text-muted mt-1">{formatShort(row.createdAt)}</div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  )}
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          <Row>
+            <Col lg={6} className="mb-4">
+              <Card className="border-0 shadow-sm">
+                <Card.Header className="bg-white border-0 d-flex justify-content-between align-items-center">
+                  <h5 className="mb-0">{t("hospitalAdminDashboard.upcomingTitle")}</h5>
+                  <Link to="/admin/appointment-requests" className="btn btn-sm btn-outline-primary">
+                    {t("hospitalAdminDashboard.manageAppointments")}
                   </Link>
-                </Col>
-                <Col xs={6}>
-                  <Link to="/dashboard-pages/patient-dashboard" className="btn btn-outline-info w-100 py-3">
-                    <i className="ri-team-fill d-block mb-1"></i>
-                    Patients
-                  </Link>
-                </Col>
-                <Col xs={6}>
-                  <Link to="/extra-pages/account-setting" className="btn btn-outline-warning w-100 py-3">
-                    <i className="ri-settings-3-fill d-block mb-1"></i>
-                    Paramètres
-                  </Link>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+                </Card.Header>
+                <Card.Body className="p-0">
+                  {upcomingConfirmed.length === 0 ? (
+                    <p className="text-muted small px-3 py-4 mb-0">{t("hospitalAdminDashboard.emptyUpcoming")}</p>
+                  ) : (
+                    <Table responsive className="mb-0">
+                      <thead className="table-light">
+                        <tr>
+                          <th>{t("hospitalAdminDashboard.thPatient")}</th>
+                          <th className="text-end">{t("hospitalAdminDashboard.thDateTime")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {upcomingConfirmed.map((row) => (
+                          <tr key={row._id}>
+                            <td className="py-3">
+                              <span className="fw-semibold">{patientLabel(row)}</span>
+                              <div className="small text-muted">{row.title || "—"}</div>
+                            </td>
+                            <td className="py-3 text-end small">
+                              {row.date || "—"}
+                              {row.time && ` · ${row.time}`}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  )}
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col lg={6} className="mb-4">
+              <Card className="border-0 shadow-sm">
+                <Card.Header className="bg-white border-0">
+                  <h5 className="mb-0">{t("hospitalAdminDashboard.quickLinksTitle")}</h5>
+                </Card.Header>
+                <Card.Body>
+                  <Row className="g-2">
+                    <Col xs={6}>
+                      <Link to="/admin/departments" className="btn btn-outline-primary w-100 py-3">
+                        <i className="ri-building-2-fill d-block mb-1"></i>
+                        {t("hospitalAdminDashboard.linkDepartments")}
+                      </Link>
+                    </Col>
+                    <Col xs={6}>
+                      <Link to="/admin/appointment-requests" className="btn btn-outline-success w-100 py-3">
+                        <i className="ri-calendar-check-fill d-block mb-1"></i>
+                        {t("hospitalAdminDashboard.linkAppointments")}
+                      </Link>
+                    </Col>
+                    <Col xs={6}>
+                      <Link to="/admin/questionnaire-bank" className="btn btn-outline-info w-100 py-3">
+                        <i className="ri-file-list-3-fill d-block mb-1"></i>
+                        {t("hospitalAdminDashboard.linkQuestionnaires")}
+                      </Link>
+                    </Col>
+                    <Col xs={6}>
+                      <Link to="/admin/profile" className="btn btn-outline-secondary w-100 py-3">
+                        <i className="ri-user-settings-fill d-block mb-1"></i>
+                        {t("hospitalAdminDashboard.linkProfile")}
+                      </Link>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </>
+      )}
     </>
   );
 };

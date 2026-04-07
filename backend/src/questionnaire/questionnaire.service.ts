@@ -12,6 +12,7 @@ import { PatientProtocolAssignment } from './schemas/patient-protocol-assignment
 import { QuestionnaireAddon } from './schemas/questionnaire-addon.schema';
 import { QuestionnaireSubmission } from './schemas/questionnaire-submission.schema';
 import { Patient } from '../patient/schemas/patient.schema';
+import { DepartmentService } from '../department/department.service';
 
 export function addDaysYmd(dischargeYmd: string, dayOffset: number): string {
   const raw = String(dischargeYmd || '').slice(0, 10);
@@ -38,6 +39,7 @@ export class QuestionnaireService {
     @InjectModel(QuestionnaireAddon.name) private addonModel: Model<QuestionnaireAddon>,
     @InjectModel(QuestionnaireSubmission.name) private subModel: Model<QuestionnaireSubmission>,
     @InjectModel(Patient.name) private patientModel: Model<Patient>,
+    private departmentService: DepartmentService,
   ) {}
 
   private toOid(id: string) {
@@ -45,13 +47,38 @@ export class QuestionnaireService {
     return new Types.ObjectId(id);
   }
 
-  // ─── Admin : templates ───────────────────────────────────────────────────
-  async adminListTemplates() {
-    return this.tmplModel.find().sort({ department: 1, title: 1 }).lean().exec();
+  private async adminDepartmentScope(user: { role?: string; id?: unknown; department?: string }): Promise<string | null> {
+    if (user?.role === 'superadmin') return null;
+    if (user?.role !== 'admin') return null;
+    return this.departmentService.resolveHospitalAdminDepartmentName(user);
   }
 
-  async adminCreateTemplate(body: { title: string; department: string; description?: string; questions?: unknown[] }) {
-    const department = String(body.department || '').trim();
+  private async assertAdminTemplateAccess(
+    user: { role?: string; id?: unknown; department?: string },
+    department: string,
+  ) {
+    const scope = await this.adminDepartmentScope(user);
+    if (scope == null) return;
+    const d = String(department || '').trim();
+    if (!d || d !== scope) {
+      throw new ForbiddenException('Vous ne pouvez gérer que les questionnaires de votre département');
+    }
+  }
+
+  // ─── Admin : templates ───────────────────────────────────────────────────
+  async adminListTemplates(user?: { role?: string; id?: unknown; department?: string }) {
+    const scope = user ? await this.adminDepartmentScope(user) : null;
+    const q = scope ? { department: scope } : {};
+    return this.tmplModel.find(q).sort({ department: 1, title: 1 }).lean().exec();
+  }
+
+  async adminCreateTemplate(
+    user: { role?: string; id?: unknown; department?: string },
+    body: { title: string; department: string; description?: string; questions?: unknown[] },
+  ) {
+    const scope = await this.adminDepartmentScope(user);
+    let department = String(body.department || '').trim();
+    if (scope) department = scope;
     if (!department) throw new BadRequestException('Département requis');
     const questions = this.normalizeQuestions(body.questions);
     return this.tmplModel.create({
@@ -63,11 +90,20 @@ export class QuestionnaireService {
     });
   }
 
-  async adminUpdateTemplate(id: string, body: Partial<{ title: string; department: string; description: string; questions: unknown[]; isActive: boolean }>) {
+  async adminUpdateTemplate(
+    user: { role?: string; id?: unknown; department?: string },
+    id: string,
+    body: Partial<{ title: string; department: string; description: string; questions: unknown[]; isActive: boolean }>,
+  ) {
     const doc = await this.tmplModel.findById(id).exec();
     if (!doc) throw new NotFoundException('Questionnaire introuvable');
+    await this.assertAdminTemplateAccess(user, String(doc.department || ''));
     if (body.title != null) doc.title = String(body.title).trim();
-    if (body.department != null) doc.department = String(body.department).trim();
+    if (body.department != null) {
+      const next = String(body.department).trim();
+      await this.assertAdminTemplateAccess(user, next);
+      doc.department = next;
+    }
     if (body.description !== undefined) doc.description = body.description;
     if (body.isActive !== undefined) doc.isActive = !!body.isActive;
     if (body.questions != null) doc.questions = this.normalizeQuestions(body.questions);
@@ -75,9 +111,11 @@ export class QuestionnaireService {
     return doc;
   }
 
-  async adminDeleteTemplate(id: string) {
-    const r = await this.tmplModel.findByIdAndDelete(id).exec();
-    if (!r) throw new NotFoundException();
+  async adminDeleteTemplate(user: { role?: string; id?: unknown; department?: string }, id: string) {
+    const doc = await this.tmplModel.findById(id).exec();
+    if (!doc) throw new NotFoundException();
+    await this.assertAdminTemplateAccess(user, String(doc.department || ''));
+    await this.tmplModel.findByIdAndDelete(id).exec();
     return { ok: true };
   }
 
@@ -96,13 +134,27 @@ export class QuestionnaireService {
     }));
   }
 
-  // ─── Admin : protocols ───────────────────────────────────────────────────
-  async adminListProtocols() {
-    return this.protoModel.find().sort({ department: 1, name: 1 }).lean().exec();
+  private async assertAdminProtocolAccess(
+    user: { role?: string; id?: unknown; department?: string },
+    department: string,
+  ) {
+    await this.assertAdminTemplateAccess(user, department);
   }
 
-  async adminCreateProtocol(body: { name: string; department: string; description?: string; milestones?: { dayOffset: number; questionnaireTemplateId: string }[] }) {
-    const department = String(body.department || '').trim();
+  // ─── Admin : protocols ───────────────────────────────────────────────────
+  async adminListProtocols(user?: { role?: string; id?: unknown; department?: string }) {
+    const scope = user ? await this.adminDepartmentScope(user) : null;
+    const q = scope ? { department: scope } : {};
+    return this.protoModel.find(q).sort({ department: 1, name: 1 }).lean().exec();
+  }
+
+  async adminCreateProtocol(
+    user: { role?: string; id?: unknown; department?: string },
+    body: { name: string; department: string; description?: string; milestones?: { dayOffset: number; questionnaireTemplateId: string }[] },
+  ) {
+    const scope = await this.adminDepartmentScope(user);
+    let department = String(body.department || '').trim();
+    if (scope) department = scope;
     if (!department) throw new BadRequestException('Département requis');
     const milestones = await this.normalizeMilestones(body.milestones);
     return this.protoModel.create({
@@ -115,6 +167,7 @@ export class QuestionnaireService {
   }
 
   async adminUpdateProtocol(
+    user: { role?: string; id?: unknown; department?: string },
     id: string,
     body: Partial<{
       name: string;
@@ -126,8 +179,13 @@ export class QuestionnaireService {
   ) {
     const doc = await this.protoModel.findById(id).exec();
     if (!doc) throw new NotFoundException('Protocole introuvable');
+    await this.assertAdminProtocolAccess(user, String(doc.department || ''));
     if (body.name != null) doc.name = String(body.name).trim();
-    if (body.department != null) doc.department = String(body.department).trim();
+    if (body.department != null) {
+      const next = String(body.department).trim();
+      await this.assertAdminProtocolAccess(user, next);
+      doc.department = next;
+    }
     if (body.description !== undefined) doc.description = body.description;
     if (body.isActive !== undefined) doc.isActive = !!body.isActive;
     if (body.milestones != null) doc.milestones = await this.normalizeMilestones(body.milestones);
@@ -135,9 +193,11 @@ export class QuestionnaireService {
     return doc;
   }
 
-  async adminDeleteProtocol(id: string) {
-    const r = await this.protoModel.findByIdAndDelete(id).exec();
-    if (!r) throw new NotFoundException();
+  async adminDeleteProtocol(user: { role?: string; id?: unknown; department?: string }, id: string) {
+    const doc = await this.protoModel.findById(id).exec();
+    if (!doc) throw new NotFoundException();
+    await this.assertAdminProtocolAccess(user, String(doc.department || ''));
+    await this.protoModel.findByIdAndDelete(id).exec();
     return { ok: true };
   }
 

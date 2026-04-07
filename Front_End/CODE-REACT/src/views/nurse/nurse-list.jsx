@@ -10,8 +10,9 @@ const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 
 const DEFAULT_AVATAR = generatePath("/assets/images/user/11.png");
 
-const NurseList = () => {
+const NurseList = ({ hospitalAdminPaths = false }) => {
   const { t } = useTranslation();
+  const addNursePath = hospitalAdminPaths ? "/admin/add-nurse" : "/nurse/add-nurse";
   const [nurses, setNurses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -95,7 +96,7 @@ const NurseList = () => {
               <Card.Header.Title>
                 <h4 className="card-title">{t("nurseList.pageTitle")}</h4>
               </Card.Header.Title>
-              <Link to="/nurse/add-nurse" className="btn btn-primary-subtle">
+              <Link to={addNursePath} className="btn btn-primary-subtle">
                 <i className="ri-user-add-fill me-1"></i>{t("nurseList.addNurse")}
               </Link>
             </Card.Header>
@@ -161,7 +162,7 @@ const NurseList = () => {
             <Card>
               <Card.Body className="text-center py-5">
                 <p className="text-muted mb-3">{t("nurseList.emptyNoNurses")}</p>
-                <Link to="/nurse/add-nurse" className="btn btn-primary-subtle">{t("nurseList.addFirstNurse")}</Link>
+                <Link to={addNursePath} className="btn btn-primary-subtle">{t("nurseList.addFirstNurse")}</Link>
               </Card.Body>
             </Card>
           </Col>

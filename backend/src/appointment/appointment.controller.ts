@@ -26,23 +26,38 @@ export class AppointmentController {
   /** Demandes en attente de validation (admin / superadmin) */
   @UseGuards(JwtAuthGuard)
   @Get('admin/pending')
-  getPending(@Req() req: { user?: { role?: string } }) {
+  getPending(@Req() req: { user?: { id?: unknown; role?: string; department?: string } }) {
     const role = req.user?.role;
     if (!role || !['admin', 'superadmin'].includes(role)) {
       throw new ForbiddenException('Accès administrateur requis');
     }
-    return this.appointmentService.findPending();
+    return this.appointmentService.findPendingForAdminUser(req.user || {});
   }
 
   /** RDV confirmés à venir (admin / superadmin) */
   @UseGuards(JwtAuthGuard)
   @Get('admin/confirmed')
-  getAdminConfirmed(@Req() req: { user?: { role?: string } }) {
+  getAdminConfirmed(@Req() req: { user?: { id?: unknown; role?: string; department?: string } }) {
     const role = req.user?.role;
     if (!role || !['admin', 'superadmin'].includes(role)) {
       throw new ForbiddenException('Accès administrateur requis');
     }
-    return this.appointmentService.findConfirmedUpcomingForAdmin();
+    return this.appointmentService.findConfirmedUpcomingForAdminUser(req.user || {});
+  }
+
+  /** Mise à jour RDV par admin / super admin (périmètre département pour admin hospitalier). */
+  @UseGuards(JwtAuthGuard)
+  @Put('admin/:id')
+  updateAsAdmin(
+    @Req() req: { user?: { id?: unknown; role?: string; department?: string } },
+    @Param('id') id: string,
+    @Body() body: any,
+  ) {
+    const role = req.user?.role;
+    if (!role || !['admin', 'superadmin'].includes(role)) {
+      throw new ForbiddenException('Accès administrateur requis');
+    }
+    return this.appointmentService.updateAsAdminUser(req.user || {}, id, body);
   }
 
   /** RDV confirmés à venir pour le médecin connecté */

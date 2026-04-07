@@ -24,66 +24,66 @@ export class QuestionnaireController {
   // ─── Admin ───────────────────────────────────────────────────────────────
   @UseGuards(JwtAuthGuard)
   @Get('admin/templates')
-  async adminTemplates(@Req() req: { user?: { role?: string } }) {
+  async adminTemplates(@Req() req: { user?: { role?: string; id?: unknown; department?: string } }) {
     if (!isAdmin(req.user?.role)) throw new ForbiddenException();
-    return this.questionnaireService.adminListTemplates();
+    return this.questionnaireService.adminListTemplates(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('admin/templates')
-  async adminCreateTemplate(@Req() req: { user?: { role?: string } }, @Body() body: any) {
+  async adminCreateTemplate(@Req() req: { user?: { role?: string; id?: unknown; department?: string } }, @Body() body: any) {
     if (!isAdmin(req.user?.role)) throw new ForbiddenException();
-    return this.questionnaireService.adminCreateTemplate(body);
+    return this.questionnaireService.adminCreateTemplate(req.user || {}, body);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('admin/templates/:id')
   async adminUpdateTemplate(
-    @Req() req: { user?: { role?: string } },
+    @Req() req: { user?: { role?: string; id?: unknown; department?: string } },
     @Param('id') id: string,
     @Body() body: any,
   ) {
     if (!isAdmin(req.user?.role)) throw new ForbiddenException();
-    return this.questionnaireService.adminUpdateTemplate(id, body);
+    return this.questionnaireService.adminUpdateTemplate(req.user || {}, id, body);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('admin/templates/:id')
-  async adminDeleteTemplate(@Req() req: { user?: { role?: string } }, @Param('id') id: string) {
+  async adminDeleteTemplate(@Req() req: { user?: { role?: string; id?: unknown; department?: string } }, @Param('id') id: string) {
     if (!isAdmin(req.user?.role)) throw new ForbiddenException();
-    return this.questionnaireService.adminDeleteTemplate(id);
+    return this.questionnaireService.adminDeleteTemplate(req.user || {}, id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('admin/protocols')
-  async adminProtocols(@Req() req: { user?: { role?: string } }) {
+  async adminProtocols(@Req() req: { user?: { role?: string; id?: unknown; department?: string } }) {
     if (!isAdmin(req.user?.role)) throw new ForbiddenException();
-    return this.questionnaireService.adminListProtocols();
+    return this.questionnaireService.adminListProtocols(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('admin/protocols')
-  async adminCreateProtocol(@Req() req: { user?: { role?: string } }, @Body() body: any) {
+  async adminCreateProtocol(@Req() req: { user?: { role?: string; id?: unknown; department?: string } }, @Body() body: any) {
     if (!isAdmin(req.user?.role)) throw new ForbiddenException();
-    return this.questionnaireService.adminCreateProtocol(body);
+    return this.questionnaireService.adminCreateProtocol(req.user || {}, body);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('admin/protocols/:id')
   async adminUpdateProtocol(
-    @Req() req: { user?: { role?: string } },
+    @Req() req: { user?: { role?: string; id?: unknown; department?: string } },
     @Param('id') id: string,
     @Body() body: any,
   ) {
     if (!isAdmin(req.user?.role)) throw new ForbiddenException();
-    return this.questionnaireService.adminUpdateProtocol(id, body);
+    return this.questionnaireService.adminUpdateProtocol(req.user || {}, id, body);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('admin/protocols/:id')
-  async adminDeleteProtocol(@Req() req: { user?: { role?: string } }, @Param('id') id: string) {
+  async adminDeleteProtocol(@Req() req: { user?: { role?: string; id?: unknown; department?: string } }, @Param('id') id: string) {
     if (!isAdmin(req.user?.role)) throw new ForbiddenException();
-    return this.questionnaireService.adminDeleteProtocol(id);
+    return this.questionnaireService.adminDeleteProtocol(req.user || {}, id);
   }
 
   // ─── Doctor ───────────────────────────────────────────────────────────────

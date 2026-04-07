@@ -1,20 +1,43 @@
-import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { Patient } from './schemas/patient.schema';
+import { Doctor } from '../doctor/schemas/doctor.schema';
+import { Nurse } from '../nurse/schemas/nurse.schema';
 import { EmailService } from '../auth/email.service';
 import { SmsService } from '../auth/sms.service';
+import { DepartmentService } from '../department/department.service';
+
+type Requester = { role?: string; id?: unknown; department?: string };
 
 @Injectable()
 export class PatientService {
   constructor(
     @InjectModel(Patient.name) private patientModel: Model<Patient>,
+    @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
+    @InjectModel(Nurse.name) private nurseModel: Model<Nurse>,
     private emailService: EmailService,
     private smsService: SmsService,
+    private departmentService: DepartmentService,
   ) {}
 
-  async create(data: Partial<Patient>) {
+  private async assertHospitalAdminManagesPatient(requester: Requester | undefined, patientId: string) {
+    if (requester?.role !== 'admin') return;
+    const dept = await this.departmentService.resolveHospitalAdminDepartmentName(requester);
+    if (!dept) throw new ForbiddenException('Aucun département assigné à votre profil');
+    const scope = this.departmentService.patientDocumentFilterForDepartmentName(dept);
+    const p = await this.patientModel.findOne({ _id: patientId, ...scope }).select('_id').lean().exec();
+    if (!p) throw new ForbiddenException('Ce patient n’appartient pas à votre département');
+  }
+
+  async create(data: Partial<Patient>, requester?: Requester) {
     const exists = await this.patientModel.findOne({ email: data.email }).exec();
     if (exists) throw new ConflictException('Un patient avec cet email existe déjà');
     if (!data.password) throw new BadRequestException('Le mot de passe est requis');
@@ -25,6 +48,27 @@ export class PatientService {
     const createPayload: any = { ...data, password: hashed };
     if (!createPayload.doctorId) delete createPayload.doctorId;
     if (!createPayload.nurseId) delete createPayload.nurseId;
+
+    if (requester?.role === 'admin') {
+      const dept = await this.departmentService.resolveHospitalAdminDepartmentName(requester);
+      if (!dept) {
+        throw new ForbiddenException('Aucun département assigné : impossible de créer un patient');
+      }
+      createPayload.department = dept;
+      createPayload.service = dept;
+      if (createPayload.doctorId) {
+        const d = await this.doctorModel.findById(createPayload.doctorId).select('department').lean().exec();
+        if (!d || String((d as { department?: string }).department || '').trim() !== dept) {
+          throw new BadRequestException('Le médecin référent doit appartenir à votre département');
+        }
+      }
+      if (createPayload.nurseId) {
+        const n = await this.nurseModel.findById(createPayload.nurseId).select('department').lean().exec();
+        if (!n || String((n as { department?: string }).department || '').trim() !== dept) {
+          throw new BadRequestException('L’infirmier référent doit appartenir à votre département');
+        }
+      }
+    }
 
     const patient = await this.patientModel.create(createPayload);
 
@@ -62,9 +106,14 @@ export class PatientService {
     return result;
   }
 
-  async findAll() {
-    const patients = await this.patientModel.find().select('-password').sort({ createdAt: -1 }).exec();
-    return patients;
+  async findAll(requester?: Requester) {
+    if (requester?.role === 'admin') {
+      const dept = await this.departmentService.resolveHospitalAdminDepartmentName(requester);
+      if (!dept) return [];
+      const scope = this.departmentService.patientDocumentFilterForDepartmentName(dept);
+      return this.patientModel.find(scope).select('-password').sort({ createdAt: -1 }).exec();
+    }
+    return this.patientModel.find().select('-password').sort({ createdAt: -1 }).exec();
   }
 
   /** Patients dont le médecin référent correspond à doctorId (champ doctorId). */
@@ -78,15 +127,34 @@ export class PatientService {
       .exec();
   }
 
-  async findById(id: string) {
+  async findById(id: string, requester?: Requester) {
     const patient = await this.patientModel.findById(id).select('-password').exec();
     if (!patient) throw new NotFoundException('Patient non trouvé');
+    await this.assertHospitalAdminManagesPatient(requester, id);
     return patient;
   }
 
-  async update(id: string, data: Partial<Patient>) {
+  async update(id: string, data: Partial<Patient>, requester?: Requester) {
+    await this.assertHospitalAdminManagesPatient(requester, id);
     const patient = await this.patientModel.findById(id).exec();
     if (!patient) throw new NotFoundException('Patient non trouvé');
+    if (requester?.role === 'admin') {
+      const dept = await this.departmentService.resolveHospitalAdminDepartmentName(requester);
+      if (!dept) throw new ForbiddenException('Aucun département assigné à votre profil');
+      data = { ...data, department: dept, service: dept };
+      if (data.doctorId) {
+        const d = await this.doctorModel.findById(data.doctorId).select('department').lean().exec();
+        if (!d || String((d as { department?: string }).department || '').trim() !== dept) {
+          throw new BadRequestException('Le médecin référent doit appartenir à votre département');
+        }
+      }
+      if (data.nurseId) {
+        const n = await this.nurseModel.findById(data.nurseId).select('department').lean().exec();
+        if (!n || String((n as { department?: string }).department || '').trim() !== dept) {
+          throw new BadRequestException('L’infirmier référent doit appartenir à votre département');
+        }
+      }
+    }
     if (data.email && data.email !== patient.email) {
       const exists = await this.patientModel.findOne({ email: data.email }).exec();
       if (exists) throw new ConflictException('Un patient avec cet email existe déjà');
@@ -116,13 +184,15 @@ export class PatientService {
     return updated;
   }
 
-  async delete(id: string) {
+  async delete(id: string, requester?: Requester) {
+    await this.assertHospitalAdminManagesPatient(requester, id);
     const patient = await this.patientModel.findByIdAndDelete(id).exec();
     if (!patient) throw new NotFoundException('Patient non trouvé');
     return { message: 'Patient supprimé' };
   }
 
-  async toggleActive(id: string) {
+  async toggleActive(id: string, requester?: Requester) {
+    await this.assertHospitalAdminManagesPatient(requester, id);
     const patient = await this.patientModel.findById(id).exec();
     if (!patient) throw new NotFoundException('Patient non trouvé');
     const newStatus = patient.isActive === false ? true : false;
@@ -130,9 +200,10 @@ export class PatientService {
     return { id, isActive: newStatus, message: newStatus ? 'Compte activé' : 'Compte désactivé' };
   }
 
-  async getCareTeam(id: string) {
+  async getCareTeam(id: string, requester?: Requester) {
     const patient = await this.patientModel.findById(id).select('-password').exec();
     if (!patient) throw new NotFoundException('Patient non trouvé');
+    await this.assertHospitalAdminManagesPatient(requester, id);
     return {
       doctorId: patient.doctorId,
       nurseId: patient.nurseId,

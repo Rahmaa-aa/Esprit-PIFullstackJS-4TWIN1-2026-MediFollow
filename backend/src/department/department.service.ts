@@ -169,6 +169,62 @@ export class DepartmentService {
     return summaries;
   }
 
+  /**
+   * Département hospitalier effectif pour un JWT admin (catalogue assignedAdminId, sinon User.department).
+   */
+  async resolveHospitalAdminDepartmentName(user: {
+    id?: unknown;
+    role?: string;
+    department?: string;
+  }): Promise<string | null> {
+    if (user?.role !== 'admin') return null;
+    const uid = String(user.id ?? '').trim();
+    if (uid && Types.ObjectId.isValid(uid)) {
+      const cat = await this.departmentCatalogModel
+        .findOne({ assignedAdminId: new Types.ObjectId(uid) })
+        .select('name')
+        .lean()
+        .exec();
+      const n = cat && (cat as { name?: string }).name ? String((cat as { name: string }).name).trim() : '';
+      if (n) return n;
+    }
+    const d = String(user.department || '').trim();
+    return d || null;
+  }
+
+  /**
+   * Filtre Mongo pour documents Patient : department = nom ou repli sur service (données héritées).
+   */
+  patientDocumentFilterForDepartmentName(departmentName: string) {
+    const name = String(departmentName || '').trim();
+    return {
+      $or: [
+        { department: name },
+        {
+          $and: [
+            { $or: [{ department: null }, { department: '' }, { department: { $exists: false } }] },
+            { service: name },
+          ],
+        },
+      ],
+    };
+  }
+
+  /** Résumé départements : super admin = tout ; admin hospitalier = son département uniquement. */
+  async listSummariesForRequester(user: { id?: unknown; role?: string; department?: string }) {
+    const full = await this.listSummaries();
+    if (user?.role === 'superadmin') return full;
+    if (user?.role !== 'admin') return full;
+    const deptName = await this.resolveHospitalAdminDepartmentName(user);
+    if (deptName) {
+      const row = full.find((s) => s.name === deptName);
+      return row ? [row] : [];
+    }
+    const uid = String(user.id ?? '');
+    const assigned = full.filter((s) => s.assignedAdminId && String(s.assignedAdminId) === uid);
+    return assigned.length ? assigned : [];
+  }
+
   async updateCatalogDepartment(catalogId: string, rawNewName: string) {
     if (!Types.ObjectId.isValid(catalogId)) {
       throw new BadRequestException('Identifiant catalogue invalide');

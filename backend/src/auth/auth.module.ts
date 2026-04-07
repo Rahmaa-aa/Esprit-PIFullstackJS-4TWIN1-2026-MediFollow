@@ -16,6 +16,7 @@ import { PasskeyCredential, PasskeyCredentialSchema } from './schemas/passkey-cr
 import { PasskeyChallenge, PasskeyChallengeSchema } from './schemas/passkey-challenge.schema';
 import { FaceLoginProfile, FaceLoginProfileSchema } from './schemas/face-login-profile.schema';
 import { DepartmentCatalog, DepartmentCatalogSchema } from '../department/schemas/department-catalog.schema';
+import { DepartmentModule } from '../department/department.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { DepartmentCatalog, DepartmentCatalogSchema } from '../department/schema
       { name: FaceLoginProfile.name, schema: FaceLoginProfileSchema },
       { name: DepartmentCatalog.name, schema: DepartmentCatalogSchema },
     ]),
+    DepartmentModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'medifollow-secret-key-change-in-production',

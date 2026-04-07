@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Row, Col, Card, Form, Button, Alert, Spinner } from "react-bootstrap";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { superAdminApi } from "../../services/api";
 import { fetchCatalogDepartmentNamesOnly, mergeDepartmentOptionsForValue } from "../../utils/mergedDepartmentNames";
@@ -20,6 +20,9 @@ const EditAdmin = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const adminsBase = pathname.startsWith("/admin/admins") ? "/admin/admins" : "/super-admin/admins";
+  const isHospitalAdminContext = pathname.startsWith("/admin/admins");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -45,8 +48,12 @@ const EditAdmin = () => {
       try {
         const data = await superAdminApi.getAdminById(id);
         const u = data?.data || data;
-        const catalogOnly = await fetchCatalogDepartmentNamesOnly();
-        setDeptOptions(mergeDepartmentOptionsForValue(catalogOnly, u.department));
+        if (isHospitalAdminContext) {
+          setDeptOptions(mergeDepartmentOptionsForValue([], u.department));
+        } else {
+          const catalogOnly = await fetchCatalogDepartmentNamesOnly();
+          setDeptOptions(mergeDepartmentOptionsForValue(catalogOnly, u.department));
+        }
         const pic = u.profileImage && String(u.profileImage).trim();
         setProfilePreview(
           pic && (pic.startsWith("data:") || pic.startsWith("http") || pic.startsWith("/")) ? pic : DEFAULT_AVATAR,
@@ -70,7 +77,7 @@ const EditAdmin = () => {
       }
     };
     load();
-  }, [id, t]);
+  }, [id, t, isHospitalAdminContext]);
 
   const handleChange = (e) => {
     setValidationKeys([]);
@@ -113,7 +120,7 @@ const EditAdmin = () => {
       }
       await superAdminApi.updateAdmin(id, payload);
       setSuccess(t("editAdmin.updateSuccess"));
-      setTimeout(() => navigate("/super-admin/admins"), 1500);
+      setTimeout(() => navigate(adminsBase), 1500);
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || t("editAdmin.updateError"));
     } finally {
@@ -183,16 +190,29 @@ const EditAdmin = () => {
                 <Col md={12}>
                   <Form.Group>
                     <Form.Label>{t("editAdmin.labelDepartment")}</Form.Label>
-                    <Form.Control as="select" name="department" value={form.department} onChange={handleChange} autoComplete="off">
-                      <option value="">{t("editAdmin.selectDepartment")}</option>
-                      {deptOptions.map((d) => (
-                        <option key={d} value={d}>
-                          {hospitalDepartmentLabel(d, t)}
-                        </option>
-                      ))}
-                    </Form.Control>
-                    {deptOptions.length === 0 && (
-                      <Form.Text className="text-muted">{t("addAuditor.catalogOnlyEmptyHint")}</Form.Text>
+                    {isHospitalAdminContext ? (
+                      <>
+                        <Form.Control
+                          readOnly
+                          disabled
+                          value={form.department ? hospitalDepartmentLabel(form.department, t) : ""}
+                        />
+                        <Form.Text className="text-muted">{t("addDoctor.departmentLockedHint")}</Form.Text>
+                      </>
+                    ) : (
+                      <>
+                        <Form.Control as="select" name="department" value={form.department} onChange={handleChange} autoComplete="off">
+                          <option value="">{t("editAdmin.selectDepartment")}</option>
+                          {deptOptions.map((d) => (
+                            <option key={d} value={d}>
+                              {hospitalDepartmentLabel(d, t)}
+                            </option>
+                          ))}
+                        </Form.Control>
+                        {deptOptions.length === 0 && (
+                          <Form.Text className="text-muted">{t("addAuditor.catalogOnlyEmptyHint")}</Form.Text>
+                        )}
+                      </>
                     )}
                   </Form.Group>
                 </Col>
@@ -265,7 +285,7 @@ const EditAdmin = () => {
                     </>
                   )}
                 </Button>
-                <Button variant="outline-secondary" onClick={() => navigate("/super-admin/admins")}>
+                <Button variant="outline-secondary" onClick={() => navigate(adminsBase)}>
                   {t("editAdmin.cancel")}
                 </Button>
               </div>

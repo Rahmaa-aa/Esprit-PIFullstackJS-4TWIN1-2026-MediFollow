@@ -118,11 +118,21 @@ export class ChatController {
       return this.chatService.getMessagesGroup({ id: u.id, role: String(u.role || '') }, groupId, before, lim);
     }
     if (peerRole && peerId) {
-      if (peerRole !== 'doctor' && peerRole !== 'nurse' && peerRole !== 'carecoordinator') {
+      if (
+        peerRole !== 'doctor' &&
+        peerRole !== 'nurse' &&
+        peerRole !== 'carecoordinator' &&
+        peerRole !== 'admin'
+      ) {
         throw new BadRequestException('peerRole invalide');
       }
       if (String(u.role) === 'patient') {
-        if (peerRole !== 'doctor' && peerRole !== 'nurse' && peerRole !== 'carecoordinator') {
+        if (
+          peerRole !== 'doctor' &&
+          peerRole !== 'nurse' &&
+          peerRole !== 'carecoordinator' &&
+          peerRole !== 'admin'
+        ) {
           throw new BadRequestException('peerRole invalide');
         }
         return this.chatService.getMessagesPatientStaff(
@@ -173,7 +183,7 @@ export class ChatController {
       patientId?: string;
       body?: string;
       kind?: 'text' | 'call';
-      peerRole?: 'doctor' | 'nurse' | 'carecoordinator';
+      peerRole?: 'doctor' | 'nurse' | 'carecoordinator' | 'admin';
       peerId?: string;
       groupId?: string;
     },
@@ -270,7 +280,11 @@ export class ChatController {
   ) {
     const u = req.user;
     if (!u?.id) throw new ForbiddenException();
-    if (!peerRole || !peerId || (peerRole !== 'doctor' && peerRole !== 'nurse' && peerRole !== 'carecoordinator')) {
+    if (
+      !peerRole ||
+      !peerId ||
+      (peerRole !== 'doctor' && peerRole !== 'nurse' && peerRole !== 'carecoordinator' && peerRole !== 'admin')
+    ) {
       throw new BadRequestException('peerRole et peerId requis');
     }
     return this.chatService.markReadPatientStaff({ id: u.id, role: String(u.role || '') }, peerRole, peerId);
@@ -285,7 +299,11 @@ export class ChatController {
   ) {
     const u = req.user;
     if (!u?.id) throw new ForbiddenException();
-    if (!peerRole || !peerId || (peerRole !== 'doctor' && peerRole !== 'nurse' && peerRole !== 'carecoordinator')) {
+    if (
+      !peerRole ||
+      !peerId ||
+      (peerRole !== 'doctor' && peerRole !== 'nurse' && peerRole !== 'carecoordinator' && peerRole !== 'admin')
+    ) {
       throw new BadRequestException('peerRole et peerId requis');
     }
     return this.chatService.markReadPeer(chatUserFromReq(u as { id?: unknown; role?: string; department?: string }), peerRole, peerId);

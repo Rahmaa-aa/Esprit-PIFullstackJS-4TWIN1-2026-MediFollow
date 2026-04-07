@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { NurseService } from './nurse.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 
 @Controller('nurses')
 export class NurseController {
@@ -8,35 +9,41 @@ export class NurseController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Body() body: any) {
-    return this.nurseService.create(body);
+  async create(@Req() req: { user?: { role?: string; id?: unknown; department?: string } }, @Body() body: any) {
+    return this.nurseService.create(body, req.user);
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get()
-  async findAll() {
-    return this.nurseService.findAll();
+  async findAll(@Req() req: { user?: { role?: string; id?: unknown; department?: string } }) {
+    return this.nurseService.findAll(req.user);
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.nurseService.findById(id);
+  async findOne(@Param('id') id: string, @Req() req: { user?: { role?: string; id?: unknown; department?: string } }) {
+    return this.nurseService.findById(id, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: any) {
-    return this.nurseService.update(id, body);
+  async update(
+    @Req() req: { user?: { role?: string; id?: unknown; department?: string } },
+    @Param('id') id: string,
+    @Body() body: any,
+  ) {
+    return this.nurseService.update(id, body, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async delete(@Param('id') id: string) {
-    return this.nurseService.delete(id);
+  async delete(@Req() req: { user?: { role?: string; id?: unknown; department?: string } }, @Param('id') id: string) {
+    return this.nurseService.delete(id, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put(':id/toggle-active')
-  async toggleActive(@Param('id') id: string) {
-    return this.nurseService.toggleActive(id);
+  async toggleActive(@Req() req: { user?: { role?: string; id?: unknown; department?: string } }, @Param('id') id: string) {
+    return this.nurseService.toggleActive(id, req.user);
   }
 }

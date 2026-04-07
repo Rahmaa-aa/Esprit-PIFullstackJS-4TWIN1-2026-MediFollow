@@ -4,11 +4,13 @@ import { NurseController } from './nurse.controller';
 import { NurseService } from './nurse.service';
 import { Nurse, NurseSchema } from './schemas/nurse.schema';
 import { AuthModule } from '../auth/auth.module';
+import { DepartmentModule } from '../department/department.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Nurse.name, schema: NurseSchema }]),
     AuthModule,
+    DepartmentModule,
   ],
   controllers: [NurseController],
   providers: [NurseService],

@@ -584,6 +584,46 @@ export const DefaultRoute = [
         path: '/admin/questionnaire-bank',
         element: <AdminQuestionnaireBank />
       },
+      {
+        path: '/admin/doctor-list',
+        element: <DoctorList hospitalAdminPaths />
+      },
+      {
+        path: '/admin/add-doctor',
+        element: <AddDoctor hospitalAdminMode />
+      },
+      {
+        path: '/admin/nurse-list',
+        element: <NurseList hospitalAdminPaths />
+      },
+      {
+        path: '/admin/add-nurse',
+        element: <AddNurse hospitalAdminMode />
+      },
+      {
+        path: '/admin/patient-list',
+        element: <PatientList hospitalAdminPaths />
+      },
+      {
+        path: '/admin/add-patient',
+        element: <AddPatient hospitalAdminMode />
+      },
+      {
+        path: '/admin/admins',
+        element: <AdminList />
+      },
+      {
+        path: '/admin/admins/add',
+        element: <AddPlatformAdmin hospitalAdminMode />
+      },
+      {
+        path: '/admin/admins/edit/:id',
+        element: <EditAdmin />
+      },
+      {
+        path: '/admin/admins/:id',
+        element: <ViewAdmin />
+      },
 
       //  ------ Super Admin Routes ------
       {
