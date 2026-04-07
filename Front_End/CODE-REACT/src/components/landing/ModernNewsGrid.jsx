@@ -12,9 +12,9 @@ const ModernNewsGrid = () => {
     useEffect(() => {
         const fetchNews = async () => {
             try {
-                // Fetch Global Healthcare News via Google News RSS and rss2json proxy
-                const rssUrl = "https://news.google.com/rss/search?q=Global+Health+Medical+Breakthroughs&hl=en-US&gl=US&ceid=US:en";
-                const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+                // Fetch Global Healthcare News via Free NewsAPI mirror (returns actual images)
+                const apiUrl = "https://saurav.tech/NewsAPI/top-headlines/category/health/us.json";
+                const response = await fetch(apiUrl);
                 
                 if (!response.ok) {
                     throw new Error("Unable to fetch global news data.");
@@ -23,7 +23,7 @@ const ModernNewsGrid = () => {
                 const data = await response.json();
                 
                 if (data.status === "ok") {
-                    setNewsData(data.items.slice(0, 9)); // Cap at 9 articles
+                    setNewsData(data.articles.slice(0, 9)); // Cap at 9 articles
                 } else {
                     throw new Error(data.message || "Failed to load feed");
                 }
@@ -59,14 +59,14 @@ const ModernNewsGrid = () => {
                 ) : (
                     <Row className="g-4">
                         {newsData.map((item, index) => {
-                            let snippet = stripHtml(item.description);
+                            let snippet = item.description || "";
                             if (snippet.length > 180) snippet = snippet.slice(0, 180) + "...";
                             
                             // A fallback realistic generic medical thumbnail if image is missing
                             const fallbackImg = "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?q=80&w=1000&auto=format&fit=crop";
-                            const thumbnail = item.thumbnail || fallbackImg;
+                            const thumbnail = item.urlToImage || fallbackImg;
                             
-                            const date = new Date(item.pubDate).toLocaleDateString(undefined, {
+                            const date = new Date(item.publishedAt).toLocaleDateString(undefined, {
                                 year: "numeric",
                                 month: "short",
                                 day: "numeric",
@@ -86,7 +86,7 @@ const ModernNewsGrid = () => {
                                                 onError={(e) => { e.target.src = fallbackImg }} 
                                             />
                                             <div className="position-absolute" style={{ top: "15px", left: "15px", backgroundColor: "rgba(8, 155, 171, 0.9)", color: "white", padding: "5px 12px", borderRadius: "20px", fontSize: "0.8rem", fontWeight: "bold" }}>
-                                                {item.categories && item.categories.length > 0 ? item.categories[0] : "Global Health"}
+                                                {item.source?.name || "Global Health"}
                                             </div>
                                         </div>
                                         <Card.Body className="d-flex flex-column p-4">
@@ -104,7 +104,7 @@ const ModernNewsGrid = () => {
                                             </p>
                                             <div className="mt-4 pt-3 border-top border-light">
                                                 <Button 
-                                                    href={item.link} 
+                                                    href={item.url} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer" 
                                                     variant="outline-primary" 
