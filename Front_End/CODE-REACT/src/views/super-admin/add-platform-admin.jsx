@@ -109,7 +109,7 @@ const AddPlatformAdmin = () => {
       });
       setEmailSent(res.credentialsEmailSent === true);
       setSuccess(t("addPlatformAdmin.createSuccess"));
-      setTimeout(() => navigate("/super-admin/platform-users"), 2200);
+      setTimeout(() => navigate("/super-admin/admins"), 2200);
     } catch (err) {
       setError(err.message || t("addPlatformAdmin.createError"));
     } finally {
@@ -265,7 +265,7 @@ const AddPlatformAdmin = () => {
                     </Col>
                   </Row>
                   <div className="d-flex gap-2 mt-3">
-                    <Button type="button" variant="outline-danger" onClick={() => navigate("/super-admin/platform-users")}>
+                    <Button type="button" variant="outline-danger" onClick={() => navigate("/super-admin/admins")}>
                       {t("addNurse.cancel")}
                     </Button>
                     <Button type="submit" className="btn btn-primary-subtle" disabled={loading}>

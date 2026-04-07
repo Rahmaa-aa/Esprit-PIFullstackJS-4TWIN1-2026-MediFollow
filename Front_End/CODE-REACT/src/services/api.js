@@ -648,6 +648,8 @@ export const departmentApi = {
   catalog: () => api.get("/departments/catalog"),
   /** Super admin : noms du catalogue sans administrateur assigné. */
   catalogEligibleForAdmin: () => api.get("/departments/catalog/eligible-for-admin"),
+  /** Noms présents uniquement dans department_catalog (pas liste fusionnée). */
+  catalogNamesOnly: () => api.get("/departments/catalog/names-only"),
   createCatalog: (data) => api.post("/departments", data),
   ensureCatalog: (data) => api.post("/departments/catalog/ensure", data),
   updateCatalog: (catalogId, data) =>
@@ -689,6 +691,10 @@ export const superAdminApi = {
   getAllUsers: () => api.get("/auth/users"),
   /** Créer un compte admin (JWT super admin uniquement). */
   createAdmin: (data) => api.post("/auth/admins", data),
+  getAdmins: () => api.get("/auth/admins"),
+  getAdminById: (id) => api.get(`/auth/admins/${encodeURIComponent(id)}`),
+  updateAdmin: (id, data) => api.put(`/auth/admins/${encodeURIComponent(id)}`, data),
+  deleteAdmin: (id) => api.delete(`/auth/admins/${encodeURIComponent(id)}`),
   toggleUserActive: (id) => api.put(`/auth/users/${id}/toggle-active`, {}),
   deleteUser: (id) => api.delete(`/auth/users/${id}`),
   createAuditor: (data) => api.post("/auth/auditors", data),

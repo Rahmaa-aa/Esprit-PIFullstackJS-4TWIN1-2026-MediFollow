@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 
 const LINKS = [
   {
-    to: "/super-admin/platform-users/add-admin",
+    to: "/super-admin/admins",
     icon: "ri-user-star-line",
     titleKey: "platformUsers.cardAdminTitle",
     descKey: "platformUsers.cardAdminDesc",

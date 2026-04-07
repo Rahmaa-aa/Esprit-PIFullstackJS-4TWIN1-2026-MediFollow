@@ -27,7 +27,6 @@ const FIELD_DEFS = [
     getValue: (a, t) => departmentLabel(a.department, t),
     icon: "ri-building-2-line",
   },
-  { labelKey: "labelSpecialty", getValue: (a) => a.specialty, icon: "ri-stethoscope-line" },
   { labelKey: "labelAddress", getValue: (a) => a.address, icon: "ri-map-pin-line" },
   { labelKey: "labelCity", getValue: (a) => a.city, icon: "ri-building-line" },
   { labelKey: "labelCountry", getValue: (a) => a.country, icon: "ri-global-line" },
@@ -74,6 +73,9 @@ const ViewAuditor = () => {
     auditor.email;
 
   const initial = displayName?.length ? displayName[0].toUpperCase() : t("superAdminViewAuditor.avatarFallback");
+  const pic = auditor.profileImage && String(auditor.profileImage).trim();
+  const avatarSrc =
+    pic && (pic.startsWith("data:") || pic.startsWith("http") || pic.startsWith("/")) ? pic : null;
 
   return (
     <Row className="justify-content-center">
@@ -97,12 +99,21 @@ const ViewAuditor = () => {
           </Card.Header>
           <Card.Body className="p-4">
             <div className="d-flex align-items-center gap-4 mb-4 pb-4 border-bottom">
-              <div
-                className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                style={{ width: 80, height: 80, background: "#009688", fontSize: 28, flexShrink: 0 }}
-              >
-                {initial}
-              </div>
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt=""
+                  className="rounded-circle border"
+                  style={{ width: 80, height: 80, objectFit: "cover", flexShrink: 0 }}
+                />
+              ) : (
+                <div
+                  className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                  style={{ width: 80, height: 80, background: "#009688", fontSize: 28, flexShrink: 0 }}
+                >
+                  {initial}
+                </div>
+              )}
               <div>
                 <h4 className="mb-1">{displayName}</h4>
                 <Badge bg="secondary" className="me-2">{t("superAdminDashboard.roleAuditor")}</Badge>

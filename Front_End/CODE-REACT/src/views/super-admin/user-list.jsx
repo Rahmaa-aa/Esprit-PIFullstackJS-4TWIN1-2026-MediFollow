@@ -176,7 +176,7 @@ const UserList = () => {
           <Col xs="auto" className="mb-4">
             <Button
               as={Link}
-              to="/super-admin/platform-users/add-admin"
+              to="/super-admin/admins"
               variant="primary"
               size="sm"
               className="text-nowrap"

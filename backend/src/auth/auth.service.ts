@@ -43,12 +43,17 @@ export class AuthService {
     private emailService: EmailService,
   ) {}
 
-  /** Après création / mise à jour d’un admin avec département : une entrée catalogue par nom. */
-  private async syncAdminCatalogEntry(adminId: Types.ObjectId | string, deptName: string) {
+  private async releaseAdminCatalogAssignments(adminId: Types.ObjectId | string) {
     const oid = new Types.ObjectId(String(adminId));
     await this.departmentCatalogModel
       .updateMany({ assignedAdminId: oid }, { $unset: { assignedAdminId: 1, assignedSuperAdminId: 1 } })
       .exec();
+  }
+
+  /** Après création / mise à jour d’un admin avec département : une entrée catalogue par nom. */
+  private async syncAdminCatalogEntry(adminId: Types.ObjectId | string, deptName: string) {
+    const oid = new Types.ObjectId(String(adminId));
+    await this.releaseAdminCatalogAssignments(adminId);
     await this.departmentCatalogModel
       .updateOne(
         { name: deptName.trim() },
@@ -859,6 +864,9 @@ export class AuthService {
   async deleteUser(id: string) {
     const user = await this.userModel.findById(id).exec();
     if (!user) throw new UnauthorizedException('Utilisateur non trouvé');
+    if (user.role === 'admin') {
+      await this.releaseAdminCatalogAssignments(user._id);
+    }
     await this.userModel.deleteOne({ _id: id }).exec();
     return { message: 'Utilisateur supprimé avec succès' };
   }
@@ -969,6 +977,25 @@ export class AuthService {
     ).select('-password').exec();
 
     if (!updated) throw new UnauthorizedException('User not found');
+
+    if (updated.role === 'admin' && data.department !== undefined) {
+      const dept = String(data.department ?? '').trim();
+      if (dept) {
+        const cat = await this.departmentCatalogModel.findOne({ name: dept }).exec();
+        if (
+          cat?.assignedAdminId &&
+          String(cat.assignedAdminId) !== String(updated._id)
+        ) {
+          throw new ConflictException(
+            'Un administrateur est déjà assigné à ce département dans le catalogue. Retirez l’assignation ou choisissez un autre département.',
+          );
+        }
+        await this.syncAdminCatalogEntry(updated._id, dept);
+      } else {
+        await this.releaseAdminCatalogAssignments(updated._id);
+      }
+    }
+
     return {
       id: updated._id,
       email: updated.email,

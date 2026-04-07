@@ -1,22 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Card from "../../components/Card";
 import { Button, Col, Container, Form, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { superAdminApi } from "../../services/api";
+import { fetchCatalogDepartmentNamesOnly } from "../../utils/mergedDepartmentNames";
+import { hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
-
-const DEPARTMENTS = ["Qualité", "Conformité", "Audit Interne", "Gestion des risques", "Direction Médicale", "Autre"];
-
-const DEPARTMENT_I18N = {
-  "Qualité": "deptQuality",
-  "Conformité": "deptCompliance",
-  "Audit Interne": "deptInternalAudit",
-  "Gestion des risques": "deptRiskManagement",
-  "Direction Médicale": "deptMedicalDirection",
-  "Autre": "deptOther",
-};
 
 const AddAuditor = () => {
   const { t } = useTranslation();
@@ -24,6 +15,23 @@ const AddAuditor = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [profilePreview, setProfilePreview] = useState(generatePath("/assets/images/user/11.png"));
+  const [deptOptions, setDeptOptions] = useState([]);
+  const [deptLoading, setDeptLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const names = await fetchCatalogDepartmentNamesOnly();
+        if (!cancelled) setDeptOptions(names);
+      } finally {
+        if (!cancelled) setDeptLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -129,12 +137,19 @@ const AddAuditor = () => {
                   <Col md={6}>
                     <Form.Group>
                       <Form.Label>{t("addAuditor.labelDepartment")}</Form.Label>
-                      <Form.Select name="department">
-                        <option value="">{t("addAuditor.selectDepartment")}</option>
-                        {DEPARTMENTS.map((d) => (
-                          <option key={d} value={d}>{t(`addAuditor.${DEPARTMENT_I18N[d]}`)}</option>
+                      <Form.Select name="department" disabled={deptLoading} autoComplete="off">
+                        <option value="">
+                          {deptLoading ? t("addAuditor.deptLoading") : t("addAuditor.selectDepartment")}
+                        </option>
+                        {deptOptions.map((d) => (
+                          <option key={d} value={d}>
+                            {hospitalDepartmentLabel(d, t)}
+                          </option>
                         ))}
                       </Form.Select>
+                      {!deptLoading && deptOptions.length === 0 && (
+                        <Form.Text className="text-muted">{t("addAuditor.catalogOnlyEmptyHint")}</Form.Text>
+                      )}
                     </Form.Group>
                   </Col>
                   <Col md={6}>

@@ -47,6 +47,14 @@ export class DepartmentController {
     return { names };
   }
 
+  /** Noms du catalogue uniquement (formulaires auditeur / rôles sans bruit des fusions). */
+  @UseGuards(JwtAuthGuard)
+  @Get('catalog/names-only')
+  async catalogNamesOnly() {
+    const names = await this.departmentService.listCatalogDepartmentNamesOnly();
+    return { names };
+  }
+
   /** Assure une entrée catalogue pour un nom déjà utilisé ailleurs (super admin, idempotent). */
   @UseGuards(JwtAuthGuard)
   @Post('catalog/ensure')

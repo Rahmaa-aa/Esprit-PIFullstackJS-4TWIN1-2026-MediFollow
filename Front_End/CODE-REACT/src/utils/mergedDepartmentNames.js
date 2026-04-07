@@ -22,3 +22,14 @@ export function mergeDepartmentOptionsForValue(baseList, currentValue) {
   if (baseList.includes(v)) return baseList;
   return [...baseList, v].sort((a, b) => a.localeCompare(b, "fr"));
 }
+
+/** Uniquement les entrées department_catalog (GET /departments/catalog/names-only). */
+export async function fetchCatalogDepartmentNamesOnly() {
+  try {
+    const res = await departmentApi.catalogNamesOnly();
+    const names = Array.isArray(res?.names) ? res.names : [];
+    return names;
+  } catch {
+    return [];
+  }
+}

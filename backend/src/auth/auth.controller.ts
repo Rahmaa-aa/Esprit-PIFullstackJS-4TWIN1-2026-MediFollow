@@ -10,6 +10,7 @@ import {
   Param,
   ForbiddenException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -161,6 +162,42 @@ export class AuthController {
       body.lastName?.trim(),
       body.phone?.trim(),
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('admins')
+  async getAdmins() {
+    return this.authService.getUsersByRole('admin');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('admins/:id')
+  async getAdminById(@Param('id') id: string) {
+    const u = await this.authService.getUserById(id);
+    if (u.role !== 'admin') {
+      throw new NotFoundException('Administrateur non trouvé');
+    }
+    return u;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('admins/:id')
+  async updateAdmin(@Param('id') id: string, @Body() body: any) {
+    const u = await this.authService.getUserById(id);
+    if (u.role !== 'admin') {
+      throw new NotFoundException('Administrateur non trouvé');
+    }
+    return this.authService.updateUser(id, body);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('admins/:id')
+  async deleteAdmin(@Param('id') id: string) {
+    const u = await this.authService.getUserById(id);
+    if (u.role !== 'admin') {
+      throw new NotFoundException('Administrateur non trouvé');
+    }
+    return this.authService.deleteUser(id);
   }
 
   // ─── Super Admin: gestion de tous les utilisateurs ───────────────────────

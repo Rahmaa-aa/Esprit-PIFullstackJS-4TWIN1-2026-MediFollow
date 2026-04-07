@@ -54,6 +54,14 @@ export class DepartmentService {
     return [...names].sort((a, b) => a.localeCompare(b, 'fr'));
   }
 
+  /** Noms présents uniquement dans department_catalog (pas de fusion patients / utilisateurs). */
+  async listCatalogDepartmentNamesOnly(): Promise<string[]> {
+    const raw = await this.departmentCatalogModel.distinct('name').exec();
+    return [...new Set(raw.map((n) => String(n).trim()).filter(Boolean))].sort((a, b) =>
+      a.localeCompare(b, 'fr'),
+    );
+  }
+
   /** Catalogue uniquement : départements sans administrateur assigné. */
   async listCatalogDepartmentNamesWithoutAssignedAdmin(): Promise<string[]> {
     const docs = await this.departmentCatalogModel

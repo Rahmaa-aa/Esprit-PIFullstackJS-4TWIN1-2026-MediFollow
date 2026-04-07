@@ -3,8 +3,18 @@ import { Row, Col, Card, Form, Button, Alert, Spinner } from "react-bootstrap";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { superAdminApi } from "../../services/api";
-import { HOSPITAL_DEPARTMENTS, hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
-import { fetchMergedDepartmentNames, mergeDepartmentOptionsForValue } from "../../utils/mergedDepartmentNames";
+import { hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
+import { fetchCatalogDepartmentNamesOnly, mergeDepartmentOptionsForValue } from "../../utils/mergedDepartmentNames";
+import {
+  validateEditPlatformStaffForm,
+  MAX_PROFILE_IMAGE_BYTES,
+} from "../../utils/editPlatformStaffValidation";
+import EditPlatformStaffValidationAlert from "../../components/super-admin/edit-platform-staff-validation-alert";
+import EditPlatformStaffProfileSection from "../../components/super-admin/edit-platform-staff-profile-section";
+
+const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
+const DEFAULT_AVATAR = generatePath("/assets/images/user/11.png");
+const PROFILE_INPUT_ID = "edit-care-coordinator-profile-pic";
 
 const EditCareCoordinator = () => {
   const { t } = useTranslation();
@@ -14,6 +24,9 @@ const EditCareCoordinator = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [validationKeys, setValidationKeys] = useState([]);
+  const [deptOptions, setDeptOptions] = useState([]);
+  const [profilePreview, setProfilePreview] = useState(DEFAULT_AVATAR);
   const [form, setForm] = useState({
     firstName: "", lastName: "", email: "", phone: "",
     department: "", address: "", city: "", country: "",
@@ -25,12 +38,19 @@ const EditCareCoordinator = () => {
       try {
         const data = await superAdminApi.getCareCoordinatorById(id);
         const u = data?.data || data;
+        const catalogOnly = await fetchCatalogDepartmentNamesOnly();
+        const deptVal = u.department || u.specialty || "";
+        setDeptOptions(mergeDepartmentOptionsForValue(catalogOnly, deptVal));
+        const pic = u.profileImage && String(u.profileImage).trim();
+        setProfilePreview(
+          pic && (pic.startsWith("data:") || pic.startsWith("http") || pic.startsWith("/")) ? pic : DEFAULT_AVATAR,
+        );
         setForm({
           firstName: u.firstName || u.name?.split(" ")[0] || "",
           lastName: u.lastName || u.name?.split(" ").slice(1).join(" ") || "",
           email: u.email || "",
           phone: u.phone || "",
-          department: u.department || u.specialty || "",
+          department: deptVal,
           address: u.address || "",
           city: u.city || "",
           country: u.country || "",
@@ -46,35 +66,41 @@ const EditCareCoordinator = () => {
     fetchCoord();
   }, [id, t]);
 
-  const [deptOptions, setDeptOptions] = useState(HOSPITAL_DEPARTMENTS);
-
-  useEffect(() => {
-    fetchMergedDepartmentNames().then(setDeptOptions);
-  }, []);
-
   const departmentSelectOptions = useMemo(
     () => mergeDepartmentOptionsForValue(deptOptions, form.department),
     [deptOptions, form.department],
   );
 
   const handleChange = (e) => {
+    setValidationKeys([]);
+    setError("");
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    setValidationKeys([]);
+    setError("");
+    if (!file) return;
+    if (file.size > MAX_PROFILE_IMAGE_BYTES) {
+      setValidationKeys(["imageTooLarge"]);
+      e.target.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setProfilePreview(reader.result);
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    if (form.password || form.confirmPassword) {
-      if (form.password !== form.confirmPassword) {
-        setError(t("editCareCoordinator.passwordMismatch"));
-        return;
-      }
-      if (form.password.length < 6) {
-        setError(t("editCareCoordinator.passwordMin"));
-        return;
-      }
+    const keys = validateEditPlatformStaffForm(form, { requireDepartment: true });
+    if (keys.length) {
+      setValidationKeys(keys);
+      return;
     }
+    setValidationKeys([]);
 
     setSaving(true);
     try {
@@ -82,6 +108,9 @@ const EditCareCoordinator = () => {
       delete payload.confirmPassword;
       if (!payload.password) delete payload.password;
       payload.specialty = form.department || "";
+      if (profilePreview.startsWith("data:")) {
+        payload.profileImage = profilePreview;
+      }
       await superAdminApi.updateCareCoordinator(id, payload);
       setSuccess(t("editCareCoordinator.updateSuccess"));
       setTimeout(() => navigate("/super-admin/care-coordinators"), 1500);
@@ -112,27 +141,36 @@ const EditCareCoordinator = () => {
             </h5>
           </Card.Header>
           <Card.Body className="p-4">
+            <EditPlatformStaffValidationAlert keys={validationKeys} />
             {error && <Alert variant="danger">{error}</Alert>}
             {success && <Alert variant="success">{success}</Alert>}
 
-            <Form onSubmit={handleSubmit}>
+            <Form onSubmit={handleSubmit} noValidate>
+              <EditPlatformStaffProfileSection
+                inputId={PROFILE_INPUT_ID}
+                profilePreview={profilePreview}
+                onFileChange={handleFileChange}
+                title={t("editCareCoordinator.profilePhoto")}
+                hint={t("editCareCoordinator.photoHint")}
+                changeLabel={t("editCareCoordinator.changePhoto")}
+              />
               <Row className="g-3">
                 <Col md={6}>
                   <Form.Group>
                     <Form.Label>{t("editCareCoordinator.labelFirstName")}</Form.Label>
-                    <Form.Control name="firstName" value={form.firstName} onChange={handleChange} required />
+                    <Form.Control name="firstName" value={form.firstName} onChange={handleChange} />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
                   <Form.Group>
                     <Form.Label>{t("editCareCoordinator.labelLastName")}</Form.Label>
-                    <Form.Control name="lastName" value={form.lastName} onChange={handleChange} required />
+                    <Form.Control name="lastName" value={form.lastName} onChange={handleChange} />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
                   <Form.Group>
                     <Form.Label>{t("editCareCoordinator.labelEmail")}</Form.Label>
-                    <Form.Control type="email" name="email" value={form.email} onChange={handleChange} required />
+                    <Form.Control type="email" name="email" value={form.email} onChange={handleChange} autoComplete="email" />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
@@ -144,14 +182,17 @@ const EditCareCoordinator = () => {
                 <Col md={6}>
                   <Form.Group>
                     <Form.Label>{t("editCareCoordinator.labelDepartment")}</Form.Label>
-                    <Form.Select name="department" value={form.department} onChange={handleChange}>
-                      <option value="">{t("addPatient.selectDepartment")}</option>
+                    <Form.Select name="department" value={form.department} onChange={handleChange} autoComplete="off">
+                      <option value="">{t("editCareCoordinator.selectDepartment")}</option>
                       {departmentSelectOptions.map((s) => (
                         <option key={s} value={s}>
                           {hospitalDepartmentLabel(s, t)}
                         </option>
                       ))}
                     </Form.Select>
+                    {deptOptions.length === 0 && (
+                      <Form.Text className="text-muted">{t("addAuditor.catalogOnlyEmptyHint")}</Form.Text>
+                    )}
                   </Form.Group>
                 </Col>
                 <Col md={12}>
@@ -189,7 +230,7 @@ const EditCareCoordinator = () => {
                       value={form.password}
                       onChange={handleChange}
                       placeholder={t("editCareCoordinator.placeholderPassword")}
-                      minLength={6}
+                      autoComplete="new-password"
                     />
                   </Form.Group>
                 </Col>
@@ -202,7 +243,7 @@ const EditCareCoordinator = () => {
                       value={form.confirmPassword}
                       onChange={handleChange}
                       placeholder={t("editCareCoordinator.placeholderConfirmPassword")}
-                      minLength={6}
+                      autoComplete="new-password"
                     />
                   </Form.Group>
                 </Col>
