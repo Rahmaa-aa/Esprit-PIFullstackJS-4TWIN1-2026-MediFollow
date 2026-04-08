@@ -4,8 +4,8 @@ import { Button, Col, Container, Form, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { superAdminApi } from "../../services/api";
-import { HOSPITAL_DEPARTMENTS, hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
-import { fetchMergedDepartmentNames } from "../../utils/mergedDepartmentNames";
+import { hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
+import { fetchAvailableCoordinatorDepartments } from "../../utils/mergedDepartmentNames";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 
@@ -15,10 +15,30 @@ const AddCareCoordinator = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [profilePreview, setProfilePreview] = useState(generatePath("/assets/images/user/11.png"));
-  const [deptOptions, setDeptOptions] = useState(HOSPITAL_DEPARTMENTS);
+  const [deptOptions, setDeptOptions] = useState([]);
+  const [deptLoading, setDeptLoading] = useState(true);
+  const [deptLoadError, setDeptLoadError] = useState(false);
 
   useEffect(() => {
-    fetchMergedDepartmentNames().then(setDeptOptions);
+    let cancelled = false;
+    setDeptLoading(true);
+    setDeptLoadError(false);
+    fetchAvailableCoordinatorDepartments()
+      .then((names) => {
+        if (!cancelled) setDeptOptions(names);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDeptOptions([]);
+          setDeptLoadError(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDeptLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleFileChange = (e) => {
@@ -48,8 +68,13 @@ const AddCareCoordinator = () => {
       return;
     }
     const profileImage = profilePreview.startsWith("data:") ? profilePreview : null;
+    const dept = form.department?.value?.trim() || "";
+    if (!dept) {
+      setError(t("addCareCoordinator.departmentRequired"));
+      setLoading(false);
+      return;
+    }
     try {
-      const dept = form.department?.value?.trim() || "";
       await superAdminApi.createCareCoordinator({
         firstName: form.fname?.value, lastName: form.lname?.value,
         email: form.email?.value, password,
@@ -128,14 +153,29 @@ const AddCareCoordinator = () => {
                   <Col md={6}>
                     <Form.Group>
                       <Form.Label>{t("addCareCoordinator.labelDepartment")}</Form.Label>
-                      <Form.Select name="department">
-                        <option value="">{t("addPatient.selectDepartment")}</option>
+                      <Form.Select
+                        name="department"
+                        required
+                        disabled={deptLoading || deptOptions.length === 0}
+                      >
+                        <option value="">
+                          {deptLoading
+                            ? t("addCareCoordinator.departmentLoading")
+                            : deptOptions.length === 0
+                              ? t("addCareCoordinator.departmentEmptyOption")
+                              : t("addCareCoordinator.selectDepartment")}
+                        </option>
                         {deptOptions.map((s) => (
                           <option key={s} value={s}>
                             {hospitalDepartmentLabel(s, t)}
                           </option>
                         ))}
                       </Form.Select>
+                      <Form.Text className="text-muted">
+                        {deptLoadError
+                          ? t("addCareCoordinator.departmentLoadError")
+                          : t("addCareCoordinator.departmentHelp")}
+                      </Form.Text>
                     </Form.Group>
                   </Col>
                   <Col md={6}>

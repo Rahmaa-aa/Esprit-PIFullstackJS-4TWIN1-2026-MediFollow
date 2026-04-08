@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { superAdminApi } from "../../services/api";
 import { hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
-import { fetchCatalogDepartmentNamesOnly, mergeDepartmentOptionsForValue } from "../../utils/mergedDepartmentNames";
+import { fetchAvailableCoordinatorDepartments, mergeDepartmentOptionsForValue } from "../../utils/mergedDepartmentNames";
 import {
   validateEditPlatformStaffForm,
   MAX_PROFILE_IMAGE_BYTES,
@@ -38,9 +38,14 @@ const EditCareCoordinator = () => {
       try {
         const data = await superAdminApi.getCareCoordinatorById(id);
         const u = data?.data || data;
-        const catalogOnly = await fetchCatalogDepartmentNamesOnly();
         const deptVal = u.department || u.specialty || "";
-        setDeptOptions(mergeDepartmentOptionsForValue(catalogOnly, deptVal));
+        let available = [];
+        try {
+          available = await fetchAvailableCoordinatorDepartments({ excludeCoordinatorId: id });
+        } catch {
+          available = [];
+        }
+        setDeptOptions(mergeDepartmentOptionsForValue(available, deptVal));
         const pic = u.profileImage && String(u.profileImage).trim();
         setProfilePreview(
           pic && (pic.startsWith("data:") || pic.startsWith("http") || pic.startsWith("/")) ? pic : DEFAULT_AVATAR,
@@ -190,9 +195,7 @@ const EditCareCoordinator = () => {
                         </option>
                       ))}
                     </Form.Select>
-                    {deptOptions.length === 0 && (
-                      <Form.Text className="text-muted">{t("addAuditor.catalogOnlyEmptyHint")}</Form.Text>
-                    )}
+                    <Form.Text className="text-muted">{t("editCareCoordinator.departmentHelp")}</Form.Text>
                   </Form.Group>
                 </Col>
                 <Col md={12}>
