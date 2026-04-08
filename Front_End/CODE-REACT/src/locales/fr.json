@@ -3390,5 +3390,17 @@
     "Super Doc": "Super Docteur",
     "Nurse Hero": "Infirmier Héros",
     "Weekly Hero": "Héros de la Semaine"
-  }
+  },
+  "rewards_and_achievements": "Récompenses et Réalisations",
+  "rewards_subtitle": "Restez actif, en bonne santé, et gagnez des badges exclusifs !",
+  "level": "Niveau",
+  "day_streak": "Série de Jours",
+  "points_remaining": "points restants",
+  "my_badges": "Mes Badges",
+  "no_badges_yet": "Continuez à utiliser l'application pour gagner votre premier badge !",
+  "locked": "Bloqué",
+  "recent_activity": "Activité Récente",
+  "action_login": "Connexion",
+  "action_health_log": "Journal de santé",
+  "action_appointment_complete": "Rendez-vous terminé"
 }

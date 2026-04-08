@@ -3426,5 +3426,17 @@
     "Super Doc": "طبيب متميز",
     "Nurse Hero": "ممرض بطل",
     "Weekly Hero": "بطل الأسبوع"
-  }
+  },
+  "rewards_and_achievements": "المكافآت والإنجازات",
+  "rewards_subtitle": "ابق نشيطًا، حافظ على صحتك، واكسب شارات حصرية!",
+  "level": "مستوى",
+  "day_streak": "أيام متتالية",
+  "points_remaining": "نقاط متبقية",
+  "my_badges": "شاراتي",
+  "no_badges_yet": "استمر في استخدام التطبيق لكسب شارتك الأولى!",
+  "locked": "مغلق",
+  "recent_activity": "النشاط الأخير",
+  "action_login": "تسجيل الدخول",
+  "action_health_log": "سجل الصحة",
+  "action_appointment_complete": "اكتمل الموعد"
 }
