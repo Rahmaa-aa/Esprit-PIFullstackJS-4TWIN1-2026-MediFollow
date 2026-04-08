@@ -52,14 +52,21 @@ export class AuthService {
       .exec();
   }
 
-  /** Après création / mise à jour d’un admin avec département : une entrée catalogue par nom. */
+  /** Après création / mise à jour d’un admin avec département : une entrée catalogue par nom (créée si absente). */
   private async syncAdminCatalogEntry(adminId: Types.ObjectId | string, deptName: string) {
+    const name = deptName.trim();
+    if (!name) return;
     const oid = new Types.ObjectId(String(adminId));
     await this.releaseAdminCatalogAssignments(adminId);
     await this.departmentCatalogModel
       .updateOne(
-        { name: deptName.trim() },
-        { $set: { assignedAdminId: oid }, $unset: { assignedSuperAdminId: 1 } },
+        { name },
+        {
+          $set: { assignedAdminId: oid },
+          $unset: { assignedSuperAdminId: 1 },
+          $setOnInsert: { name },
+        },
+        { upsert: true },
       )
       .exec();
   }

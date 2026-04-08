@@ -3,7 +3,7 @@ import Card from "../../components/Card";
 import { Alert, Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { departmentApi, superAdminApi } from "../../services/api";
+import { api, superAdminApi } from "../../services/api";
 import { hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
@@ -35,8 +35,9 @@ const AddPlatformAdmin = () => {
     let cancelled = false;
     setDeptLoading(true);
     setDeptLoadError(false);
-    departmentApi
-      .catalogEligibleForAdmin()
+    /** Merged DB names (catalog + patients, doctors, nurses, users) — not “eligible only” static catalog slice. */
+    api
+      .getWithAdminToken("/departments/catalog")
       .then((res) => {
         if (!cancelled) setDeptOptions(Array.isArray(res?.names) ? res.names : []);
       })
