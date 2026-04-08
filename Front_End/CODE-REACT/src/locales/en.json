@@ -3390,5 +3390,17 @@
     "Super Doc": "Super Doc",
     "Nurse Hero": "Nurse Hero",
     "Weekly Hero": "Weekly Hero"
-  }
+  },
+  "rewards_and_achievements": "Rewards & Achievements",
+  "rewards_subtitle": "Stay active, keep healthy, and earn exclusive badges!",
+  "level": "Level",
+  "day_streak": "Day Streak",
+  "points_remaining": "points remaining",
+  "my_badges": "My Badges",
+  "no_badges_yet": "Keep using the app to earn your first badge!",
+  "locked": "Locked",
+  "recent_activity": "Recent Activity",
+  "action_login": "Login",
+  "action_health_log": "Health log",
+  "action_appointment_complete": "Appointment complete"
 }
