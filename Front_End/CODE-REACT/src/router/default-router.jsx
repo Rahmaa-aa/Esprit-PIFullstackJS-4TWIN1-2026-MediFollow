@@ -330,6 +330,10 @@ export const DefaultRoute = [
         path: '/patient/edit-patient/:id',
         element: <EditPatient />
       },
+      {
+        path: '/patient/brain-mri',
+        element: <PatientBrainMri />
+      },
 
       //  ------ Nurse Route ------
       {

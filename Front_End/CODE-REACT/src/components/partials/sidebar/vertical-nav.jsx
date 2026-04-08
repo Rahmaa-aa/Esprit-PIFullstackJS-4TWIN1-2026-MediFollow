@@ -76,6 +76,11 @@ const VerticalNav = () => {
         { path: "/nurse/nurse-profile", nameKey: "nurseProfileItem", icon: "ri-profile-fill" },
     ];
 
+    /** Session admin hôpital : sous-menus sans les entrées « Profil médecin / patient / infirmier ». */
+    const adminStaffDoctorItems = doctorItems.filter((i) => i.path !== "/doctor/doctor-profile");
+    const adminStaffPatientItems = patientItems.filter((i) => i.path !== "/patient/patient-profile");
+    const adminStaffNurseItems = nurseItems.filter((i) => i.path !== "/nurse/nurse-profile");
+
     const uiElementsItems = [
         { path: "/ui-elements/colors", nameKey: "uiColors", icon: "ri-font-color" },
         { path: "/ui-elements/typography", nameKey: "uiTypography", icon: "ri-text" },
@@ -833,7 +838,7 @@ const VerticalNav = () => {
                             <div className="colors">
                                 <CustomToggle
                                     eventKey="Doctor"
-                                    activeClass={doctorItems.some((item) => location.pathname === item.path) || location.pathname.startsWith("/doctor/doctor-profile/")}
+                                    activeClass={adminStaffDoctorItems.some((item) => location.pathname === item.path) || location.pathname.startsWith("/doctor/doctor-profile/")}
                                     onClick={(activeKey) => setActiveMenu(activeKey)}
                                 >
                                     <OverlayTrigger
@@ -857,7 +862,7 @@ const VerticalNav = () => {
                                 </CustomToggle>
                                 <Accordion.Collapse as="ul" eventKey="Doctor" className="sub-nav" id="Doctor-admin">
                                     <>
-                                        {doctorItems.map(({ path, nameKey, icon }) => (
+                                        {adminStaffDoctorItems.map(({ path, nameKey, icon }) => (
                                             <li key={path}>
                                                 <Link className={`nav-link ${location.pathname === path ? "active" : ""}`} to={path}>
                                                     <i className={icon}></i>
@@ -873,7 +878,7 @@ const VerticalNav = () => {
                             <div className="colors">
                                 <CustomToggle
                                     eventKey="Patient"
-                                    activeClass={patientItems.some((item) => location.pathname === item.path || location.pathname.startsWith("/patient/patient-profile/"))}
+                                    activeClass={adminStaffPatientItems.some((item) => location.pathname === item.path) || location.pathname.startsWith("/patient/patient-profile/")}
                                     onClick={(activeKey) => setActiveMenu(activeKey)}
                                 >
                                     <OverlayTrigger
@@ -892,7 +897,7 @@ const VerticalNav = () => {
                                 </CustomToggle>
                                 <Accordion.Collapse as="ul" eventKey="Patient" className="sub-nav" id="Patient-admin">
                                     <>
-                                        {patientItems.map(({ path, nameKey, icon }) => (
+                                        {adminStaffPatientItems.map(({ path, nameKey, icon }) => (
                                             <li key={path}>
                                                 <Link className={`nav-link ${location.pathname === path ? "active" : ""}`} to={path}>
                                                     <i className={icon}></i>
@@ -908,7 +913,7 @@ const VerticalNav = () => {
                             <div className="colors">
                                 <CustomToggle
                                     eventKey="Nurse"
-                                    activeClass={nurseItems.some((item) => location.pathname === item.path) || location.pathname.startsWith("/nurse/nurse-profile/")}
+                                    activeClass={adminStaffNurseItems.some((item) => location.pathname === item.path) || location.pathname.startsWith("/nurse/nurse-profile/")}
                                     onClick={(activeKey) => setActiveMenu(activeKey)}
                                 >
                                     <OverlayTrigger
@@ -927,7 +932,7 @@ const VerticalNav = () => {
                                 </CustomToggle>
                                 <Accordion.Collapse as="ul" eventKey="Nurse" className="sub-nav" id="Nurse-admin">
                                     <>
-                                        {nurseItems.map(({ path, nameKey, icon }) => (
+                                        {adminStaffNurseItems.map(({ path, nameKey, icon }) => (
                                             <li key={path}>
                                                 <Link className={`nav-link ${location.pathname === path ? "active" : ""}`} to={path}>
                                                     <i className={icon}></i>
