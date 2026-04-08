@@ -6,6 +6,7 @@ import { Patient } from '../patient/schemas/patient.schema';
 import { Nurse } from '../nurse/schemas/nurse.schema';
 import { NotificationService } from '../notification/notification.service';
 import { ChatService } from '../chat/chat.service';
+import { GamificationService } from '../gamification/gamification.service';
 
 function num(v: unknown): number | null {
   if (v === '' || v == null || v === undefined) return null;
@@ -194,6 +195,7 @@ export class HealthLogService {
     @InjectModel(Nurse.name) private nurseModel: Model<Nurse>,
     private notificationService: NotificationService,
     private chatService: ChatService,
+    private gamificationService: GamificationService,
   ) {}
 
   private toPatientObjectId(patientId: string) {
@@ -294,6 +296,7 @@ export class HealthLogService {
       }
     }
 
+    await this.gamificationService.awardPoints(String(pid), 'patient', 'health_log');
     return doc;
   }
 
@@ -360,6 +363,7 @@ export class HealthLogService {
       nurseName,
     });
 
+    await this.gamificationService.awardPoints(uid, 'nurse', 'nurse_escalation');
     return { ok: true };
   }
 
@@ -428,6 +432,7 @@ export class HealthLogService {
       },
     );
 
+    await this.gamificationService.awardPoints(uid, 'doctor', 'doctor_resolution');
     return { ok: true };
   }
 

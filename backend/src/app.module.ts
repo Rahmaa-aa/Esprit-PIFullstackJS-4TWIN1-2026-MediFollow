@@ -20,6 +20,7 @@ import { AuditModule } from './audit/audit.module';
 import { BrainTumorModule } from './brain-tumor/brain-tumor.module';
 import { VideoMeetingModule } from './video-meeting/video-meeting.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
+import { GamificationModule } from './gamification/gamification.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ChatbotModule } from './chatbot/chatbot.module';
     BrainTumorModule,
     VideoMeetingModule,
     ChatbotModule,
+    GamificationModule,
   ],
 })
 export class AppModule {}

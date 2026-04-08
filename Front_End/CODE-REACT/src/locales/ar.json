@@ -160,7 +160,8 @@
   "sidebar": {
     "myDashboard": "لوحة التحكم",
     "globalNews": "الأخبار العالمية",
-    "secureMessaging": "مراسلة آمنة",
+    "secureMessaging": "المراسلة الآمنة",
+    "rewards": "الجوائز والأوسمة",
     "medicationHistory": "سجل الأدوية",
     "vitalsHistory": "سجل المقاييس",
     "appointmentRequest": "طلب موعد",
@@ -3403,5 +3404,27 @@
     "suggHeadache": "ماذا أفعل مع صداع مستمر؟",
     "suggFirstAid": "إسعافات أولية للحروق الطفيفة",
     "suggAnxiety": "نصائح لإدارة القلق اليومي"
+  },
+  "gamification": {
+    "rewards_and_achievements": "الجوائز والإنجازات",
+    "rewards_subtitle": "كن نشطاً، حافظ على صحتك واكسب أوسمة حصرية!",
+    "level": "المستوى",
+    "day_streak": "سلسلة الأيام",
+    "points_remaining": "نقاط متبقية",
+    "my_badges": "أوسمتي",
+    "no_badges_yet": "استمر في استخدام التطبيق لكسب وسامك الأول!",
+    "locked": "مغلق",
+    "recent_activity": "النشاط الأخير",
+    "action_login": "تسجيل دخول يومي",
+    "action_health_log": "سجل صحي",
+    "action_appointment_complete": "اكتملت الاستشارة",
+    "action_chat_sent": "تم إرسال رسالة",
+    "action_nurse_escalation": "تصعيد الممرض",
+    "action_doctor_resolution": "حل الطبيب",
+    "Early Adopter": "مبادر",
+    "Wellness Warrior": "محارب العافية",
+    "Super Doc": "طبيب متميز",
+    "Nurse Hero": "ممرض بطل",
+    "Weekly Hero": "بطل الأسبوع"
   }
 }

@@ -1233,3 +1233,8 @@ export const videoMeetingApi = {
 export const chatbotApi = {
   ask: (messages, lang) => api.post('/chatbot/ask', { messages, lang }),
 };
+
+export const gamificationApi = {
+  getMyStats: () => api.get('/gamification/my-stats'),
+  awardPoints: (action) => api.post('/gamification/award-points', { action }),
+};

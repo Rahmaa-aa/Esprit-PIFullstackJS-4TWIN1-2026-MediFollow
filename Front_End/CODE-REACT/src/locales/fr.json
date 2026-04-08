@@ -161,6 +161,7 @@
     "myDashboard": "Mon tableau de bord",
     "globalNews": "Fil d'actualité",
     "secureMessaging": "Messagerie sécurisée",
+    "rewards": "Récompenses & Badges",
     "medicationHistory": "Historique médicaments",
     "vitalsHistory": "Historique constantes",
     "appointmentRequest": "Demande de rendez-vous",
@@ -3367,5 +3368,27 @@
     "suggHeadache": "Que faire en cas de maux de tête persistants ?",
     "suggFirstAid": "Premiers secours pour les brûlures légères",
     "suggAnxiety": "Astuces pour gérer l'anxiété au quotidien"
+  },
+  "gamification": {
+    "rewards_and_achievements": "Récompenses & Réussites",
+    "rewards_subtitle": "Restez actif, prenez soin de votre santé et gagnez des badges exclusifs !",
+    "level": "Niveau",
+    "day_streak": "Jours de suite",
+    "points_remaining": "points restants",
+    "my_badges": "Mes Badges",
+    "no_badges_yet": "Continuez à utiliser l'application pour gagner votre premier badge !",
+    "locked": "Verrouillé",
+    "recent_activity": "Activité Récente",
+    "action_login": "Connexion Quotidienne",
+    "action_health_log": "Relevé de Santé",
+    "action_appointment_complete": "Consultation Terminée",
+    "action_chat_sent": "Message Envoyé",
+    "action_nurse_escalation": "Alerte Infirmière",
+    "action_doctor_resolution": "Alerte Clôturée",
+    "Early Adopter": "Pionnier",
+    "Wellness Warrior": "Guerrier du Bien-être",
+    "Super Doc": "Super Docteur",
+    "Nurse Hero": "Infirmier Héros",
+    "Weekly Hero": "Héros de la Semaine"
   }
 }

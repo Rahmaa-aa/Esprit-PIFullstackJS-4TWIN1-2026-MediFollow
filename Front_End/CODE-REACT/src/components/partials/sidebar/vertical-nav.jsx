@@ -250,6 +250,15 @@ const VerticalNav = () => {
                         <span className="item-name">{t("sidebar.secureMessaging")}</span>
                     </Link>
                 </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/rewards"
+                        className={`nav-link ${location.pathname === "/rewards" ? "active" : ""}`}
+                    >
+                        <i className="ri-award-fill"></i>
+                        <span className="item-name">{t("sidebar.rewards", "Rewards & Badges")}</span>
+                    </Link>
+                </Nav.Item>
                 {renderEmailAccordion()}
                 <Nav.Item as="li">
                     <Link
@@ -366,6 +375,15 @@ const VerticalNav = () => {
                         <span className="item-name">{t("sidebar.secureMessaging")}</span>
                     </Link>
                 </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/rewards"
+                        className={`nav-link ${location.pathname === "/rewards" ? "active" : ""}`}
+                    >
+                        <i className="ri-award-fill"></i>
+                        <span className="item-name">{t("sidebar.rewards", "Rewards & Badges")}</span>
+                    </Link>
+                </Nav.Item>
                 {renderEmailAccordion()}
                 <Nav.Item as="li">
                     <Link
@@ -423,6 +441,15 @@ const VerticalNav = () => {
                     <Link to="/chat" className={`nav-link ${location.pathname === "/chat" ? "active" : ""}`}>
                         <i className="ri-chat-3-line"></i>
                         <span className="item-name">{t("sidebar.secureMessaging")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/rewards"
+                        className={`nav-link ${location.pathname === "/rewards" ? "active" : ""}`}
+                    >
+                        <i className="ri-award-fill"></i>
+                        <span className="item-name">{t("sidebar.rewards", "Rewards & Badges")}</span>
                     </Link>
                 </Nav.Item>
                 {renderEmailAccordion()}

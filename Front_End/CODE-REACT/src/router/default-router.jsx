@@ -59,6 +59,7 @@ import HealthcareChatbot from "../views/chatbot/healthcare-chatbot"
 // Chat Page
 import Chat from "../views/chat/chat"
 import NotificationsCenterPage from "../views/notifications/notifications-center"
+import GamificationHub from "../views/gamification/gamification-hub"
 
 // UI Elements
 import Alerts from "../views/ui-elements/alerts";
@@ -376,7 +377,6 @@ export const DefaultRoute = [
         element: <HealthcareChatbot />
       },
 
-      //  ------ Chat Route ------ 
       {
         path: '/chat',
         element: <Chat />
@@ -384,6 +384,10 @@ export const DefaultRoute = [
       {
         path: '/notifications',
         element: <NotificationsCenterPage />
+      },
+      {
+        path: '/rewards',
+        element: <GamificationHub />
       },
 
       //  ------ UI Elements Route ------ 

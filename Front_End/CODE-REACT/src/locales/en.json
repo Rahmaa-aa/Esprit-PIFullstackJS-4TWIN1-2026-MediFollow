@@ -161,6 +161,7 @@
     "myDashboard": "My dashboard",
     "globalNews": "Global News",
     "secureMessaging": "Secure messaging",
+    "rewards": "Rewards & Badges",
     "medicationHistory": "Medication history",
     "vitalsHistory": "Vitals history",
     "appointmentRequest": "Appointment request",
@@ -3367,5 +3368,27 @@
     "suggHeadache": "What should I do for a persistent headache?",
     "suggFirstAid": "Basic first aid for minor burns",
     "suggAnxiety": "Tips to manage daily anxiety"
+  },
+  "gamification": {
+    "rewards_and_achievements": "Rewards & Achievements",
+    "rewards_subtitle": "Stay active, keep healthy, and earn exclusive badges!",
+    "level": "Level",
+    "day_streak": "Day Streak",
+    "points_remaining": "points remaining",
+    "my_badges": "My Badges",
+    "no_badges_yet": "Keep using the app to earn your first badge!",
+    "locked": "Locked",
+    "recent_activity": "Recent Activity",
+    "action_login": "Daily Login",
+    "action_health_log": "Health Log",
+    "action_appointment_complete": "Consultation Completed",
+    "action_chat_sent": "Message Sent",
+    "action_nurse_escalation": "Vital Escalation",
+    "action_doctor_resolution": "Escalation Resolved",
+    "Early Adopter": "Early Adopter",
+    "Wellness Warrior": "Wellness Warrior",
+    "Super Doc": "Super Doc",
+    "Nurse Hero": "Nurse Hero",
+    "Weekly Hero": "Weekly Hero"
   }
 }

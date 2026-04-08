@@ -19,6 +19,7 @@ import { PasskeyCredential } from './schemas/passkey-credential.schema';
 import { PasskeyChallenge } from './schemas/passkey-challenge.schema';
 import { FaceLoginProfile } from './schemas/face-login-profile.schema';
 import { DepartmentCatalog } from '../department/schemas/department-catalog.schema';
+import { GamificationService } from '../gamification/gamification.service';
 
 const {
   generateAuthenticationOptions,
@@ -41,6 +42,7 @@ export class AuthService {
     @InjectModel(DepartmentCatalog.name) private departmentCatalogModel: Model<DepartmentCatalog>,
     private jwtService: JwtService,
     private emailService: EmailService,
+    private gamificationService: GamificationService,
   ) {}
 
   private async releaseAdminCatalogAssignments(adminId: Types.ObjectId | string) {
@@ -544,7 +546,7 @@ export class AuthService {
     if (!isMatch) throw new UnauthorizedException('Invalid email or password');
     const d = doctor.toObject();
     const payload = { sub: d._id, email: d.email, role: 'doctor' };
-    return {
+    const result = {
       access_token: this.jwtService.sign(payload),
       user: {
         id: d._id,
@@ -556,6 +558,8 @@ export class AuthService {
         profileImage: d.profileImage,
       },
     };
+    await this.gamificationService.awardPoints(d._id.toString(), 'doctor', 'login');
+    return result;
   }
 
   async loginPatient(email: string, password: string) {
@@ -565,7 +569,7 @@ export class AuthService {
     if (!isMatch) throw new UnauthorizedException('Email ou mot de passe incorrect');
     const p = patient.toObject();
     const payload = { sub: p._id, email: p.email, role: 'patient' };
-    return {
+    const result = {
       access_token: this.jwtService.sign(payload),
       user: {
         id: p._id,
@@ -586,6 +590,8 @@ export class AuthService {
         height: (p as any).height,
       },
     };
+    await this.gamificationService.awardPoints(p._id.toString(), 'patient', 'login');
+    return result;
   }
 
 
@@ -596,7 +602,7 @@ export class AuthService {
     if (!isMatch) throw new UnauthorizedException('Email ou mot de passe incorrect');
     const n = nurse.toObject();
     const payload = { sub: n._id, email: n.email, role: 'nurse' };
-    return {
+    const result = {
       access_token: this.jwtService.sign(payload),
       user: {
         id: n._id,
@@ -609,6 +615,8 @@ export class AuthService {
         profileImage: n.profileImage,
       },
     };
+    await this.gamificationService.awardPoints(n._id.toString(), 'nurse', 'login');
+    return result;
   }
 
   async validateUser(payload: any) {

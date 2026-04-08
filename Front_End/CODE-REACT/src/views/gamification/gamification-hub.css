@@ -1,0 +1,144 @@
+.gamification-container {
+    background: transparent;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+
+.reward-title {
+    font-weight: 800;
+    font-size: 2.5rem;
+    background: linear-gradient(45deg, #0d6efd, #0dcaf0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+}
+
+.header-reward {
+    border-radius: 20px;
+}
+
+.level-badge {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px rgba(13, 110, 253, 0.4);
+    border: 5px solid #fff;
+    font-size: 2.5rem;
+    color: white;
+    font-weight: 900;
+}
+
+.streak-widget {
+    background: rgba(255, 69, 0, 0.1);
+    padding: 15px;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.streak-icon {
+    font-size: 2rem;
+    color: #ff4500;
+    margin-bottom: 5px;
+}
+
+.streak-count {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ff4500;
+}
+
+.custom-progress {
+    height: 12px;
+    border-radius: 6px;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.badge-item {
+    padding: 20px;
+    border-radius: 15px;
+    transition: transform 0.3s ease;
+}
+
+.badge-item:hover {
+    transform: translateY(-5px);
+}
+
+.badge-item .badge-icon-wrapper {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+}
+
+.badge-item.earned .badge-icon-wrapper {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+}
+
+.badge-item.locked .badge-icon-wrapper {
+    background: #e9ecef;
+    color: #adb5bd;
+}
+
+.badge-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+.badge-date {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.action-icon-circle {
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.action-icon-circle.login { background-color: rgba(13, 110, 253, 0.1); color: #0d6efd; }
+.action-icon-circle.health_log { background-color: rgba(25, 135, 84, 0.1); color: #198754; }
+.action-icon-circle.appointment_complete { background-color: rgba(102, 16, 242, 0.1); color: #6610f2; }
+
+.points-plus {
+    font-weight: 800;
+    color: #198754;
+    font-size: 0.9rem;
+    background: rgba(25, 135, 84, 0.1);
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.history-list .list-group-item {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.history-list .list-group-item:last-child {
+    border-bottom: none !important;
+}
