@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { videoMeetingApi } from "../../services/api";
 import "./video-meeting.css";
 
@@ -38,13 +40,9 @@ const statusClass = (s) => {
   return map[s] || "vm-status-scheduled";
 };
 
-const statusLabel = (s) => {
-  const map = { scheduled: "Scheduled", "in-progress": "In Progress", completed: "Completed", cancelled: "Cancelled" };
-  return map[s] || s;
-};
-
 /* ── Component ── */
 const VideoMeeting = () => {
+  const { t } = useTranslation();
   const [user] = useState(getUser);
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +54,16 @@ const VideoMeeting = () => {
   const [form, setForm] = useState({ title: "", date: "", time: "", duration: "30", notes: "" });
   const [invitable, setInvitable] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
+
+  const statusLabel = (s) => {
+    const map = {
+      scheduled: t("videoMeetingPage.statusScheduled"),
+      "in-progress": t("videoMeetingPage.statusInProgress"),
+      completed: t("videoMeetingPage.statusCompleted"),
+      cancelled: t("videoMeetingPage.statusCancelled"),
+    };
+    return map[s] || s;
+  };
 
   const showToast = (msg) => {
     setToast(msg);
@@ -85,14 +93,14 @@ const VideoMeeting = () => {
   /* ── Room Logic ── */
   const openMeeting = (code) => {
     if (!code) {
-      showToast("❌ Invalid meeting code");
+      showToast("❌ " + t("videoMeetingPage.invalidCode"));
       return;
     }
     // Simplify room name and skip prejoin page to avoid "Failed to join" errors
     const roomName = `MediFollow${code}`;
     const url = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false`;
     window.open(url, "_blank");
-    showToast("🚀 Opening video room...");
+    showToast("🚀 " + t("videoMeetingPage.openingRoom"));
   };
 
   /* ── Create ── */
@@ -115,10 +123,10 @@ const VideoMeeting = () => {
       setShowModal(false);
       setForm({ title: "", date: "", time: "", duration: "30", notes: "" });
       setSelectedUsers([]);
-      showToast("✅ Meeting created successfully!");
+      showToast("✅ " + t("videoMeetingPage.createSuccess"));
       load();
     } catch (e) {
-      showToast("❌ " + (e.message || "Failed to create"));
+      showToast("❌ " + (e.message || t("videoMeetingPage.createFail")));
     } finally {
       setSaving(false);
     }
@@ -130,12 +138,12 @@ const VideoMeeting = () => {
     setJoining(true);
     try {
       const meeting = await videoMeetingApi.join(joinCode.trim());
-      showToast(`✅ Joined meeting: ${meeting.title}`);
+      showToast("✅ " + t("videoMeetingPage.joinedMeeting", { title: meeting.title }));
       setJoinCode("");
       load();
       openMeeting(meeting.meetingCode);
     } catch (e) {
-      showToast("❌ " + (e.message || "Meeting not found"));
+      showToast("❌ " + (e.message || t("videoMeetingPage.meetingNotFound")));
     } finally {
       setJoining(false);
     }
@@ -149,19 +157,19 @@ const VideoMeeting = () => {
 
   /* ── Cancel ── */
   const handleCancel = async (id) => {
-    if (!window.confirm("Cancel this meeting?")) return;
+    if (!window.confirm(t("videoMeetingPage.cancelConfirm"))) return;
     try {
       await videoMeetingApi.cancel(id);
-      showToast("Meeting cancelled");
+      showToast(t("videoMeetingPage.meetingCancelled"));
       load();
     } catch (e) {
-      showToast("❌ " + (e.message || "Failed"));
+      showToast("❌ " + (e.message || t("videoMeetingPage.failed")));
     }
   };
 
   /* ── Copy code ── */
   const copyCode = (code) => {
-    navigator.clipboard.writeText(code).then(() => showToast("📋 Code copied!")).catch(() => {});
+    navigator.clipboard.writeText(code).then(() => showToast("📋 " + t("videoMeetingPage.codeCopied"))).catch(() => {});
   };
 
   /* ── Split upcoming / past ── */
@@ -174,12 +182,12 @@ const VideoMeeting = () => {
       {/* Header */}
       <div className="vm-header">
         <div className="vm-header-left">
-          <h2><i className="ri-vidicon-fill" style={{ marginRight: 10 }}></i>Video Meetings</h2>
-          <p>Schedule and join secure video consultations</p>
+          <h2><i className="ri-vidicon-fill" style={{ marginRight: 10 }}></i>{t("videoMeetingPage.title")}</h2>
+          <p>{t("videoMeetingPage.subtitle")}</p>
         </div>
         <button className="vm-btn-new" onClick={() => setShowModal(true)}>
           <i className="ri-add-line"></i>
-          New Meeting
+          {t("videoMeetingPage.newMeeting")}
         </button>
       </div>
 
@@ -188,34 +196,34 @@ const VideoMeeting = () => {
         <i className="ri-key-2-line" style={{ fontSize: "1.3rem", color: "#089bab" }}></i>
         <input
           type="text"
-          placeholder="Enter meeting code to join..."
+          placeholder={t("videoMeetingPage.enterCode")}
           value={joinCode}
           onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
           onKeyDown={(e) => e.key === "Enter" && handleJoin()}
           maxLength={8}
         />
         <button className="vm-btn-join" onClick={handleJoin} disabled={joining || !joinCode.trim()}>
-          {joining ? "Joining..." : "Join Meeting"}
+          {joining ? t("videoMeetingPage.joining") : t("videoMeetingPage.joinMeeting")}
         </button>
       </div>
 
       {/* Upcoming */}
       <div className="vm-section-title">
         <i className="ri-calendar-schedule-line"></i>
-        Upcoming Meetings ({upcoming.length})
+        {t("videoMeetingPage.upcoming")} ({upcoming.length})
       </div>
 
       {loading ? (
-        <div className="vm-empty"><i className="ri-loader-4-line"></i><p>Loading...</p></div>
+        <div className="vm-empty"><i className="ri-loader-4-line"></i><p>{t("videoMeetingPage.loading")}</p></div>
       ) : upcoming.length === 0 ? (
         <div className="vm-empty">
           <i className="ri-vidicon-line"></i>
-          <p>No upcoming meetings. Create one to get started!</p>
+          <p>{t("videoMeetingPage.emptyUpcoming")}</p>
         </div>
       ) : (
         <div className="vm-grid">
           {upcoming.map((m) => (
-            <MeetingCard key={m._id} meeting={m} user={user} onCancel={handleCancel} onCopy={copyCode} onJoin={openMeeting} />
+            <MeetingCard key={m._id} meeting={m} user={user} onCancel={handleCancel} onCopy={copyCode} onJoin={openMeeting} t={t} statusLabel={statusLabel} />
           ))}
         </div>
       )}
@@ -225,11 +233,11 @@ const VideoMeeting = () => {
         <>
           <div className="vm-section-title" style={{ marginTop: "1rem" }}>
             <i className="ri-history-line"></i>
-            Past Meetings ({past.length})
+            {t("videoMeetingPage.past")} ({past.length})
           </div>
           <div className="vm-grid">
             {past.map((m) => (
-              <MeetingCard key={m._id} meeting={m} user={user} onCancel={handleCancel} onCopy={copyCode} onJoin={openMeeting} isPast />
+              <MeetingCard key={m._id} meeting={m} user={user} onCancel={handleCancel} onCopy={copyCode} onJoin={openMeeting} isPast t={t} statusLabel={statusLabel} />
             ))}
           </div>
         </>
@@ -240,22 +248,22 @@ const VideoMeeting = () => {
         <div className="vm-modal-overlay" onClick={() => !saving && setShowModal(false)}>
           <div className="vm-modal" onClick={(e) => e.stopPropagation()}>
             <div className="vm-modal-header">
-              <h4><i className="ri-vidicon-line" style={{ marginRight: 8, color: "#089bab" }}></i>New Video Meeting</h4>
+              <h4><i className="ri-vidicon-line" style={{ marginRight: 8, color: "#089bab" }}></i>{t("videoMeetingPage.newVideoMeeting")}</h4>
               <button className="vm-modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
             <div className="vm-modal-body">
               <div className="vm-form-group">
-                <label>Meeting Title *</label>
+                <label>{t("videoMeetingPage.meetingTitle")}</label>
                 <input
                   type="text"
-                  placeholder="e.g. Patient Follow-up with Dr. Smith"
+                  placeholder={t("videoMeetingPage.meetingTitlePlaceholder")}
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 />
               </div>
               <div className="vm-form-row">
                 <div className="vm-form-group">
-                  <label>Date *</label>
+                  <label>{t("videoMeetingPage.date")}</label>
                   <input
                     type="date"
                     value={form.date}
@@ -264,7 +272,7 @@ const VideoMeeting = () => {
                   />
                 </div>
                 <div className="vm-form-group">
-                  <label>Time *</label>
+                  <label>{t("videoMeetingPage.time")}</label>
                   <input
                     type="time"
                     value={form.time}
@@ -273,21 +281,21 @@ const VideoMeeting = () => {
                 </div>
               </div>
               <div className="vm-form-group">
-                <label>Duration</label>
+                <label>{t("videoMeetingPage.duration")}</label>
                 <select value={form.duration} onChange={(e) => setForm((f) => ({ ...f, duration: e.target.value }))}>
-                  <option value="15">15 minutes</option>
-                  <option value="30">30 minutes</option>
-                  <option value="45">45 minutes</option>
-                  <option value="60">1 hour</option>
-                  <option value="90">1.5 hours</option>
-                  <option value="120">2 hours</option>
+                  <option value="15">{t("videoMeetingPage.min15")}</option>
+                  <option value="30">{t("videoMeetingPage.min30")}</option>
+                  <option value="45">{t("videoMeetingPage.min45")}</option>
+                  <option value="60">{t("videoMeetingPage.hour1")}</option>
+                  <option value="90">{t("videoMeetingPage.hour1half")}</option>
+                  <option value="120">{t("videoMeetingPage.hour2")}</option>
                 </select>
               </div>
               <div className="vm-form-group">
-                <label>Notes (optional)</label>
+                <label>{t("videoMeetingPage.notesOptional")}</label>
                 <textarea
                   rows={2}
-                  placeholder="Add any meeting details or agenda..."
+                  placeholder={t("videoMeetingPage.notesPlaceholder")}
                   value={form.notes}
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                 />
@@ -295,7 +303,7 @@ const VideoMeeting = () => {
 
               {invitable.length > 0 && (
                 <div className="vm-form-group">
-                  <label>Invite Participants ({selectedUsers.length} selected)</label>
+                  <label>{t("videoMeetingPage.inviteParticipants", { count: selectedUsers.length })}</label>
                   <div className="vm-participant-selector">
                     {invitable.map((u) => (
                       <div 
@@ -319,13 +327,13 @@ const VideoMeeting = () => {
               )}
             </div>
             <div className="vm-modal-footer">
-              <button className="vm-btn-secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</button>
+              <button className="vm-btn-secondary" onClick={() => setShowModal(false)} disabled={saving}>{t("videoMeetingPage.cancel")}</button>
               <button
                 className="vm-btn-primary"
                 onClick={handleCreate}
                 disabled={saving || !form.title || !form.date || !form.time}
               >
-                {saving ? "Creating..." : "Create Meeting"}
+                {saving ? t("videoMeetingPage.creating") : t("videoMeetingPage.createMeeting")}
               </button>
             </div>
           </div>
@@ -339,7 +347,7 @@ const VideoMeeting = () => {
 };
 
 /* ── Meeting Card sub-component ── */
-const MeetingCard = ({ meeting, user, onCancel, onCopy, onJoin, isPast }) => {
+const MeetingCard = ({ meeting, user, onCancel, onCopy, onJoin, isPast, t, statusLabel }) => {
   const m = meeting;
   const isOwner = user && (user.id === m.createdBy || user._id === m.createdBy);
 
@@ -361,11 +369,11 @@ const MeetingCard = ({ meeting, user, onCancel, onCopy, onJoin, isPast }) => {
         </span>
         <span className="vm-card-meta-item">
           <i className="ri-timer-line"></i>
-          {m.duration} min
+          {m.duration} {t("videoMeetingPage.minShort")}
         </span>
       </div>
 
-      <div className="vm-card-code" onClick={() => onCopy(m.meetingCode)} title="Click to copy">
+      <div className="vm-card-code" onClick={() => onCopy(m.meetingCode)} title={t("videoMeetingPage.clickToCopy")}>
         <i className="ri-file-copy-line"></i>
         {m.meetingCode}
       </div>
@@ -382,31 +390,31 @@ const MeetingCard = ({ meeting, user, onCancel, onCopy, onJoin, isPast }) => {
               <div className="vm-avatar" style={{ background: "#94a3b8" }}>+{m.participants.length - 4}</div>
             )}
           </div>
-          <span>{m.participants.length} participant{m.participants.length !== 1 ? "s" : ""}</span>
+          <span>{m.participants.length} {m.participants.length !== 1 ? t("videoMeetingPage.participants") : t("videoMeetingPage.participant")}</span>
         </div>
       )}
 
       {!isPast && m.status !== "cancelled" && (
         <div className="vm-card-actions">
-          <button className="vm-btn-action vm-btn-go" onClick={() => onJoin(m.meetingCode)} title="Join this meeting">
+          <button className="vm-btn-action vm-btn-go" onClick={() => onJoin(m.meetingCode)} title={t("videoMeetingPage.joinTitle")}>
             <i className="ri-vidicon-line"></i>
-            Join
+            {t("videoMeetingPage.join")}
           </button>
           <button className="vm-btn-action vm-btn-copy" onClick={() => onCopy(m.meetingCode)}>
             <i className="ri-file-copy-line"></i>
-            Copy Code
+            {t("videoMeetingPage.copyCode")}
           </button>
           {isOwner && (
             <button className="vm-btn-action vm-btn-cancel-meeting" onClick={() => onCancel(m._id)}>
               <i className="ri-close-line"></i>
-              Cancel
+              {t("videoMeetingPage.cancelMeeting")}
             </button>
           )}
         </div>
       )}
 
       <div style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "#94a3b8" }}>
-        Organized by {m.creatorName || "—"}
+        {t("videoMeetingPage.organizedBy", { name: m.creatorName || "—" })}
       </div>
     </div>
   );

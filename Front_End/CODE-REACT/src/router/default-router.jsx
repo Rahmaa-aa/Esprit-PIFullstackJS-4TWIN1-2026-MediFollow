@@ -53,6 +53,8 @@ import EditNurse from "../views/nurse/edit-nurse"
 // Calendar Page
 import Calendar from "../views/calendar/calendar"
 import VideoMeeting from "../views/video-meeting/video-meeting"
+import GlobalHealthcareNews from "../views/news/global-healthcare-news"
+import HealthcareChatbot from "../views/chatbot/healthcare-chatbot"
 
 // Chat Page
 import Chat from "../views/chat/chat"
@@ -360,6 +362,18 @@ export const DefaultRoute = [
       {
         path: '/video-meeting',
         element: <VideoMeeting />
+      },
+
+      //  ------ Global News Feed Route ------
+      {
+        path: '/global-news',
+        element: <GlobalHealthcareNews />
+      },
+
+      //  ------ Health Chatbot Route ------
+      {
+        path: '/health-chatbot',
+        element: <HealthcareChatbot />
       },
 
       //  ------ Chat Route ------ 

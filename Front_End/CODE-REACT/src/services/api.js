@@ -1229,3 +1229,7 @@ export const videoMeetingApi = {
   join: (code) => api.post(`/video-meetings/join/${encodeURIComponent(code)}`, {}),
   getInvitableUsers: () => api.get('/video-meetings/invitable-users'),
 };
+
+export const chatbotApi = {
+  ask: (messages, lang) => api.post('/chatbot/ask', { messages, lang }),
+};

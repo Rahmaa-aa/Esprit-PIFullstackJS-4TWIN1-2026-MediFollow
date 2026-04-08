@@ -227,6 +227,24 @@ const VerticalNav = () => {
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
+                    <Link
+                        to="/global-news"
+                        className={`nav-link ${location.pathname === "/global-news" ? "active" : ""}`}
+                    >
+                        <i className="ri-newspaper-line"></i>
+                        <span className="item-name">{t("sidebar.globalNews")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/health-chatbot"
+                        className={`nav-link ${location.pathname === "/health-chatbot" ? "active" : ""}`}
+                    >
+                        <i className="ri-robot-2-line"></i>
+                        <span className="item-name">{t("sidebar.healthChatbot")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
                     <Link to="/chat" className={`nav-link ${location.pathname === "/chat" ? "active" : ""}`}>
                         <i className="ri-chat-3-line"></i>
                         <span className="item-name">{t("sidebar.secureMessaging")}</span>
@@ -325,6 +343,24 @@ const VerticalNav = () => {
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
+                    <Link
+                        to="/global-news"
+                        className={`nav-link ${location.pathname === "/global-news" ? "active" : ""}`}
+                    >
+                        <i className="ri-newspaper-line"></i>
+                        <span className="item-name">{t("sidebar.globalNews")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/health-chatbot"
+                        className={`nav-link ${location.pathname === "/health-chatbot" ? "active" : ""}`}
+                    >
+                        <i className="ri-robot-2-line"></i>
+                        <span className="item-name">{t("sidebar.healthChatbot")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
                     <Link to="/chat" className={`nav-link ${location.pathname === "/chat" ? "active" : ""}`}>
                         <i className="ri-chat-3-line"></i>
                         <span className="item-name">{t("sidebar.secureMessaging")}</span>
@@ -363,6 +399,24 @@ const VerticalNav = () => {
                     <Link to="/dashboard" className={`nav-link ${location.pathname === "/dashboard" ? "active" : ""}`}>
                         <i className="ri-dashboard-2-fill"></i>
                         <span className="item-name">{t("sidebar.dashboard")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/global-news"
+                        className={`nav-link ${location.pathname === "/global-news" ? "active" : ""}`}
+                    >
+                        <i className="ri-newspaper-line"></i>
+                        <span className="item-name">{t("sidebar.globalNews")}</span>
+                    </Link>
+                </Nav.Item>
+                <Nav.Item as="li">
+                    <Link
+                        to="/health-chatbot"
+                        className={`nav-link ${location.pathname === "/health-chatbot" ? "active" : ""}`}
+                    >
+                        <i className="ri-robot-2-line"></i>
+                        <span className="item-name">{t("sidebar.healthChatbot")}</span>
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
@@ -690,6 +744,24 @@ const VerticalNav = () => {
                             <Link to="/admin/dashboard" className={`nav-link ${location.pathname === "/admin/dashboard" ? "active" : ""}`}>
                                 <i className="ri-dashboard-2-fill"></i>
                                 <span className="item-name">{t("sidebar.adminDashboard")}</span>
+                            </Link>
+                        </Nav.Item>
+                        <Nav.Item as="li">
+                            <Link
+                                to="/global-news"
+                                className={`nav-link ${location.pathname === "/global-news" ? "active" : ""}`}
+                            >
+                                <i className="ri-newspaper-line"></i>
+                                <span className="item-name">{t("sidebar.globalNews")}</span>
+                            </Link>
+                        </Nav.Item>
+                        <Nav.Item as="li">
+                            <Link
+                                to="/health-chatbot"
+                                className={`nav-link ${location.pathname === "/health-chatbot" ? "active" : ""}`}
+                            >
+                                <i className="ri-robot-2-line"></i>
+                                <span className="item-name">{t("sidebar.healthChatbot")}</span>
                             </Link>
                         </Nav.Item>
                         <Nav.Item as="li">
