@@ -10,7 +10,7 @@ import user09 from "/assets/images/user/09.jpg";
 import user10 from "/assets/images/user/10.jpg";
 import ChatData from "../../components/chat-data";
 import { chatApi } from "../../services/api";
-import VoiceCallLayer from "./VoiceCallLayer";
+import { useVoiceCallBridge } from "../../context/VoiceCallBridgeContext";
 import { buildVoiceCallContext } from "./voiceCallUtils";
 import {
     filterHiddenRows,
@@ -666,7 +666,7 @@ const Chat = () => {
     const [selectedMemberKeys, setSelectedMemberKeys] = useState(() => new Set());
     const [createGroupError, setCreateGroupError] = useState("");
     const [creatingGroup, setCreatingGroup] = useState(false);
-    const voiceCallRef = useRef(null);
+    const { setPeerContext, setOnAfterCallLogged, voiceCallRef } = useVoiceCallBridge();
 
     const SidebarToggle = () => {
         if (window.innerWidth < 990) {
@@ -768,6 +768,20 @@ const Chat = () => {
         },
         [tabDefByKey, session.id, t],
     );
+
+    const handleAfterCallLogged = useCallback(() => {
+        loadThread(activeKey);
+    }, [activeKey, loadThread]);
+
+    useEffect(() => {
+        setPeerContext(voicePeerContext);
+        return () => setPeerContext(null);
+    }, [voicePeerContext, setPeerContext]);
+
+    useEffect(() => {
+        setOnAfterCallLogged(handleAfterCallLogged);
+        return () => setOnAfterCallLogged(null);
+    }, [handleAfterCallLogged, setOnAfterCallLogged]);
 
     useEffect(() => {
         const pr = searchParams.get("peerRole");
@@ -1334,12 +1348,6 @@ const Chat = () => {
 
     return (
         <>
-            <VoiceCallLayer
-                ref={voiceCallRef}
-                session={session}
-                peerContext={voicePeerContext}
-                onAfterCallLogged={() => loadThread(activeKey)}
-            />
             {loadError && (
                 <div className="alert alert-warning py-2 small mb-2" role="alert">
                     {loadError}

@@ -8,7 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { HandGestureProvider } from "./context/HandGestureContext";
 import HandGestureOverlay from "./components/HandGestureOverlay";
 import VirtualKeyboard from "./components/VirtualKeyboard";
-import GlobalCallLayer from "./components/GlobalCallLayer";
+import { VoiceCallBridgeProvider } from "./context/VoiceCallBridgeContext";
 
 // import state selectors
 import {
@@ -23,12 +23,13 @@ function App({ children }) {
   return (
     <I18nextProvider i18n={i18n}>
       <AuthProvider>
-        <HandGestureProvider>
-          <div className="App">{children}</div>
-          <HandGestureOverlay />
-          <VirtualKeyboard />
-          <GlobalCallLayer />
-        </HandGestureProvider>
+        <VoiceCallBridgeProvider>
+          <HandGestureProvider>
+            <div className="App">{children}</div>
+            <HandGestureOverlay />
+            <VirtualKeyboard />
+          </HandGestureProvider>
+        </VoiceCallBridgeProvider>
       </AuthProvider>
     </I18nextProvider>
   )

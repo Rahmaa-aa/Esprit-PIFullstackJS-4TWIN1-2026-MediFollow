@@ -149,11 +149,17 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
     const connectedAtRef = useRef(null);
     /** Flux distant si ontrack arrive avant le montage du <video> (récepteur / appelant). */
     const pendingRemoteStreamRef = useRef(null);
+    /** Pair cible pour appels via window.medifollow.startCall (hors fil de chat). */
+    const peerOverrideRef = useRef(null);
 
     const [micMuted, setMicMuted] = useState(false);
     const [callRecording, setCallRecording] = useState(false);
     /** Affichage MM:SS uniquement une fois la communication établie (appelant ou appelé). */
     const [callTimerLabel, setCallTimerLabel] = useState("00:00");
+    /** Libellé contact si appel global (sans peerContext messagerie). */
+    const [peerLabelFallback, setPeerLabelFallback] = useState(null);
+
+    const peerDisplayName = peerContext?.label || peerLabelFallback || "…";
 
     const runHangupBody = useCallback((notifyPeer) => {
         connectedAtRef.current = null;
@@ -178,6 +184,8 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
         }
         roomIdRef.current = null;
         remoteUserIdRef.current = null;
+        peerOverrideRef.current = null;
+        setPeerLabelFallback(null);
         setPendingIncoming(null);
         setPhase("idle");
         setErrorHint(null);
@@ -315,7 +323,7 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
         async (notifyPeer) => {
             const ph = phaseRef.current;
             const t0 = connectedAtRef.current;
-            const routing = peerContext?.routing;
+            const routing = (peerOverrideRef.current || peerContext)?.routing;
             if (notifyPeer && routing) {
                 let outcome = "cancelled";
                 let durationSec;
@@ -567,32 +575,40 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
     useEffect(() => {
         const ph = phaseRef.current;
         if (ph === "idle" || ph === "ringing") return;
-        if (!peerContext?.roomId) {
+        const ctx = peerOverrideRef.current || peerContext;
+        if (!ctx?.roomId) {
             hangup(true);
             return;
         }
-        if (roomIdRef.current && peerContext.roomId !== roomIdRef.current) {
+        if (roomIdRef.current && ctx.roomId !== roomIdRef.current) {
             hangup(true);
         }
     }, [peerContext?.roomId, hangup]);
 
     const startOutgoing = useCallback(async (opts = {}) => {
         const isVideo = !!opts.video;
-        if (!peerContext?.remoteUserId || !peerContext?.roomId) return;
+        const ctx = peerOverrideRef.current || peerContext;
+        if (!ctx?.remoteUserId || !ctx?.roomId) return;
         const s = socketRef.current;
         if (!s?.connected) {
             setErrorHint(t("chat.voice.errorSignalUnavailable"));
+            peerOverrideRef.current = null;
+            setPeerLabelFallback(null);
             return;
         }
-        if (phaseRef.current !== "idle") return;
+        if (phaseRef.current !== "idle") {
+            peerOverrideRef.current = null;
+            setPeerLabelFallback(null);
+            return;
+        }
 
         connectedAtRef.current = null;
         setMediaMode(isVideo ? "video" : "audio");
         callMediaRef.current = isVideo ? "video" : "audio";
         setPhase("outgoing");
         setErrorHint(null);
-        roomIdRef.current = peerContext.roomId;
-        remoteUserIdRef.current = peerContext.remoteUserId;
+        roomIdRef.current = ctx.roomId;
+        remoteUserIdRef.current = ctx.remoteUserId;
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia(
@@ -605,10 +621,10 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
             stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
             pc.onicecandidate = (e) => {
-                if (e.candidate && peerContext.remoteUserId) {
+                if (e.candidate && ctx.remoteUserId) {
                     s.emit("voice:ice", {
-                        roomId: peerContext.roomId,
-                        toUserId: peerContext.remoteUserId,
+                        roomId: ctx.roomId,
+                        toUserId: ctx.remoteUserId,
                         candidate: e.candidate.toJSON(),
                     });
                 }
@@ -623,8 +639,8 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
             await pc.setLocalDescription(offer);
 
             s.emit("voice:invite", {
-                roomId: peerContext.roomId,
-                toUserId: peerContext.remoteUserId,
+                roomId: ctx.roomId,
+                toUserId: ctx.remoteUserId,
                 offer: pc.localDescription,
                 callerName: getSelfDisplayName(session),
                 video: isVideo,
@@ -709,8 +725,9 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
         }
         void (async () => {
             try {
-                if (peerContext?.routing) {
-                    await sendCallLogToThread(peerContext.routing, JSON.stringify({ outcome: "declined" }));
+                const r = (peerOverrideRef.current || peerContext)?.routing;
+                if (r) {
+                    await sendCallLogToThread(r, JSON.stringify({ outcome: "declined" }));
                     onAfterCallLogged?.();
                 }
             } catch (e) {
@@ -722,6 +739,32 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
         setPendingIncoming(null);
         setPhase("idle");
     }, [pendingIncoming, peerContext, onAfterCallLogged]);
+
+    useEffect(() => {
+        if (!window.medifollow) window.medifollow = {};
+        window.medifollow.startCall = async (toUserId, opts = {}) => {
+            if (!session?.id) return;
+            if (phaseRef.current !== "idle") return;
+            const room = [
+                `${session.role}:${session.id}`,
+                `${opts.peerRole || "user"}:${toUserId}`,
+            ]
+                .sort()
+                .join("|");
+            const label = opts.peerName || "Contact";
+            peerOverrideRef.current = {
+                roomId: room,
+                remoteUserId: String(toUserId),
+                label,
+                routing: undefined,
+            };
+            setPeerLabelFallback(label);
+            await startOutgoing({ video: opts.video !== false });
+        };
+        return () => {
+            if (window.medifollow) delete window.medifollow.startCall;
+        };
+    }, [session, startOutgoing]);
 
     useImperativeHandle(
         ref,
@@ -838,7 +881,7 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                                         <Spinner animation="border" role="status" variant="light" className="mb-2" />
                                         <p className="voice-call-modal__title mb-1 fw-semibold">{t("chat.voice.outgoingVideo")}</p>
                                         <p className="voice-call-modal__subtitle small mb-3">
-                                            {t("chat.voice.connectingLine", { name: peerContext?.label || "…" })}
+                                            {t("chat.voice.connectingLine", { name: peerDisplayName })}
                                         </p>
                                         <div className="voice-call-toolbar">
                                             <button
@@ -886,7 +929,7 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                                         </p>
                                         <p className="voice-call-modal__subtitle small mb-2">
                                             {t("chat.voice.with")}{" "}
-                                            <strong className="text-white">{peerContext?.label || "…"}</strong>
+                                            <strong className="text-white">{peerDisplayName}</strong>
                                         </p>
                                         <div className="voice-call-toolbar">
                                             <button
@@ -963,7 +1006,7 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                                 {t("chat.voice.outgoingAudio")}
                             </p>
                             <p className="voice-call-modal__subtitle small mb-3">
-                                {t("chat.voice.connectingLine", { name: peerContext?.label || "…" })}
+                                {t("chat.voice.connectingLine", { name: peerDisplayName })}
                             </p>
                             <div className="voice-call-toolbar">
                                 <button
@@ -1008,7 +1051,7 @@ const VoiceCallLayer = forwardRef(function VoiceCallLayer({ session, peerContext
                             </p>
                             <p className="voice-call-modal__subtitle small mb-3">
                                 {t("chat.voice.with")}{" "}
-                                <strong className="text-white">{peerContext?.label || "…"}</strong>
+                                <strong className="text-white">{peerDisplayName}</strong>
                             </p>
                             <div className="voice-call-toolbar">
                                 <button
