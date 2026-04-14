@@ -174,6 +174,7 @@ export class AuthService {
           role: 'doctor',
           specialty: raw.specialty,
           profileImage: raw.profileImage,
+          academicTitle: raw.academicTitle === 'prof' ? 'prof' : 'dr',
         },
       };
     }
@@ -563,6 +564,7 @@ export class AuthService {
         role: 'doctor',
         specialty: d.specialty,
         profileImage: d.profileImage,
+        academicTitle: d.academicTitle === 'prof' ? 'prof' : 'dr',
       },
     };
     await this.gamificationService.awardPoints(d._id.toString(), 'doctor', 'login');
@@ -640,6 +642,7 @@ export class AuthService {
         role: 'doctor',
         specialty: d.specialty,
         profileImage: d.profileImage,
+        academicTitle: d.academicTitle === 'prof' ? 'prof' : 'dr',
       };
     }
     if (payload.role === 'patient') {

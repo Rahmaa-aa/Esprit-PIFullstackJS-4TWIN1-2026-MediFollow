@@ -16,6 +16,7 @@ import {
 } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { formatDoctorFormalName } from "../../utils/doctorDisplayName";
 import { appointmentApi, healthLogApi, medicationApi } from "../../services/api";
 import MedicationNameAutocomplete from "../../components/MedicationNameAutocomplete";
 import DosageAutocomplete from "../../components/DosageAutocomplete";
@@ -134,8 +135,7 @@ const DoctorNurseEscalations = () => {
 
   const doctorDisplayName = useMemo(() => {
     if (!doctorUser) return "";
-    const ln = doctorUser.lastName ? `Dr. ${doctorUser.firstName || ""} ${doctorUser.lastName}`.trim() : "";
-    return ln || doctorUser.firstName || t("doctorNurseEscalations.doctorFallback");
+    return formatDoctorFormalName(doctorUser, t) || doctorUser.firstName || t("doctorNurseEscalations.doctorFallback");
   }, [doctorUser, t]);
 
   const load = useCallback(async () => {

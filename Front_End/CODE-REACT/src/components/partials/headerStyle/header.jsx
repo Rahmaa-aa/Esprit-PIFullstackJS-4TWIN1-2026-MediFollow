@@ -28,6 +28,7 @@ import { useTranslation } from "react-i18next"
 import { DYSLEXIA_MODE_STORAGE_KEY, LARGE_TEXT_STORAGE_KEY } from "../../../constants/accessibility"
 import { getA11yReadablePageText } from "../../../utils/a11yReadPage"
 import { useHandGesture } from "../../../context/HandGestureContext"
+import { formatDoctorFormalName, normalizeDoctorAcademicTitle } from "../../../utils/doctorDisplayName"
 
 const generatePath = (path) => {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "") || "";
@@ -151,7 +152,18 @@ const Header = () => {
       const id = doctorUser?.id;
       if (id) {
          doctorApi.getById(id)
-            .then((doctor) => setDoctorUser((prev) => prev ? { ...prev, ...doctor, id: doctor._id || doctor.id } : prev))
+            .then((doctor) =>
+               setDoctorUser((prev) =>
+                  prev
+                     ? {
+                          ...prev,
+                          ...doctor,
+                          id: doctor._id || doctor.id,
+                          academicTitle: normalizeDoctorAcademicTitle(doctor.academicTitle),
+                       }
+                     : prev
+               )
+            )
             .catch(() => {});
       }
    }, [doctorUser?.id])
@@ -663,7 +675,7 @@ const Header = () => {
                               className="img-fluid rounded" alt={t("nav.userAvatarAlt")} />
                            <div className="caption d-none d-lg-block ms-3">
                               <h6 className="mb-0 line-height">
-                                 {isDoctor ? `Dr. ${doctorUser?.firstName || ''} ${doctorUser?.lastName || ''}`.trim() || doctorUser?.email : isPatient ? `${patientUser?.firstName || ''} ${patientUser?.lastName || ''}`.trim() || patientUser?.email : isNurse ? `${nurseUser?.firstName || ''} ${nurseUser?.lastName || ''}`.trim() || nurseUser?.email : (adminUser?.name || adminUser?.email || "Admin")}
+                                 {isDoctor ? formatDoctorFormalName(doctorUser, t) || doctorUser?.email : isPatient ? `${patientUser?.firstName || ''} ${patientUser?.lastName || ''}`.trim() || patientUser?.email : isNurse ? `${nurseUser?.firstName || ''} ${nurseUser?.lastName || ''}`.trim() || nurseUser?.email : (adminUser?.name || adminUser?.email || "Admin")}
                               </h6>
                               <span className="font-size-12">{t("nav.connected")}</span>
                            </div>{" "}

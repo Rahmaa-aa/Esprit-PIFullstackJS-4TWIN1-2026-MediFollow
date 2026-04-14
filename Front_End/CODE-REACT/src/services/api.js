@@ -597,6 +597,8 @@ export const authApi = {
   faceLogin: (descriptor, email) =>
     api.postNoAuth("/auth/face/login", email ? { email, descriptor } : { descriptor }),
   me: () => api.get("/auth/me"),
+  /** Session médecin : évite d’utiliser le jeton patient si les deux existent. */
+  meDoctor: () => api.getWithDoctorToken("/auth/me"),
   updateMe: (data) => api.put("/auth/me", data),
 };
 
@@ -1240,4 +1242,9 @@ export const chatbotApi = {
 export const gamificationApi = {
   getMyStats: () => api.get('/gamification/my-stats'),
   awardPoints: (action) => api.post('/gamification/award-points', { action }),
+};
+
+/** Formulaire public page /contact (sans JWT). */
+export const publicContactApi = {
+  send: (data) => api.postNoAuth('/contact', data),
 };

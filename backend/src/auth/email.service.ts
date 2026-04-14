@@ -351,4 +351,48 @@ export class EmailService {
       `[Mirror] Copie envoyée vers ${params.toEmail} (messageId SMTP: ${info.messageId || 'n/a'})`,
     );
   }
+
+  /**
+   * Formulaire public page /contact — envoi vers CONTACT_FORM_TO (sinon SMTP_USER).
+   */
+  async sendContactInquiry(payload: { name: string; email: string; subject: string; message: string }): Promise<void> {
+    if (!this.transporter) {
+      const err = new Error('SMTP_NOT_CONFIGURED');
+      (err as { code?: string }).code = 'SMTP_NOT_CONFIGURED';
+      throw err;
+    }
+    const to = (process.env.CONTACT_FORM_TO || process.env.SMTP_USER || '').trim();
+    if (!to) {
+      const err = new Error('CONTACT_DESTINATION_NOT_CONFIGURED');
+      (err as { code?: string }).code = 'CONTACT_DESTINATION_NOT_CONFIGURED';
+      throw err;
+    }
+    const esc = (s: string) =>
+      String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    const subjEsc = esc(payload.subject).slice(0, 200);
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
+        <h2 style="color: #089bab;">MediFollow — message de contact (site)</h2>
+        <p><strong>Nom :</strong> ${esc(payload.name)}</p>
+        <p><strong>E-mail :</strong> <a href="mailto:${esc(payload.email)}">${esc(payload.email)}</a></p>
+        <p><strong>Objet :</strong> ${subjEsc}</p>
+        <hr style="border:none;border-top:1px solid #ddd;"/>
+        <div style="white-space:pre-wrap;">${esc(payload.message)}</div>
+      </div>
+    `;
+    const subjectLine = `[MediFollow Contact] ${payload.subject}`.slice(0, 998);
+    await this.transporter.sendMail({
+      from: this.getSmtpFrom(),
+      to,
+      replyTo: payload.email,
+      subject: subjectLine,
+      html,
+      text: `Nom: ${payload.name}\nE-mail: ${payload.email}\n\n${payload.message}`,
+    });
+    this.logger.log(`[Contact] Message de ${payload.email} → ${to}`);
+  }
 }

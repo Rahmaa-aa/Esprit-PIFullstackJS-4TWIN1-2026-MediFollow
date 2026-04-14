@@ -324,7 +324,7 @@
     "pageLead": "Vue d’ensemble en temps réel de MediFollow (données issues de la base).",
     "loadError": "Impossible de charger les statistiques.",
     "loading": "Chargement des indicateurs…",
-    "retry": "Réessayer",
+    "refresh": "Actualiser",
     "statDoctors": "Médecins",
     "statDoctorsHint": "Comptes médecins enregistrés",
     "statUpcoming": "RDV à venir",
@@ -724,6 +724,9 @@
     "placeholderFirstName": "Prénom",
     "labelLastName": "Nom :",
     "placeholderLastName": "Nom",
+    "academicTitleLabel": "Titre du médecin",
+    "academicTitleDr": "Docteur (Dr.)",
+    "academicTitleProf": "Professeur (Pr.)",
     "labelAddress1": "Adresse 1 :",
     "placeholderAddress": "Adresse",
     "labelAddress2": "Adresse 2 :",
@@ -1858,6 +1861,8 @@
     "cardNewTemplate": "Nouveau questionnaire",
     "cardNewProtocol": "Nouveau protocole",
     "fieldTitle": "Titre",
+    "msgNeedTitle": "Saisissez un titre pour le questionnaire.",
+    "msgInvalidTitle": "Le titre doit contenir au moins une lettre (les titres composés uniquement de symboles comme *** ne sont pas acceptés).",
     "placeholderTitle": "ex. Suivi post-cardiaque",
     "fieldDepartment": "Département",
     "descriptionOptional": "Description (optionnel)",
@@ -1913,6 +1918,10 @@
     "defaultQ2": "Avez-vous une douleur importante ?",
     "defaultQ3": "Commentaires libres"
   },
+  "doctorTitle": {
+    "prefixDr": "Dr.",
+    "prefixProf": "Pr."
+  },
   "doctorList": {
     "loadError": "Erreur lors du chargement des médecins",
     "loadingSpinner": "Chargement…",
@@ -1963,6 +1972,9 @@
     "placeholderUrlLinkedIn": "URL LinkedIn",
     "firstName": "Prénom :",
     "lastName": "Nom :",
+    "academicTitleLabel": "Titre du médecin",
+    "academicTitleDr": "Docteur (Dr.)",
+    "academicTitleProf": "Professeur (Pr.)",
     "address1": "Adresse 1 :",
     "address2": "Adresse 2 :",
     "placeholderFirstName": "Prénom",
@@ -2810,7 +2822,7 @@
     },
     "roles": {
       "doctor": "Médecin",
-      "nurse": "IDE",
+      "nurse": "Infirmier(ère)",
       "patient": "Patient"
     },
     "voice": {
@@ -3293,7 +3305,25 @@
     "accountHint": "Les comptes patient et professionnels sont créés et gérés par l’administration du CHU ; MediFollow ne délivre pas d’identifiants en direct depuis cette page.",
     "emergencyNote": "En cas d’urgence médicale, ne vous fiez pas uniquement à la messagerie de l’application : contactez les secours ou les urgences du CHU.",
     "ctaTitle": "Espace sécurisé",
-    "ctaLead": "Si vous disposez déjà d’un identifiant, connectez-vous pour accéder à MediFollow."
+    "ctaLead": "Si vous disposez déjà d’un identifiant, connectez-vous pour accéder à MediFollow.",
+    "formKicker": "Message",
+    "formTitle": "Nous écrire",
+    "formLead": "Remplissez le formulaire ci-dessous. Votre message est envoyé directement à notre équipe par courriel.",
+    "formName": "Nom complet",
+    "formNamePlaceholder": "Votre nom",
+    "formEmail": "Votre courriel",
+    "formEmailPlaceholder": "nom@exemple.com",
+    "formSubject": "Objet",
+    "formSubjectPlaceholder": "ex. demande d’accès, question technique",
+    "formMessage": "Message",
+    "formMessagePlaceholder": "Décrivez votre demande…",
+    "formSubmit": "Envoyer",
+    "formSending": "Envoi en cours…",
+    "formValidation": "Veuillez remplir tous les champs avec une adresse courriel valide.",
+    "formSuccess": "Votre message a bien été envoyé. Nous vous répondrons dans les meilleurs délais.",
+    "formErrorGeneric": "Impossible d’envoyer le message pour le moment. Réessayez dans quelques instants.",
+    "formBodyFrom": "De :",
+    "formBodyReply": "Répondre à :"
   },
   "videoMeetingPage": {
     "title": "Visioconférence",

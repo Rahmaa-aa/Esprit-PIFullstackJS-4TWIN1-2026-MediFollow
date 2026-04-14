@@ -9,9 +9,10 @@ import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/flatpickr.css';
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { doctorApi, appointmentApi, patientApi, departmentApi, healthLogApi } from "../services/api";
+import { doctorApi, appointmentApi, patientApi, departmentApi, healthLogApi, authApi } from "../services/api";
 import Chart from 'react-apexcharts';
 import SecureMessagingHubCard from "../components/SecureMessagingHubCard";
+import { formatDoctorFormalName, normalizeDoctorAcademicTitle } from "../utils/doctorDisplayName";
 
 const generatePath = (path) => {
     const base = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "") || "";
@@ -105,12 +106,46 @@ const Index = () => {
 
     useEffect(() => {
         const stored = localStorage.getItem("doctorUser");
-        const doctorId = stored ? (JSON.parse(stored)?.id) : null;
-        if (doctorId) {
-            doctorApi.getById(doctorId)
-                .then((doctor) => setDoctorUser((prev) => ({ ...prev, ...doctor, id: doctor._id || doctor.id })))
-                .catch(() => {});
+        let doctorId = null;
+        try {
+            doctorId = stored ? JSON.parse(stored)?.id : null;
+        } catch {
+            doctorId = null;
         }
+        if (!doctorId) return;
+
+        const mergeDoctorProfile = (payload) => {
+            const rawId = payload.id ?? payload._id;
+            const merged = {
+                ...payload,
+                id: rawId != null ? String(rawId) : String(doctorId),
+                firstName: payload.firstName ?? "",
+                lastName: payload.lastName ?? "",
+                academicTitle: normalizeDoctorAcademicTitle(payload.academicTitle),
+            };
+            setDoctorUser((prev) => ({ ...prev, ...merged }));
+            try {
+                const rawLs = localStorage.getItem("doctorUser");
+                const parsed = rawLs ? JSON.parse(rawLs) : {};
+                localStorage.setItem("doctorUser", JSON.stringify({ ...parsed, ...merged }));
+            } catch {
+                /* ignore */
+            }
+            window.dispatchEvent(new Event("doctor-updated"));
+        };
+
+        authApi
+            .meDoctor()
+            .then((res) => {
+                const u = res?.user;
+                if (u?.role === "doctor" && u?.id != null) mergeDoctorProfile(u);
+            })
+            .catch(() => {
+                doctorApi
+                    .getById(doctorId)
+                    .then((doctor) => mergeDoctorProfile({ ...doctor, id: doctor._id || doctor.id }))
+                    .catch(() => {});
+            });
     }, []);
 
     useEffect(() => {
@@ -796,7 +831,7 @@ const Index = () => {
                                     />
                                 </div>
                                 <div className="text-center mt-3 pb-3">
-                                    <h4><b>{doctorUser ? `Dr. ${doctorUser.firstName || ''} ${doctorUser.lastName || ''}`.trim() || doctorUser.email : 'Doctor'}</b></h4>
+                                    <h4><b>{doctorUser ? formatDoctorFormalName(doctorUser, t) || doctorUser.email : "Doctor"}</b></h4>
                                     <p>{doctorUser?.specialty || 'Doctor'}</p>
                                     <p>{doctorUser?.email || '—'}</p>
                                     <Button variant="primary-subtle" as={Link} to={doctorUser ? `/doctor/doctor-profile/${doctorUser.id}` : '#'}>
@@ -1207,7 +1242,7 @@ const Index = () => {
                                                         />
                                                         <div className="ms-3 min-w-0">
                                                             <h6 className="mb-0 text-truncate">
-                                                                Dr. {`${doc.firstName || ""} ${doc.lastName || ""}`.trim() || doc.email}
+                                                                {formatDoctorFormalName(doc, t) || doc.email}
                                                             </h6>
                                                             <p className="mb-0 font-size-12 text-muted text-truncate">
                                                                 {doc.specialty || "—"}

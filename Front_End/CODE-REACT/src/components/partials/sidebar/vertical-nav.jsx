@@ -1,6 +1,6 @@
 import React, { useContext, useState } from "react"
 import { Accordion, AccordionContext, Collapse, Nav, OverlayTrigger, Tooltip, useAccordionButton } from "react-bootstrap"
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 
 
@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next"
 const VerticalNav = () => {
     const { t } = useTranslation()
     const location = useLocation()
+    const navigate = useNavigate()
     const [activeMenu, setActiveMenu] = useState(false)
     const [active, setActive] = useState('')
     const [patientUser] = useState(() => {
@@ -43,6 +44,23 @@ const VerticalNav = () => {
     const isCareCoordinatorPatientsActive =
         location.pathname === "/dashboard-pages/care-coordinator-patients" ||
         /^\/dashboard-pages\/care-coordinator-patient\/[^/]+$/.test(location.pathname)
+
+    const handleSidebarLogout = () => {
+        const wasDoctor = !!doctorUser
+        const wasPatient = !!patientUser
+        const wasNurse = !!nurseUser
+        localStorage.removeItem("adminToken")
+        localStorage.removeItem("adminUser")
+        localStorage.removeItem("doctorToken")
+        localStorage.removeItem("doctorUser")
+        localStorage.removeItem("patientToken")
+        localStorage.removeItem("patientUser")
+        localStorage.removeItem("nurseToken")
+        localStorage.removeItem("nurseUser")
+        window.dispatchEvent(new CustomEvent("user-signed-out"))
+        navigate(wasDoctor || wasPatient || wasNurse ? "/auth/sign-in" : "/auth/lock-screen")
+    }
+
     const emailItems = [
         { path: "/email/inbox", nameKey: "emailInbox", icon: "ri-inbox-fill" },
         { path: "/email/email-compose", nameKey: "emailCompose", icon: "ri-edit-2-fill" },
@@ -338,10 +356,14 @@ const VerticalNav = () => {
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
-                    <Link to={`/patient/patient-profile/${patientUser?.id}`} className={`nav-link ${location.pathname === `/patient/patient-profile/${patientUser?.id}` ? "active" : ""}`}>
-                        <i className="ri-user-heart-fill"></i>
-                        <span className="item-name">{t("sidebar.myProfile")}</span>
-                    </Link>
+                    <button
+                        type="button"
+                        className="nav-link text-start w-100 border-0 bg-transparent"
+                        onClick={handleSidebarLogout}
+                    >
+                        <i className="ri-logout-box-r-line" aria-hidden />
+                        <span className="item-name">{t("nav.signOut")}</span>
+                    </button>
                 </Nav.Item>
             </ul>
         )
@@ -400,10 +422,14 @@ const VerticalNav = () => {
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
-                    <Link to={`/nurse/nurse-profile/${nurseUser?.id}`} className={`nav-link ${location.pathname === `/nurse/nurse-profile/${nurseUser?.id}` ? "active" : ""}`}>
-                        <i className="ri-nurse-fill"></i>
-                        <span className="item-name">{t("sidebar.myProfile")}</span>
-                    </Link>
+                    <button
+                        type="button"
+                        className="nav-link text-start w-100 border-0 bg-transparent"
+                        onClick={handleSidebarLogout}
+                    >
+                        <i className="ri-logout-box-r-line" aria-hidden />
+                        <span className="item-name">{t("nav.signOut")}</span>
+                    </button>
                 </Nav.Item>
             </ul>
         )
@@ -547,13 +573,14 @@ const VerticalNav = () => {
                     </Link>
                 </Nav.Item>
                 <Nav.Item as="li">
-                    <Link
-                        to={`/doctor/doctor-profile/${docId}`}
-                        className={`nav-link ${location.pathname === `/doctor/doctor-profile/${docId}` ? "active" : ""}`}
+                    <button
+                        type="button"
+                        className="nav-link text-start w-100 border-0 bg-transparent"
+                        onClick={handleSidebarLogout}
                     >
-                        <i className="ri-profile-fill"></i>
-                        <span className="item-name">{t("sidebar.myProfile")}</span>
-                    </Link>
+                        <i className="ri-logout-box-r-line" aria-hidden />
+                        <span className="item-name">{t("nav.signOut")}</span>
+                    </button>
                 </Nav.Item>
             </ul>
         )
@@ -639,10 +666,14 @@ const VerticalNav = () => {
                         </Link>
                     </Nav.Item>
                     <Nav.Item as="li">
-                        <Link to="/super-admin/profile" className={`nav-link super-admin-nav-link ${location.pathname === "/super-admin/profile" ? "active" : ""}`}>
-                            <i className="ri-user-settings-fill"></i>
-                            <span className="item-name">{t("sidebar.myProfile")}</span>
-                        </Link>
+                        <button
+                            type="button"
+                            className="nav-link super-admin-nav-link text-start w-100 border-0 bg-transparent"
+                            onClick={handleSidebarLogout}
+                        >
+                            <i className="ri-logout-box-r-line" aria-hidden />
+                            <span className="item-name">{t("nav.signOut")}</span>
+                        </button>
                     </Nav.Item>
                 </ul>
             </>

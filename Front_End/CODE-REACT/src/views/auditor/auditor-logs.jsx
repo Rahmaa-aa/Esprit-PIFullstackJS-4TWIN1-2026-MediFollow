@@ -65,15 +65,6 @@ function labelAction(t, code) {
   return t(`auditorLogs.actionLabels.${code}`, { defaultValue: code });
 }
 
-function labelResource(t, row) {
-  const type = row.resourceType;
-  const custom = row.resourceLabel;
-  if (custom && type && custom !== type) return custom;
-  if (type) return t(`auditorLogs.resourceLabels.${type}`, { defaultValue: type });
-  if (custom) return custom;
-  return t("auditorLogs.noValue");
-}
-
 function labelRole(t, role) {
   if (!role) return t("auditorLogs.noValue");
   return t(`auditorLogs.roleLabels.${role}`, { defaultValue: role });
@@ -330,16 +321,13 @@ const AuditorLogsPage = () => {
                     <th>{t("auditorLogs.colWho")}</th>
                     <th>{t("auditorLogs.colRole")}</th>
                     <th>{t("auditorLogs.colActionType")}</th>
-                    <th>{t("auditorLogs.colWhat")}</th>
-                    <th>{t("auditorLogs.colResource")}</th>
-                    <th>{t("auditorLogs.colIp")}</th>
                     <th className="text-end">{t("auditorLogs.detail")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.items?.length === 0 && (
                     <tr>
-                      <td colSpan={8}>
+                      <td colSpan={5}>
                         <div className="auditor-logs__empty">
                           <div className="auditor-logs__empty-icon" aria-hidden>
                             <i className="ri-inbox-line" aria-hidden />
@@ -367,15 +355,6 @@ const AuditorLogsPage = () => {
                           {labelAction(t, row.actionType)}
                         </Badge>
                       </td>
-                      <td className="auditor-logs__cell-action">
-                        <span title={row.action}>
-                          {row.action?.length > 56 ? `${row.action.slice(0, 56)}…` : row.action}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="auditor-logs__cell-muted">{labelResource(t, row)}</span>
-                      </td>
-                      <td className="small font-monospace auditor-logs__cell-muted">{row.ipAddress || t("auditorLogs.noValue")}</td>
                       <td className="text-end">
                         <Button
                           type="button"

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import Card from "../../components/Card";
 import FaceEnrollmentCard from "../../components/FaceEnrollmentCard";
 import { doctorApi } from "../../services/api";
+import { formatDoctorFormalName } from "../../utils/doctorDisplayName";
 
 // Import FsLightBox
 import ReactFsLightbox from "fslightbox-react";
@@ -165,7 +166,7 @@ const DoctorProfile = (props) => {
                                     <img src={profileImg} alt="profile-img" className="avatar-130 img-fluid" style={{ objectFit: "cover" }} />
                                 </div>
                                 <div className="text-center mt-3 ps-3 pe-3">
-                                    <h4><b>{displayDoctor.firstName ? `Dr. ${displayDoctor.firstName} ${displayDoctor.lastName}` : "Bini Jets"}</b></h4>
+                                    <h4><b>{displayDoctor.firstName ? formatDoctorFormalName(displayDoctor, t) : "Bini Jets"}</b></h4>
                                     <p>{displayDoctor.specialty || "Doctor"}</p>
                                     <p className="mb-0">{displayDoctor.department || "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Delectus repudiandae eveniet harum."}</p>
                                 </div>

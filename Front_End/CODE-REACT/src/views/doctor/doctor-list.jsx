@@ -5,6 +5,7 @@ import Card from "../../components/Card";
 import { Link } from "react-router-dom";
 import { doctorApi } from "../../services/api";
 import ConfirmActionModal from "../../components/ConfirmActionModal";
+import { formatDoctorFormalName } from "../../utils/doctorDisplayName";
 
 const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
 
@@ -195,7 +196,7 @@ const DoctorList = () => {
                   />
                 </div>
                 <div className="doc-info mt-3">
-                  <h4>{t("doctorList.doctorPrefix")} {doctor.firstName} {doctor.lastName}</h4>
+                  <h4>{formatDoctorFormalName(doctor, t)}</h4>
                   <p className="mb-0">{doctor.specialty || t("doctorList.defaultSpecialty")}</p>
                   <a href={`mailto:${doctor.email}`}>{doctor.email}</a>
                 </div>

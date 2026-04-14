@@ -359,7 +359,6 @@ const AuditorDashboard = () => {
               <th>{t("auditorDashboard.colTime")}</th>
               <th>{t("auditorDashboard.colUser")}</th>
               <th>{t("auditorDashboard.colRole")}</th>
-              <th>{t("auditorDashboard.colAction")}</th>
               <th>{t("auditorDashboard.colCategory")}</th>
               <th>{t("auditorDashboard.colStatus")}</th>
               <th>{t("auditorDashboard.colSeverity")}</th>
@@ -368,7 +367,7 @@ const AuditorDashboard = () => {
           <tbody>
             {recent.length === 0 && (
               <tr>
-                <td colSpan={7} className="auditor-empty">
+                <td colSpan={6} className="auditor-empty">
                   {t("auditorDashboard.noLogs")}
                 </td>
               </tr>
@@ -378,11 +377,6 @@ const AuditorDashboard = () => {
                 <td className="text-nowrap">{formatTime(row.createdAt)}</td>
                 <td>{row.actorEmail || t("auditorLogs.noValue")}</td>
                 <td>{labelRole(t, row.actorRole)}</td>
-                <td>
-                  <span title={row.action}>
-                    {row.action?.length > 48 ? `${row.action.slice(0, 48)}…` : row.action || t("auditorLogs.noValue")}
-                  </span>
-                </td>
                 <td>{labelCategory(t, row.category)}</td>
                 <td>{row.statusCode ?? t("auditorLogs.noValue")}</td>
                 <td>{severityBadge(row.severity, row.suspicious)}</td>

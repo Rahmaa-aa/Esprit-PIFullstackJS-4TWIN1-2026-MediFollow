@@ -1,14 +1,68 @@
-import React from "react";
-import { Container, Row, Col, Button, Alert } from "react-bootstrap";
+import React, { useState } from "react";
+import { Container, Row, Col, Button, Alert, Form, Spinner } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import LandingShell from "../components/landing/LandingShell";
 import { landingImg } from "./landing/landingPaths";
+import { publicContactApi } from "../services/api";
+
+const emailLooksValid = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
 
 const Contact = () => {
   const { t } = useTranslation();
   const phoneRaw = String(t("landing.contactPhone")).replace(/\s/g, "");
   const email = t("landing.contactEmail");
+
+  const [formName, setFormName] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formSubject, setFormSubject] = useState("");
+  const [formMessage, setFormMessage] = useState("");
+  const [formTouched, setFormTouched] = useState(false);
+  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
+
+  const formInvalid =
+    formTouched &&
+    (!formName.trim() ||
+      !formEmail.trim() ||
+      !emailLooksValid(formEmail) ||
+      !formSubject.trim() ||
+      !formMessage.trim());
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setFormTouched(true);
+    setSendError("");
+    if (
+      !formName.trim() ||
+      !formEmail.trim() ||
+      !emailLooksValid(formEmail) ||
+      !formSubject.trim() ||
+      !formMessage.trim()
+    ) {
+      return;
+    }
+    setSending(true);
+    try {
+      await publicContactApi.send({
+        name: formName.trim(),
+        email: formEmail.trim(),
+        subject: formSubject.trim(),
+        message: formMessage.trim(),
+      });
+      setFormSubmitted(true);
+      setFormName("");
+      setFormEmail("");
+      setFormSubject("");
+      setFormMessage("");
+      setFormTouched(false);
+    } catch (err) {
+      setSendError(err?.message || t("contactPage.formErrorGeneric"));
+    } finally {
+      setSending(false);
+    }
+  };
 
   const cards = [
     {
@@ -78,6 +132,107 @@ const Contact = () => {
                 </div>
               </Col>
             ))}
+          </Row>
+
+          <Row className="justify-content-center mt-5 pt-lg-2">
+            <Col lg={10} xl={8}>
+              <div className="text-center mx-auto mb-4" style={{ maxWidth: "640px" }}>
+                <h5 className="d-inline-block text-primary text-uppercase border-bottom border-5">{t("contactPage.formKicker")}</h5>
+                <h2 className="display-6 text-dark fw-bold mt-3 mb-2">{t("contactPage.formTitle")}</h2>
+                <p className="text-muted mb-0">{t("contactPage.formLead")}</p>
+              </div>
+              <div className="bg-white rounded shadow-sm border border-light p-4 p-lg-5">
+                {formSubmitted && (
+                  <Alert variant="success" className="mb-4" onClose={() => setFormSubmitted(false)} dismissible>
+                    {t("contactPage.formSuccess")}
+                  </Alert>
+                )}
+                {sendError && (
+                  <Alert variant="danger" className="mb-4" onClose={() => setSendError("")} dismissible>
+                    {sendError}
+                  </Alert>
+                )}
+                <Form onSubmit={handleContactSubmit} noValidate>
+                  <Row className="g-3">
+                    <Col md={6}>
+                      <Form.Group controlId="contact-name">
+                        <Form.Label>{t("contactPage.formName")}</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="name"
+                          autoComplete="name"
+                          value={formName}
+                          onChange={(ev) => setFormName(ev.target.value)}
+                          placeholder={t("contactPage.formNamePlaceholder")}
+                          isInvalid={formTouched && !formName.trim()}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group controlId="contact-email">
+                        <Form.Label>{t("contactPage.formEmail")}</Form.Label>
+                        <Form.Control
+                          type="email"
+                          name="email"
+                          autoComplete="email"
+                          value={formEmail}
+                          onChange={(ev) => setFormEmail(ev.target.value)}
+                          placeholder={t("contactPage.formEmailPlaceholder")}
+                          isInvalid={formTouched && (!formEmail.trim() || !emailLooksValid(formEmail))}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col xs={12}>
+                      <Form.Group controlId="contact-subject">
+                        <Form.Label>{t("contactPage.formSubject")}</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="subject"
+                          value={formSubject}
+                          onChange={(ev) => setFormSubject(ev.target.value)}
+                          placeholder={t("contactPage.formSubjectPlaceholder")}
+                          isInvalid={formTouched && !formSubject.trim()}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col xs={12}>
+                      <Form.Group controlId="contact-message">
+                        <Form.Label>{t("contactPage.formMessage")}</Form.Label>
+                        <Form.Control
+                          as="textarea"
+                          name="message"
+                          rows={5}
+                          value={formMessage}
+                          onChange={(ev) => setFormMessage(ev.target.value)}
+                          placeholder={t("contactPage.formMessagePlaceholder")}
+                          isInvalid={formTouched && !formMessage.trim()}
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                  {formInvalid && (
+                    <Alert variant="danger" className="mt-3 mb-0 py-2 small">
+                      {t("contactPage.formValidation")}
+                    </Alert>
+                  )}
+                  <div className="d-flex flex-wrap gap-2 align-items-center mt-4">
+                    <Button type="submit" size="lg" className="rounded-pill px-4" disabled={sending}>
+                      {sending ? (
+                        <>
+                          <Spinner animation="border" size="sm" className="me-2" aria-hidden />
+                          {t("contactPage.formSending")}
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-send-fill me-2" aria-hidden />
+                          {t("contactPage.formSubmit")}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </Form>
+              </div>
+            </Col>
           </Row>
         </Container>
       </div>

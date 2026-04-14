@@ -50,6 +50,7 @@ const EditDoctor = () => {
         setFormData({
           fname: data.firstName || "",
           lname: data.lastName || "",
+          academicTitle: data.academicTitle === "prof" ? "prof" : "dr",
           email: data.email || "",
           selectuserrole: data.specialty || "",
           cname: data.department || "",
@@ -121,6 +122,7 @@ const EditDoctor = () => {
       firstName: form.fname?.value,
       lastName: form.lname?.value,
       email: form.email?.value,
+      academicTitle: form.academicTitle?.value === "prof" ? "prof" : "dr",
       specialty: form.selectuserrole?.value,
       department: form.cname?.value,
       phone: form.mobno?.value,
@@ -138,6 +140,31 @@ const EditDoctor = () => {
 
     try {
       await doctorApi.update(id, payload);
+      try {
+        const docRaw = localStorage.getItem("doctorUser");
+        if (docRaw) {
+          const u = JSON.parse(docRaw);
+          const myId = u?.id ?? u?._id;
+          if (String(myId) === String(id)) {
+            localStorage.setItem(
+              "doctorUser",
+              JSON.stringify({
+                ...u,
+                firstName: payload.firstName,
+                lastName: payload.lastName,
+                email: payload.email,
+                academicTitle: payload.academicTitle,
+                specialty: payload.specialty,
+                department: payload.department,
+                profileImage: payload.profileImage,
+              })
+            );
+            window.dispatchEvent(new Event("doctor-updated"));
+          }
+        }
+      } catch {
+        /* ignore */
+      }
       navigate("/doctor/doctor-list");
     } catch (err) {
       if (err.status === 401) {
@@ -251,6 +278,13 @@ const EditDoctor = () => {
                     <Col md={6} className="form-group">
                       <Form.Label className="mb-0">{t("editDoctor.labelLastName")}</Form.Label>
                       <Form.Control type="text" className="my-2" name="lname" placeholder={t("editDoctor.placeholderLastName")} required defaultValue={formData.lname} />
+                    </Col>
+                    <Col sm={12} className="form-group">
+                      <Form.Label className="mb-0">{t("editDoctor.academicTitleLabel")}</Form.Label>
+                      <Form.Control as="select" className="my-2" name="academicTitle" defaultValue={formData.academicTitle || "dr"}>
+                        <option value="dr">{t("editDoctor.academicTitleDr")}</option>
+                        <option value="prof">{t("editDoctor.academicTitleProf")}</option>
+                      </Form.Control>
                     </Col>
                     <Col md={6} className="form-group">
                       <Form.Label className="mb-0">{t("editDoctor.labelAddress1")}</Form.Label>

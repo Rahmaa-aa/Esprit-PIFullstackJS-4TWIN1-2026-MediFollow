@@ -7,12 +7,6 @@ import InboxEmailIcon from "../../components/inbox-email-icon";
 import { useTranslation } from "react-i18next";
 import { mailApi } from "../../services/api";
 
-function formatBytes(n) {
-  if (n == null || Number.isNaN(n)) return "—";
-  const gb = n / (1024 * 1024 * 1024);
-  return `${gb.toFixed(2)} GB`;
-}
-
 function formatDate(iso) {
   if (!iso) return "—";
   try {
@@ -42,14 +36,13 @@ const Inbox = () => {
     spam: 0,
     important: 0,
   });
-  const [storage, setStorage] = useState(null);
   const [labels, setLabels] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [list, c, st, lab] = await Promise.all([
+      const [list, c, lab] = await Promise.all([
         mailApi.listMessages({
           folder: starredOnly ? undefined : folder,
           starred: starredOnly,
@@ -57,13 +50,11 @@ const Inbox = () => {
           page: 1,
         }),
         mailApi.counts(),
-        mailApi.storage(),
         mailApi.listLabels(),
       ]);
       setItems(list.items || []);
       setTotal(list.total ?? 0);
       setCounts(c);
-      setStorage(st);
       setLabels(lab || []);
     } catch (e) {
       setError(e?.message || t("emailPage.loadError"));
@@ -176,14 +167,6 @@ const Inbox = () => {
     }
   };
 
-  const storageLine = storage
-    ? t("emailPage.storageLine", {
-        used: formatBytes(storage.usedBytes),
-        pct: String(storage.percent ?? 0),
-        quota: formatBytes(storage.quotaBytes),
-      })
-    : "";
-
   return (
     <>
       <Row>
@@ -288,20 +271,6 @@ const Inbox = () => {
                       <span className="text-muted small">{t("emailPage.addLabel")} — API</span>
                     </li>
                   </ul>
-                  <div className="iq-progress-bar-linear d-inline-block w-100">
-                    <h6 className="mt-4 mb-3">{t("emailPage.storage")}</h6>
-                    {storage && (
-                      <>
-                        <div className="progress" style={{ height: "6px" }}>
-                          <div
-                            className="progress-bar bg-danger"
-                            style={{ width: `${Math.min(100, storage.percent || 0)}%` }}
-                          />
-                        </div>
-                        <span className="mt-1 d-inline-block w-100 small">{storageLine}</span>
-                      </>
-                    )}
-                  </div>
                 </div>
               </Card.Body>
             </Card>

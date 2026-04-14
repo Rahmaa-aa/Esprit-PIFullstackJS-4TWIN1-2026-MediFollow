@@ -187,7 +187,7 @@ const AdminDashboard = () => {
               ) : (
                 <>
                   <i className="ri-refresh-line me-1" aria-hidden />
-                  {t("adminDashboard.retry")}
+                  {t("adminDashboard.refresh")}
                 </>
               )}
             </Button>

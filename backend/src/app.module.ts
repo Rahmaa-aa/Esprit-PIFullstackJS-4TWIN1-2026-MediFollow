@@ -21,6 +21,7 @@ import { BrainTumorModule } from './brain-tumor/brain-tumor.module';
 import { VideoMeetingModule } from './video-meeting/video-meeting.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
 import { GamificationModule } from './gamification/gamification.module';
+import { ContactModule } from './contact/contact.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { GamificationModule } from './gamification/gamification.module';
     VideoMeetingModule,
     ChatbotModule,
     GamificationModule,
+    ContactModule,
   ],
 })
 export class AppModule {}

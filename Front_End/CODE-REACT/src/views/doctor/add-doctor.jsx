@@ -88,6 +88,7 @@ const AddDoctor = () => {
         lastName: form.lname?.value,
         email: form.email?.value,
         password,
+        academicTitle: form.academicTitle?.value === "prof" ? "prof" : "dr",
         specialty: form.selectuserrole?.value,
         department: form.cname?.value,
         phone: (() => {
@@ -199,6 +200,13 @@ const AddDoctor = () => {
                     <Col md={6} className="form-group">
                       <Form.Label className="mb-0">{t("addDoctor.lastName")}</Form.Label>
                       <Form.Control type="text" className="my-2" name="lname" placeholder={t("addDoctor.placeholderLastName")} required />
+                    </Col>
+                    <Col sm={12} className="form-group">
+                      <Form.Label className="mb-0">{t("addDoctor.academicTitleLabel")}</Form.Label>
+                      <Form.Control as="select" className="my-2" name="academicTitle" defaultValue="dr">
+                        <option value="dr">{t("addDoctor.academicTitleDr")}</option>
+                        <option value="prof">{t("addDoctor.academicTitleProf")}</option>
+                      </Form.Control>
                     </Col>
                     <Col md={6} className="form-group">
                       <Form.Label className="mb-0">{t("addDoctor.address1")}</Form.Label>
