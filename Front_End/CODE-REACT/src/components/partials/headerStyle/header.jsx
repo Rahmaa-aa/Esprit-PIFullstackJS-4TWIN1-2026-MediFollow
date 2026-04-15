@@ -850,7 +850,7 @@ const Header = () => {
                                        className="btn btn-primary-subtle w-100"
                                        onClick={handleSignOut}
                                     >
-                                       {t("nav.signOut")}
+                                       {t("sidebar.logout")}
                                        <i className="ri-login-box-line ms-2"></i>
                                     </button>
                                  </div>

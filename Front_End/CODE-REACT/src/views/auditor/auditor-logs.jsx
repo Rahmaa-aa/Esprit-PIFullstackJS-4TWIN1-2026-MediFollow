@@ -321,13 +321,15 @@ const AuditorLogsPage = () => {
                     <th>{t("auditorLogs.colWho")}</th>
                     <th>{t("auditorLogs.colRole")}</th>
                     <th>{t("auditorLogs.colActionType")}</th>
+                    <th>{t("auditorLogs.colResource")}</th>
+                    <th>{t("auditorLogs.colIp")}</th>
                     <th className="text-end">{t("auditorLogs.detail")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.items?.length === 0 && (
                     <tr>
-                      <td colSpan={5}>
+                      <td colSpan={7}>
                         <div className="auditor-logs__empty">
                           <div className="auditor-logs__empty-icon" aria-hidden>
                             <i className="ri-inbox-line" aria-hidden />
@@ -355,6 +357,10 @@ const AuditorLogsPage = () => {
                           {labelAction(t, row.actionType)}
                         </Badge>
                       </td>
+                      <td>
+                        <span className="auditor-logs__cell-muted">{labelResource(t, row)}</span>
+                      </td>
+                      <td className="small font-monospace auditor-logs__cell-muted">{row.ipAddress || t("auditorLogs.noValue")}</td>
                       <td className="text-end">
                         <Button
                           type="button"
@@ -443,10 +449,6 @@ const AuditorLogsPage = () => {
                 <div className="auditor-logs__detail-field">
                   <dt>{t("auditorLogs.colIp")}</dt>
                   <dd className="font-monospace">{detail.ipAddress || t("auditorLogs.noValue")}</dd>
-                </div>
-                <div className="auditor-logs__detail-field auditor-logs__detail-field--full">
-                  <dt>{t("auditorLogs.colWhat")}</dt>
-                  <dd>{detail.action}</dd>
                 </div>
               </dl>
               {isReadOnlyAuditDetail(detail) &&

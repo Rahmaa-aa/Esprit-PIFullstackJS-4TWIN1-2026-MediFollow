@@ -342,9 +342,10 @@ const VerticalNav = () => {
                         type="button"
                         className="nav-link text-start w-100 border-0 bg-transparent"
                         onClick={handleSidebarLogout}
+                        aria-label={t("sidebar.logout")}
                     >
                         <i className="ri-logout-box-r-line" aria-hidden />
-                        <span className="item-name">{t("nav.signOut")}</span>
+                        <span className="item-name">{t("sidebar.logout")}</span>
                     </button>
                 </Nav.Item>
             </ul>
@@ -390,9 +391,10 @@ const VerticalNav = () => {
                         type="button"
                         className="nav-link text-start w-100 border-0 bg-transparent"
                         onClick={handleSidebarLogout}
+                        aria-label={t("sidebar.logout")}
                     >
                         <i className="ri-logout-box-r-line" aria-hidden />
-                        <span className="item-name">{t("nav.signOut")}</span>
+                        <span className="item-name">{t("sidebar.logout")}</span>
                     </button>
                 </Nav.Item>
             </ul>
@@ -523,9 +525,10 @@ const VerticalNav = () => {
                         type="button"
                         className="nav-link text-start w-100 border-0 bg-transparent"
                         onClick={handleSidebarLogout}
+                        aria-label={t("sidebar.logout")}
                     >
                         <i className="ri-logout-box-r-line" aria-hidden />
-                        <span className="item-name">{t("nav.signOut")}</span>
+                        <span className="item-name">{t("sidebar.logout")}</span>
                     </button>
                 </Nav.Item>
             </ul>
@@ -616,9 +619,10 @@ const VerticalNav = () => {
                             type="button"
                             className="nav-link super-admin-nav-link text-start w-100 border-0 bg-transparent"
                             onClick={handleSidebarLogout}
+                            aria-label={t("sidebar.logout")}
                         >
                             <i className="ri-logout-box-r-line" aria-hidden />
-                            <span className="item-name">{t("nav.signOut")}</span>
+                            <span className="item-name">{t("sidebar.logout")}</span>
                         </button>
                     </Nav.Item>
                 </ul>
@@ -653,6 +657,17 @@ const VerticalNav = () => {
                             <i className="ri-file-list-3-line"></i>
                             <span className="item-name">{t("sidebar.auditorLogs")}</span>
                         </Link>
+                    </Nav.Item>
+                    <Nav.Item as="li">
+                        <button
+                            type="button"
+                            className="nav-link w-100 text-start border-0 bg-transparent"
+                            onClick={handleSidebarLogout}
+                            aria-label={t("sidebar.logout")}
+                        >
+                            <i className="ri-logout-box-line" aria-hidden />
+                            <span className="item-name">{t("sidebar.logout")}</span>
+                        </button>
                     </Nav.Item>
                 </ul>
             </>
@@ -735,6 +750,17 @@ const VerticalNav = () => {
                             <i className="ri-message-fill"></i>
                             <span className="item-name">{t("sidebar.chat")}</span>
                         </Link>
+                    </Nav.Item>
+                    <Nav.Item as="li">
+                        <button
+                            type="button"
+                            className="nav-link w-100 text-start border-0 bg-transparent"
+                            onClick={handleSidebarLogout}
+                            aria-label={t("sidebar.logout")}
+                        >
+                            <i className="ri-logout-box-line" aria-hidden />
+                            <span className="item-name">{t("sidebar.logout")}</span>
+                        </button>
                     </Nav.Item>
                 </ul>
             </>
@@ -966,6 +992,17 @@ const VerticalNav = () => {
                             </div>
                         </Accordion.Item>
                     </Accordion>
+                    <Nav.Item as="li">
+                        <button
+                            type="button"
+                            className="nav-link w-100 text-start border-0 bg-transparent"
+                            onClick={handleSidebarLogout}
+                            aria-label={t("sidebar.logout")}
+                        >
+                            <i className="ri-logout-box-line" aria-hidden />
+                            <span className="item-name">{t("sidebar.logout")}</span>
+                        </button>
+                    </Nav.Item>
                 </ul>
             </>
         );

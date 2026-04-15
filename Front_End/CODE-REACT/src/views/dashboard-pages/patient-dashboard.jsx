@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Row, Col } from "react-bootstrap";
+import { Row, Col, Button, Table, Spinner } from "react-bootstrap";
 import { useTranslation } from "react-i18next";
 import ApexCharts from 'apexcharts';
 import Card from "../../components/Card";
@@ -10,7 +10,7 @@ import AppointmentsCard from "../../components/AppointmentsCard";
 import CareTeamCard from "../../components/CareTeamCard";
 import SecureMessagingHubCard from "../../components/SecureMessagingHubCard";
 import DischargeSummaryCard from "../../components/DischargeSummaryCard";
-import { healthLogApi, medicationApi, appointmentApi, patientApi, doctorApi, nurseApi } from "../../services/api";
+import { healthLogApi, medicationApi, appointmentApi, patientApi, doctorApi, nurseApi, medicalCertificateApi } from "../../services/api";
 import { isMedicationCurrentTreatment } from "../../utils/medicationReminders";
 import { translateSymptom } from "../../utils/symptomLabels";
 
@@ -106,6 +106,8 @@ const PatientDashboard = () => {
     const [careNurse, setCareNurse] = useState(null);
     /** Dernière consigne médecin (clôture alerte) — même texte qu’envoyé au patient */
     const [doctorConsigne, setDoctorConsigne] = useState(null);
+    const [medicalCertificates, setMedicalCertificates] = useState([]);
+    const [loadingMedicalCertificates, setLoadingMedicalCertificates] = useState(false);
     const chartRef = useRef(null);
     const chartInstanceRef = useRef(null);
 
@@ -186,6 +188,20 @@ const PatientDashboard = () => {
         }
     };
 
+    const loadMedicalCertificates = async () => {
+        if (!pid) return;
+        setLoadingMedicalCertificates(true);
+        try {
+            const list = await medicalCertificateApi.listMinePatient();
+            setMedicalCertificates(Array.isArray(list) ? list : []);
+        } catch (e) {
+            console.error("[Dashboard] Failed to load medical certificates:", e);
+            setMedicalCertificates([]);
+        } finally {
+            setLoadingMedicalCertificates(false);
+        }
+    };
+
     useEffect(() => {
         loadTodayLog();
         loadHistory();
@@ -193,6 +209,7 @@ const PatientDashboard = () => {
         loadAppointments();
         loadCareTeam();
         loadDoctorConsigne();
+        loadMedicalCertificates();
     }, [pid]);
 
     useEffect(() => {
@@ -633,6 +650,82 @@ const PatientDashboard = () => {
                 </Col>
                 <Col lg={3} md={6}>
                     <DischargeSummaryCard patient={patientUser} doctorConsigne={effectiveDoctorConsigne} />
+                </Col>
+            </Row>
+
+            <Row className="g-3 mt-2">
+                <Col xs={12}>
+                    <Card className="border-0 shadow-sm">
+                        <Card.Body>
+                            <h6 className="text-primary fw-bold mb-2">
+                                <i className="ri-file-paper-2-line me-2" aria-hidden />
+                                {t("patientDashboard.medicalCertificatesTitle")}
+                            </h6>
+                            <p className="text-muted small mb-3">{t("patientDashboard.medicalCertificatesLead")}</p>
+                            {loadingMedicalCertificates ? (
+                                <div className="text-center py-3">
+                                    <Spinner animation="border" size="sm" variant="primary" />
+                                </div>
+                            ) : medicalCertificates.length === 0 ? (
+                                <p className="text-muted small mb-0">{t("patientDashboard.medicalCertificatesEmpty")}</p>
+                            ) : (
+                                <div className="table-responsive">
+                                    <Table size="sm" className="mb-0 align-middle">
+                                        <thead className="table-light">
+                                            <tr>
+                                                <th>{t("patientDashboard.medicalCertificatesColDate")}</th>
+                                                <th>{t("patientDashboard.medicalCertificatesColDoctor")}</th>
+                                                <th>{t("patientDashboard.medicalCertificatesColMeds")}</th>
+                                                <th className="text-end">{t("patientDashboard.medicalCertificatesDownload")}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {medicalCertificates.map((c) => (
+                                                <tr key={String(c._id ?? c.id ?? "")}>
+                                                    <td className="small text-muted">
+                                                        {c.issuedAt
+                                                            ? String(c.issuedAt).slice(0, 10)
+                                                            : "—"}
+                                                    </td>
+                                                    <td className="small">{c.doctorDisplayName || "—"}</td>
+                                                    <td className="small">{Array.isArray(c.items) ? c.items.length : 0}</td>
+                                                    <td className="text-end">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline-primary"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                const certId = String(c._id ?? c.id ?? "").trim();
+                                                                if (!certId) {
+                                                                    console.error("[Dashboard] Certificate id missing");
+                                                                    return;
+                                                                }
+                                                                medicalCertificateApi
+                                                                    .downloadPdfPatient(
+                                                                        certId,
+                                                                        `medical-certificate-${String(c.issuedAt || "").slice(0, 10)}.pdf`,
+                                                                    )
+                                                                    .catch((err) => {
+                                                                        console.error(err);
+                                                                        window.alert(
+                                                                            err?.message ||
+                                                                                t("patientDashboard.medicalCertificatesDownloadError"),
+                                                                        );
+                                                                    });
+                                                            }}
+                                                        >
+                                                            <i className="ri-download-2-line me-1" aria-hidden />
+                                                            PDF
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+                                </div>
+                            )}
+                        </Card.Body>
+                    </Card>
                 </Col>
             </Row>
         </>
