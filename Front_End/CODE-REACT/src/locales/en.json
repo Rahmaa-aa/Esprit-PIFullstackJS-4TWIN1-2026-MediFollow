@@ -680,7 +680,10 @@
     "certificateColMeds": "Medications",
     "certificateColPdf": "Download",
     "certificateCreateError": "Could not create the certificate.",
-    "certificateDownloadError": "Could not download the PDF."
+    "certificateDownloadError": "Could not download the PDF.",
+    "certificateSaveHint": "When you save, a PDF certificate listing this patient’s active medications is created automatically (see « Medical certificates » below). You can also generate another PDF with the red button.",
+    "certificateAutoSuccess": "Prescription saved. A PDF certificate was generated — scroll to « Medical certificates (PDF) » to download it.",
+    "certificateAutoSkipped": "Prescription saved, but the PDF certificate could not be created: {{reason}}"
   },
   "doctorAvailabilityCalendar": {
     "loginHint": "Sign in as a doctor.",

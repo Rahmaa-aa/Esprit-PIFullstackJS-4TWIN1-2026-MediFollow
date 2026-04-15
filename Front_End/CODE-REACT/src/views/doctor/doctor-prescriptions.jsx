@@ -62,6 +62,9 @@ const DoctorPrescriptions = () => {
   const [medicalCertificates, setMedicalCertificates] = useState([]);
   const [loadingCertificates, setLoadingCertificates] = useState(false);
   const [creatingCertificate, setCreatingCertificate] = useState(false);
+  /** Après « Enregistrer l’ordonnance » : certificat PDF généré automatiquement */
+  const [certificateAutoSuccess, setCertificateAutoSuccess] = useState("");
+  const [certificateAutoWarning, setCertificateAutoWarning] = useState("");
 
   useEffect(() => {
     if (!doctorId) return;
@@ -119,8 +122,12 @@ const DoctorPrescriptions = () => {
   useEffect(() => {
     if (!selectedPatientId) {
       setMedicalCertificates([]);
+      setCertificateAutoSuccess("");
+      setCertificateAutoWarning("");
       return;
     }
+    setCertificateAutoSuccess("");
+    setCertificateAutoWarning("");
     let cancelled = false;
     (async () => {
       setLoadingCertificates(true);
@@ -142,6 +149,8 @@ const DoctorPrescriptions = () => {
     if (!selectedPatientId) return;
     setCreatingCertificate(true);
     setError("");
+    setCertificateAutoSuccess("");
+    setCertificateAutoWarning("");
     try {
       await medicalCertificateApi.createFromPatientMedications(selectedPatientId);
       const list = await medicalCertificateApi.listForDoctorPatient(selectedPatientId);
@@ -191,6 +200,8 @@ const DoctorPrescriptions = () => {
     }
     setSaving(true);
     setError("");
+    setCertificateAutoSuccess("");
+    setCertificateAutoWarning("");
     try {
       for (const row of toSave) {
         await medicationApi.create({
@@ -206,6 +217,17 @@ const DoctorPrescriptions = () => {
       const meds = await medicationApi.getByPatient(selectedPatientId);
       setMedications(Array.isArray(meds) ? meds : []);
       setLines([emptyMedicationLine()]);
+      try {
+        await medicalCertificateApi.createFromPatientMedications(selectedPatientId);
+        const certs = await medicalCertificateApi.listForDoctorPatient(selectedPatientId);
+        setMedicalCertificates(Array.isArray(certs) ? certs : []);
+        setCertificateAutoSuccess(t("doctorPrescriptions.certificateAutoSuccess"));
+        setCertificateAutoWarning("");
+      } catch (certErr) {
+        const reason = certErr?.message || t("doctorPrescriptions.certificateCreateError");
+        setCertificateAutoSuccess("");
+        setCertificateAutoWarning(t("doctorPrescriptions.certificateAutoSkipped", { reason }));
+      }
     } catch (err) {
       setError(err.message || t("doctorPrescriptions.saveError"));
     } finally {
@@ -238,6 +260,16 @@ const DoctorPrescriptions = () => {
       {error && (
         <div className="alert alert-danger" role="alert">
           {error}
+        </div>
+      )}
+      {certificateAutoSuccess && (
+        <div className="alert alert-success mb-3" role="status">
+          {certificateAutoSuccess}
+        </div>
+      )}
+      {certificateAutoWarning && (
+        <div className="alert alert-warning mb-3" role="status">
+          {certificateAutoWarning}
         </div>
       )}
 
@@ -412,6 +444,7 @@ const DoctorPrescriptions = () => {
                     {t("doctorPrescriptions.addAnotherMedication")}
                   </Button>
 
+                  <p className="text-muted small mb-2">{t("doctorPrescriptions.certificateSaveHint")}</p>
                   <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-1 border-top">
                     <span className="text-muted small">
                       {t("doctorPrescriptions.prescribedBy", {

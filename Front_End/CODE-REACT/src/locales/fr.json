@@ -680,7 +680,10 @@
     "certificateColMeds": "Médicaments",
     "certificateColPdf": "Télécharger",
     "certificateCreateError": "Impossible de créer le certificat.",
-    "certificateDownloadError": "Impossible de télécharger le PDF."
+    "certificateDownloadError": "Impossible de télécharger le PDF.",
+    "certificateSaveHint": "À l’enregistrement, un certificat PDF listant les médicaments actifs du patient est créé automatiquement (voir « Certificats médicaux » plus bas). Vous pouvez aussi en générer un autre avec le bouton rouge.",
+    "certificateAutoSuccess": "Ordonnance enregistrée. Un certificat PDF a été généré — faites défiler jusqu’à « Certificats médicaux (PDF) » pour le télécharger.",
+    "certificateAutoSkipped": "Ordonnance enregistrée, mais le certificat PDF n’a pas pu être créé : {{reason}}"
   },
   "doctorAvailabilityCalendar": {
     "loginHint": "Connectez-vous en tant que médecin.",

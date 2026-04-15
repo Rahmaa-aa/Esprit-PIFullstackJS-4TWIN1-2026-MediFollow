@@ -680,7 +680,10 @@
     "certificateColMeds": "الأدوية",
     "certificateColPdf": "تنزيل",
     "certificateCreateError": "تعذّر إنشاء الشهادة.",
-    "certificateDownloadError": "تعذّر تنزيل ملف PDF."
+    "certificateDownloadError": "تعذّر تنزيل ملف PDF.",
+    "certificateSaveHint": "عند الحفظ، يُنشأ تلقائيًا ملف PDF يجمع الأدوية النشطة للمريض (انظر « الشهادات الطبية » في الأسفل). يمكنك أيضًا إنشاء ملف آخر بالزر الأحمر.",
+    "certificateAutoSuccess": "تم حفظ الوصفة. تم إنشاء شهادة PDF — مرّر إلى « الشهادات الطبية (PDF) » لتنزيلها.",
+    "certificateAutoSkipped": "تم حفظ الوصفة، لكن تعذّر إنشاء شهادة PDF: {{reason}}"
   },
   "doctorAvailabilityCalendar": {
     "loginHint": "سجّل الدخول كطبيب.",

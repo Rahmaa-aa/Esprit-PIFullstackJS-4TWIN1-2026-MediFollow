@@ -20,6 +20,29 @@ type JwtUser = {
   name?: string;
 };
 
+/**
+ * PDFKit + polices standard = encodage WinAnsi : les caractères hors plage
+ * (tiret cadratin, guillemets typographiques, certains accents) provoquent une erreur synchrone → 500.
+ */
+function textForStandardPdfFonts(input: unknown): string {
+  const raw = String(input ?? '')
+    .replace(/\u2014|\u2013/g, '-') // em / en dash
+    .replace(/\u2026/g, '...')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\u00b5|\u03bc/gi, 'u') // micro sign -> ASCII (dosages "µg")
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '');
+  let out = '';
+  for (const ch of raw) {
+    const c = ch.charCodeAt(0);
+    if (c === 10 || c === 13) out += ch;
+    else if (c >= 32 && c <= 126) out += ch;
+    else out += ' ';
+  }
+  return out.replace(/\s+/g, ' ').trim();
+}
+
 @Injectable()
 export class MedicalCertificateService {
   constructor(
@@ -136,9 +159,10 @@ export class MedicalCertificateService {
   async buildPdfBuffer(certId: string, user?: JwtUser): Promise<Buffer> {
     const cert = await this.getCertAndAssertPdfAccess(certId, user);
     const patient = await this.patientModel.findById(cert.patientId).lean().exec();
-    const pFirst = (patient as any)?.firstName || '';
-    const pLast = (patient as any)?.lastName || '';
+    const pFirst = textForStandardPdfFonts((patient as any)?.firstName || '');
+    const pLast = textForStandardPdfFonts((patient as any)?.lastName || '');
     const issued = cert.issuedAt ? new Date(cert.issuedAt).toISOString().slice(0, 10) : '';
+    const doctorLine = textForStandardPdfFonts(cert.doctorDisplayName || '-');
 
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -147,28 +171,40 @@ export class MedicalCertificateService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      doc.fontSize(18).text('Medical certificate / Certificat médical', { align: 'center' });
-      doc.moveDown();
-      doc.fontSize(11);
-      doc.text(`Patient: ${pFirst} ${pLast}`.trim() || `Patient ID: ${String(cert.patientId)}`);
-      doc.text(`Issued: ${issued}`);
-      doc.text(`Physician: ${cert.doctorDisplayName || '—'}`);
-      doc.moveDown();
-      doc.fontSize(12).text('Prescribed medications / Médicaments prescrits:', { underline: true });
-      doc.moveDown(0.5);
-      const items = cert.items || [];
-      if (!items.length) {
-        doc.fontSize(10).text('—');
-      } else {
-        items.forEach((it, i) => {
-          doc
-            .fontSize(10)
-            .text(`${i + 1}. ${it.name}${it.dosage ? ` — ${it.dosage}` : ''}${it.frequency ? ` — ${it.frequency}` : ''}`);
-        });
+      try {
+        doc.fontSize(18).text('Medical certificate / Certificat medical', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(11);
+        const patientLine = textForStandardPdfFonts(`${pFirst} ${pLast}`.trim()) || `Patient ID: ${String(cert.patientId)}`;
+        doc.text(`Patient: ${patientLine}`);
+        doc.text(`Issued: ${issued}`);
+        doc.text(`Physician: ${doctorLine}`);
+        doc.moveDown();
+        doc.fontSize(12).text('Prescribed medications / Medicaments prescrits:', { underline: true });
+        doc.moveDown(0.5);
+        const items = cert.items || [];
+        if (!items.length) {
+          doc.fontSize(10).text('-');
+        } else {
+          items.forEach((it, i) => {
+            const name = textForStandardPdfFonts((it as any).name);
+            const dosage = textForStandardPdfFonts((it as any).dosage);
+            const freq = textForStandardPdfFonts((it as any).frequency);
+            const parts = [name];
+            if (dosage) parts.push(dosage);
+            if (freq) parts.push(freq);
+            doc.fontSize(10).text(`${i + 1}. ${parts.join(' - ')}`);
+          });
+        }
+        doc.moveDown(2);
+        doc
+          .fontSize(9)
+          .fillColor('#666666')
+          .text('MediFollow - document generated electronically.', { align: 'center' });
+        doc.end();
+      } catch (e) {
+        reject(e);
       }
-      doc.moveDown(2);
-      doc.fontSize(9).fillColor('#666666').text('MediFollow — document generated electronically.', { align: 'center' });
-      doc.end();
     });
   }
 }
