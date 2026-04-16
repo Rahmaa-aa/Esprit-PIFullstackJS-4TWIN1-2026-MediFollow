@@ -8,16 +8,24 @@ Vagrant.configure("2") do |config|
   # --- PORT FORWARDING ---
   # Jenkins: Guest 8080 -> Host 8080
   config.vm.network "forwarded_port", guest: 8080, host: 8080
-  
+
   # Your App: Guest 8089 -> Host 8089
   config.vm.network "forwarded_port", guest: 8089, host: 8089
 
   # Nexus: Guest 8081 (Container) -> Host 8082 (Windows)
-  # We use 8082 on Windows because 8081 is busy.
   config.vm.network "forwarded_port", guest: 8081, host: 8082
 
   # SonarQube: Guest 9000 -> Host 9000
   config.vm.network "forwarded_port", guest: 9000, host: 9000
+
+  # Prometheus: Guest 9090 -> Host 9090
+  config.vm.network "forwarded_port", guest: 9090, host: 9090
+
+  # Grafana: Guest 3001 -> Host 3001
+  config.vm.network "forwarded_port", guest: 3001, host: 3001
+
+  # Kubernetes NodePort range
+  config.vm.network "forwarded_port", guest: 30000, host: 30000
 
   # Hardware
   config.vm.provider "virtualbox" do |vb|
@@ -25,17 +33,83 @@ Vagrant.configure("2") do |config|
     vb.cpus = 2
   end
 
-  # Setup Script (Basic Tools)
+  # Setup Script
   config.vm.provision "shell", inline: <<-SHELL
+    echo "=========================================="
+    echo "  MediFollow DevOps - VM Provisioning"
+    echo "=========================================="
+
+    # --- Basic Tools ---
     sudo apt-get update -y
-    sudo apt-get install -y gedit curl git
+    sudo apt-get install -y curl git apt-transport-https ca-certificates gnupg lsb-release software-properties-common
 
-    # Install Kubectl
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+    # --- Docker Installation ---
+    echo "[1/5] Installing Docker..."
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update -y
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    sudo usermod -aG docker vagrant
+    sudo systemctl enable docker
+    sudo systemctl start docker
 
-    # Install Minikube
-    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-    sudo install minikube-linux-amd64 /usr/local/bin/minikube
+    # --- Configure containerd for Kubernetes ---
+    sudo mkdir -p /etc/containerd
+    containerd config default | sudo tee /etc/containerd/config.toml > /dev/null
+    sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+    sudo systemctl restart containerd
+
+    # --- Kernel Modules & Sysctl for Kubernetes ---
+    echo "[2/5] Configuring kernel for Kubernetes..."
+    cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+    sudo modprobe overlay
+    sudo modprobe br_netfilter
+
+    cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward                 = 1
+EOF
+    sudo sysctl --system
+
+    # --- Disable Swap (required for kubeadm) ---
+    sudo swapoff -a
+    sudo sed -i '/ swap / s/^/#/' /etc/fstab
+
+    # --- Install kubeadm, kubelet, kubectl ---
+    echo "[3/5] Installing kubeadm, kubelet, kubectl..."
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+    sudo apt-get update -y
+    sudo apt-get install -y kubelet kubeadm kubectl
+    sudo apt-mark hold kubelet kubeadm kubectl
+    sudo systemctl enable kubelet
+
+    # --- Initialize Kubernetes Cluster ---
+    echo "[4/5] Initializing Kubernetes cluster with kubeadm..."
+    sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=192.168.33.10 --ignore-preflight-errors=NumCPU,Mem
+
+    # Setup kubectl for vagrant user
+    mkdir -p /home/vagrant/.kube
+    sudo cp -f /etc/kubernetes/admin.conf /home/vagrant/.kube/config
+    sudo chown vagrant:vagrant /home/vagrant/.kube/config
+    export KUBECONFIG=/home/vagrant/.kube/config
+
+    # Allow scheduling pods on the master node (single-node cluster)
+    kubectl taint nodes --all node-role.kubernetes.io/control-plane- || true
+
+    # --- Install Flannel CNI ---
+    echo "[5/5] Installing Flannel CNI network plugin..."
+    kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+
+    echo "=========================================="
+    echo "  VM Provisioning Complete!"
+    echo "  Docker + Kubeadm + kubectl installed"
+    echo "  Kubernetes cluster initialized"
+    echo "=========================================="
   SHELL
 end
