@@ -31,10 +31,14 @@ pipeline {
                     echo "Running Code Quality Checks..."
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         sh '''
-                        npx sonarqube-scanner \
+                        docker run --rm \
+                          --network=host \
+                          -v "$(pwd):/usr/src" \
+                          sonarsource/sonar-scanner-cli \
                           -Dsonar.projectKey=medifollow-backend \
                           -Dsonar.sources=. \
-                          -Dsonar.host.url=http://localhost:9000
+                          -Dsonar.host.url=http://localhost:9000 \
+                          -Dsonar.login=$SONAR_TOKEN
                         '''
                     }
                 }
