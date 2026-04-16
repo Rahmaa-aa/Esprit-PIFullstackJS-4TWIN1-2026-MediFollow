@@ -27,8 +27,18 @@ pipeline {
         }
         stage('SonarQube Security Scan') {
             steps {
-                echo "Running Code Quality Checks..."
-                // Ready for Phase 4 Sonar Token
+                dir('backend') {
+                    echo "Running Code Quality Checks..."
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        sh '''
+                        npx sonarqube-scanner \
+                          -Dsonar.projectKey=medifollow-backend \
+                          -Dsonar.sources=. \
+                          -Dsonar.host.url=http://localhost:9000 \
+                          -Dsonar.login=$SONAR_TOKEN
+                        '''
+                    }
+                }
             }
         }
     }
