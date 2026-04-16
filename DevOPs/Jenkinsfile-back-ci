@@ -34,8 +34,7 @@ pipeline {
                         npx sonarqube-scanner \
                           -Dsonar.projectKey=medifollow-backend \
                           -Dsonar.sources=. \
-                          -Dsonar.host.url=http://localhost:9000 \
-                          -Dsonar.token=$SONAR_TOKEN
+                          -Dsonar.host.url=http://localhost:9000
                         '''
                     }
                 }
