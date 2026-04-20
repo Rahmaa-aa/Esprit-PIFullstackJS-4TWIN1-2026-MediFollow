@@ -32,7 +32,8 @@ pipeline {
     post {
         success {
             // Automatically trigger the Frontend CD pipeline when CI passes!
-            build job: 'MediFollow-Front-CD', wait: false
+            // wait: true ensures CI only reports success AFTER CD also succeeds
+            build job: 'MediFollow-Front-CD', wait: true
         }
     }
 }

@@ -49,7 +49,8 @@ pipeline {
     post {
         success {
             // Automatically trigger the Backend CD pipeline when CI passes!
-            build job: 'MediFollow-Back-CD', wait: false
+            // wait: true ensures CI only reports success AFTER CD also succeeds
+            build job: 'MediFollow-Back-CD', wait: true
         }
     }
 }
