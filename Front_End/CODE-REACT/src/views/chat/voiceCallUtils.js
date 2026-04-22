@@ -61,7 +61,24 @@ export function getSelfDisplayName(session) {
     }
 }
 
-export const VOICE_ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }];
+const DEFAULT_STUN = [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+];
+
+/** ICE (STUN/TURN) — en prod, ajoutez un TURN (Vercel + réseaux stricts) via VITE_WEBRTC_ICE_SERVERS. */
+export const VOICE_ICE_SERVERS = (() => {
+    const raw = import.meta.env.VITE_WEBRTC_ICE_SERVERS;
+    if (typeof raw === "string" && raw.trim()) {
+        try {
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr) && arr.length > 0) return arr;
+        } catch {
+            console.warn("[WebRTC] VITE_WEBRTC_ICE_SERVERS invalide (JSON attendu), STUN public utilisé.");
+        }
+    }
+    return DEFAULT_STUN;
+})();
 
 export function getApiOrigin() {
     return (import.meta.env.VITE_API_URL || "http://localhost:3000/api").replace(/\/api\/?$/, "");

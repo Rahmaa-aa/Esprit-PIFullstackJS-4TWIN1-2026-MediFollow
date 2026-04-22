@@ -12,6 +12,7 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { AuthService } from './auth/auth.service';
+import { resolveCorsOrigins } from './config/cors-origins.util';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false });
@@ -25,7 +26,7 @@ async function bootstrap() {
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ extended: true, limit: '10mb' }));
   app.enableCors({
-    origin: process.env.FRONTEND_URL || ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+    origin: resolveCorsOrigins(),
     credentials: true,
   });
   app.setGlobalPrefix('api');

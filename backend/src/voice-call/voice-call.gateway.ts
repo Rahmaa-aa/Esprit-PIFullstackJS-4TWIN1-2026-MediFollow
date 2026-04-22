@@ -11,12 +11,13 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { NotificationService } from '../notification/notification.service';
+import { resolveCorsOrigins } from '../config/cors-origins.util';
 
 @Injectable()
 @WebSocketGateway({
   namespace: '/voice',
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+    origin: resolveCorsOrigins(),
     credentials: true,
   },
 })

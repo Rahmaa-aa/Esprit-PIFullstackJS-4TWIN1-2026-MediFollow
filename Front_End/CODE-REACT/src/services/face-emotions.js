@@ -4,9 +4,38 @@ import * as faceapi from "face-api.js";
 /**
  * face-api.js dépend de @tensorflow/tfjs-core 1.7 ; le modèle d’émotion utilise @tensorflow/tfjs 4.x.
  * Ne pas charger tf.min.js en global dans index.html : ça casse TinyFaceDetector (engine.js « d is not a function »).
+ *
+ * En build prod (Vercel), le backend WebGL + minification peut provoquer « m is not a function » dans runKernelFunc.
+ * On initialise donc TF.js explicitement (CPU d’abord, plus stable avec face-api).
  */
 const DEFAULT_MODEL_URL =
   import.meta.env.VITE_FACE_MODEL_URL || "https://justadudewhohacks.github.io/face-api.js/models";
+
+const EMOTION_DISABLED =
+  import.meta.env.VITE_DISABLE_CALL_EMOTION === "1" ||
+  import.meta.env.VITE_DISABLE_CALL_EMOTION === "true";
+
+let tfBackendInitPromise = null;
+
+async function ensureTfjsBackend() {
+  if (!tfBackendInitPromise) {
+    tfBackendInitPromise = (async () => {
+      try {
+        await tf.setBackend("cpu");
+        await tf.ready();
+      } catch (e) {
+        console.warn("[emotion] Backend CPU indisponible, tentative WebGL :", e?.message || e);
+        try {
+          await tf.setBackend("webgl");
+          await tf.ready();
+        } catch (e2) {
+          console.warn("[emotion] Backend WebGL indisponible :", e2?.message || e2);
+        }
+      }
+    })();
+  }
+  return tfBackendInitPromise;
+}
 
 /** Index FER (train_emotion_model.py) -> clés i18n / EMOTION_EMOJI dans VoiceCallLayer */
 const FER_INDEX_TO_KEY = ["angry", "disgusted", "fearful", "happy", "sad", "surprised", "neutral"];
@@ -27,6 +56,7 @@ let customModelPromise =
 let customModelUnavailable = false;
 
 const ensureTinyFaceDetectorOnly = async () => {
+  await ensureTfjsBackend();
   if (!tinyFaceOnlyPromise) {
     tinyFaceOnlyPromise = faceapi.nets.tinyFaceDetector.loadFromUri(DEFAULT_MODEL_URL);
   }
@@ -34,6 +64,7 @@ const ensureTinyFaceDetectorOnly = async () => {
 };
 
 const ensureFaceExpressionModelsLoaded = async () => {
+  await ensureTfjsBackend();
   if (!expressionModelsPromise) {
     expressionModelsPromise = Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(DEFAULT_MODEL_URL),
@@ -194,6 +225,9 @@ async function predictWithFaceApi(videoElement) {
  */
 export const detectDominantExpression = async (videoElement) => {
   if (!videoElement || videoElement.readyState < 2) return null;
+  if (EMOTION_DISABLED) return null;
+
+  await ensureTfjsBackend();
 
   let model;
   try {
@@ -209,7 +243,12 @@ export const detectDominantExpression = async (videoElement) => {
       console.warn("[emotion] Erreur modèle custom, secours face-api", e);
     }
   }
-  return predictWithFaceApi(videoElement);
+  try {
+    return await predictWithFaceApi(videoElement);
+  } catch (e) {
+    console.warn("[emotion] face-api indisponible :", e?.message || e);
+    return null;
+  }
 };
 
 export { ensureFaceExpressionModelsLoaded };
