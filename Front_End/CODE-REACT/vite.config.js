@@ -8,6 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const coreJsEmpty = path.resolve(__dirname, "src/shims/core-js-empty.js");
 /** Sources ES6+ du paquet : évite le bundle dist prétranspilé (helpers Babel / audit Lighthouse « Ancien JavaScript »). */
 const apexchartsSrc = path.resolve(__dirname, "node_modules/apexcharts/src/apexcharts.js");
+/** Fichier sous public/ : importer via alias absolu (évite l’avertissement Vite « use /hospital/... » et casse dev). */
+const hospitalLandingCss = path.resolve(__dirname, "public/hospital/css/style.css");
 
 /** Racine : @tensorflow/tfjs-core 4.22 (dépendance directe) — utilisé par @tensorflow/tfjs et backends */
 const tfjsCore422Root = path.resolve(__dirname, "node_modules/@tensorflow/tfjs-core");
@@ -49,18 +51,29 @@ function tfjsCoreDualResolve() {
  * Remplace le <link rel="stylesheet"> du chunk CSS d’entrée (index-*.css) par preload + onload,
  * pour éviter le blocage du rendu signalé par Lighthouse (chemin critique / LCP).
  */
-/** Les sources ApexCharts importent le CSS en « default string » (webpack) ; Vite : `?raw`. */
-function apexchartsSourceCssPlugin() {
-  const needle = "import apexCSS from './assets/apexcharts.css'";
-  const replacement = "import apexCSS from './assets/apexcharts.css?raw'";
+/**
+ * ApexCharts (sources) : `import x from './assets/apexcharts.css'` attend une chaîne (webpack).
+ * Vite sert le .css sans export default → erreur. Forcer `?raw` à la résolution (y compris dans optimizeDeps).
+ */
+function apexchartsCssRawResolvePlugin() {
   return {
-    name: "apexcharts-source-css-raw",
+    name: "apexcharts-css-raw-resolve",
     enforce: "pre",
-    transform(code, id) {
-      const norm = id.replace(/\\/g, "/");
-      if (!norm.includes("apexcharts/src/apexcharts.js")) return null;
-      if (!code.includes(needle)) return null;
-      return code.replace(needle, replacement);
+    async resolveId(source, importer, options) {
+      if (!importer) return null;
+      const imp = importer.replace(/\\/g, "/");
+      if (!imp.includes("/apexcharts/")) return null;
+      const normSrc = source.replace(/\\/g, "/");
+      const isApexCss =
+        normSrc === "./assets/apexcharts.css" ||
+        normSrc.endsWith("/assets/apexcharts.css") ||
+        normSrc.endsWith("/apexcharts.css");
+      if (!isApexCss || source.includes("?")) return null;
+      const resolved = await this.resolve(source, importer, { skipSelf: true, ...options });
+      if (!resolved?.id || resolved.id.includes("?")) return null;
+      const rid = resolved.id.replace(/\\/g, "/");
+      if (!rid.includes("/apexcharts/")) return null;
+      return `${resolved.id}?raw`;
     },
   };
 }
@@ -115,6 +128,7 @@ export default defineConfig(({ mode }) => {
           replacement: coreJsEmpty,
         },
         { find: /^apexcharts$/, replacement: apexchartsSrc },
+        { find: /^hospital-landing-styles$/, replacement: hospitalLandingCss },
       ],
     },
     /** Navigateurs récents : moins de transpilation / polyfills inutiles (audit Lighthouse « Legacy JavaScript »). */
@@ -123,12 +137,18 @@ export default defineConfig(({ mode }) => {
       legalComments: "none",
     },
     optimizeDeps: {
+      /** Sinon esbuild pré-bundle `apexcharts.css` sans `?raw` → « does not provide an export named 'default' ». */
+      exclude: ["apexcharts"],
       esbuildOptions: {
         target: "esnext",
       },
     },
     /** Dev : si le front appelle `/api` sur le port Vite, proxifier vers Nest (évite « Cannot GET /api/... »). */
     server: {
+      watch: {
+        /** Évite rechargements / états incohérents si `vite build` met à jour dist pendant `vite dev`. */
+        ignored: ["**/dist/**"],
+      },
       proxy: {
         "/api": {
           target: "http://localhost:3000",
@@ -138,7 +158,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       tfjsCoreDualResolve(),
-      apexchartsSourceCssPlugin(),
+      apexchartsCssRawResolvePlugin(),
       landingHeroLcpPreloadPlugin(baseUrl),
       react(),
       asyncEntryCssPlugin(),

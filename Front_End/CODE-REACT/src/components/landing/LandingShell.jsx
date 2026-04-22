@@ -9,8 +9,8 @@ import {
   LANDING_PARTNERSHIP_FLAG_WIDTH,
 } from "../../views/landing/landingPaths";
 import OptimizedSiteLogo from "./OptimizedSiteLogo";
-/* Bundle avec le shell : évite le CLS dû au chargement tardif du CSS injecté en useEffect. */
-import "../../../public/hospital/css/style.css";
+/* Résolu par Vite (`hospital-landing-styles` → public/hospital/css/style.css) : pas d’import via chemin /public/. */
+import "hospital-landing-styles";
 
 /**
  * En-tête + pied de page communs aux pages publiques (accueil, à propos, fonctionnalités, contact).
