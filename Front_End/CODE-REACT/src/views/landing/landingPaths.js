@@ -18,13 +18,6 @@ export function landingImg(name) {
   return generatePath(`assets/images/landing/${name}`);
 }
 
-/** Chemin d’URL (sans origin) pour `<link rel="preload">` — aligné sur `landingImg` / `BASE_URL`. */
-export function landingHeroPreloadPath() {
-  const base = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "") || "";
-  const p = "assets/images/landing/chu-hero.webp".replace(/^\/+/, "");
-  return `${base}/${p}`.replace(/([^:])\/+/g, "$1/");
-}
-
 /** Srcset WebP pour l’image « à propos » (colonnes ~454px sur desktop). */
 export function chuAboutImgWebpSrcSet() {
   return `${landingImg("chu-about-480.webp")} 480w, ${landingImg("chu-about-720.webp")} 720w, ${landingImg("chu-about-960.webp")} 960w`;

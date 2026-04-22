@@ -29,19 +29,8 @@ import { LayoutsRoute } from "./router/layout-router";
 // store
 import { store } from "./store/index";
 import { Provider } from "react-redux";
-import { landingHeroPreloadPath } from "./views/landing/landingPaths.js";
 
 const router = createBrowserRouter([...LayoutsRoute], { basename: import.meta.env.BASE_URL });
-
-if (typeof document !== "undefined" && !document.getElementById("medifollow-landing-hero-preload")) {
-  const link = document.createElement("link");
-  link.id = "medifollow-landing-hero-preload";
-  link.rel = "preload";
-  link.as = "image";
-  link.href = landingHeroPreloadPath();
-  link.setAttribute("fetchpriority", "high");
-  document.head.appendChild(link);
-}
 
 function loadDeferredIconFonts() {
   import("./deferred-icon-fonts.js").catch(() => {});

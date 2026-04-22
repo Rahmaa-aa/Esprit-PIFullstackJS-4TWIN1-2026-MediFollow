@@ -8,20 +8,22 @@ import { LANDING_FEATURE_CARDS } from "./landing/landingFeatureCards";
 
 const Home = () => {
   const { t } = useTranslation();
+  const heroSrc = landingImg("chu-hero.webp");
 
   return (
     <LandingShell navActive="home">
-      <div
-        className="container-fluid bg-primary py-5 mb-5 hero-header landing-hero"
-        style={{
-          backgroundImage: `url(${landingImg("chu-hero.webp")})`,
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          backgroundSize: "cover",
-        }}
-      >
+      <div className="container-fluid bg-primary py-5 mb-5 hero-header landing-hero">
+        <img
+          className="landing-hero-lcp-img"
+          src={heroSrc}
+          alt={t("landing.heroImageAlt")}
+          width={1920}
+          height={1080}
+          sizes="100vw"
+          decoding="async"
+          fetchPriority="high"
+        />
         <Container className="py-5">
-          <span className="visually-hidden">{t("landing.heroImageAlt")}</span>
           <Row className="justify-content-start">
             <Col lg={8} className="text-center text-lg-start">
               <h5 className="hero-kicker d-inline-block text-uppercase border-bottom border-5 border-primary mb-3">{t("landing.heroKicker")}</h5>

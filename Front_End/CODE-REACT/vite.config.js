@@ -65,6 +65,25 @@ function apexchartsSourceCssPlugin() {
   };
 }
 
+/** Même logique que `landingHeroPreloadPath` dans src (évite d’attendre le bundle JS pour démarrer le fetch LCP). */
+function landingHeroPreloadHref(viteBase) {
+  const base = (viteBase || "/").replace(/\/+$/, "") || "";
+  const p = "assets/images/landing/chu-hero.webp".replace(/^\/+/, "");
+  return `${base}/${p}`.replace(/([^:])\/+/g, "$1/");
+}
+
+function landingHeroLcpPreloadPlugin(viteBase) {
+  const href = landingHeroPreloadHref(viteBase);
+  return {
+    name: "landing-hero-lcp-preload",
+    enforce: "pre",
+    transformIndexHtml(html) {
+      const link = `<link rel="preload" as="image" href="${href}" fetchpriority="high" />`;
+      return html.replace("<meta charset=\"UTF-8\" />", `<meta charset="UTF-8" />\n  ${link}`);
+    },
+  };
+}
+
 function asyncEntryCssPlugin() {
   return {
     name: "async-entry-css",
@@ -85,7 +104,7 @@ function asyncEntryCssPlugin() {
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const baseUrl = mode == "production" ? env.PUBLIC_URL : "/";
+  const baseUrl = mode === "production" ? env.PUBLIC_URL || "/" : "/";
 
   return {
     base: baseUrl,
@@ -117,7 +136,13 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    plugins: [tfjsCoreDualResolve(), apexchartsSourceCssPlugin(), react(), asyncEntryCssPlugin()],
+    plugins: [
+      tfjsCoreDualResolve(),
+      apexchartsSourceCssPlugin(),
+      landingHeroLcpPreloadPlugin(baseUrl),
+      react(),
+      asyncEntryCssPlugin(),
+    ],
     css: {
       preprocessorOptions: {
         scss: {
