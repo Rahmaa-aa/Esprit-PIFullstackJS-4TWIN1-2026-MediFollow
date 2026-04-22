@@ -85,6 +85,54 @@ function landingHeroPreloadHref(viteBase) {
   return `${base}/${p}`.replace(/([^:])\/+/g, "$1/");
 }
 
+/** Chemin public pour un fichier émis dans `dist/` (preload / early hints). */
+function viteEmittedAssetHref(viteBase, fileName) {
+  const base = (viteBase || "/").replace(/\/+$/, "") || "";
+  const f = String(fileName || "").replace(/^\/+/, "");
+  return `${base}/${f}`.replace(/([^:])\/+/g, "$1/");
+}
+
+/**
+ * Le CSS « deferred-icon-fonts » n’est découvert qu’après exécution du gros index-*.js → longue chaîne critique.
+ * Preload en parallèle (fetchpriority bas) pour le réseau sans bloquer le rendu.
+ */
+function deferredIconFontsCssPreloadPlugin(viteBase) {
+  return {
+    name: "deferred-icon-fonts-css-preload",
+    transformIndexHtml: {
+      order: "post",
+      handler(html, ctx) {
+        const bundle = ctx.bundle;
+        if (!bundle) return html;
+        let cssName = null;
+        for (const key of Object.keys(bundle)) {
+          if (key.includes("deferred-icon-fonts") && key.endsWith(".css")) {
+            cssName = key;
+            break;
+          }
+        }
+        if (!cssName) {
+          for (const item of Object.values(bundle)) {
+            if (
+              item &&
+              item.type === "asset" &&
+              item.fileName?.includes("deferred-icon-fonts") &&
+              item.fileName.endsWith(".css")
+            ) {
+              cssName = item.fileName;
+              break;
+            }
+          }
+        }
+        if (!cssName) return html;
+        const href = viteEmittedAssetHref(viteBase, cssName);
+        const link = `<link rel="preload" as="style" href="${href}" fetchpriority="low" />`;
+        return html.replace("</head>", `  ${link}\n</head>`);
+      },
+    },
+  };
+}
+
 function landingHeroLcpPreloadPlugin(viteBase) {
   const href = landingHeroPreloadHref(viteBase);
   return {
@@ -162,6 +210,7 @@ export default defineConfig(({ mode }) => {
       landingHeroLcpPreloadPlugin(baseUrl),
       react(),
       asyncEntryCssPlugin(),
+      deferredIconFontsCssPreloadPlugin(baseUrl),
     ],
     css: {
       preprocessorOptions: {

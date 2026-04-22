@@ -37,7 +37,7 @@ function loadDeferredIconFonts() {
 }
 if (typeof window !== "undefined") {
   if ("requestIdleCallback" in window) {
-    requestIdleCallback(() => loadDeferredIconFonts(), { timeout: 2500 });
+    requestIdleCallback(() => loadDeferredIconFonts(), { timeout: 1000 });
   } else {
     window.addEventListener("load", loadDeferredIconFonts, { once: true });
   }
