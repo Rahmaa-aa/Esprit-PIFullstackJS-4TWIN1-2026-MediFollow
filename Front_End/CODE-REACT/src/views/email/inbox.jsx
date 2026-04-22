@@ -36,13 +36,11 @@ const Inbox = () => {
     spam: 0,
     important: 0,
   });
-  const [labels, setLabels] = useState([]);
-
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [list, c, lab] = await Promise.all([
+      const [list, c] = await Promise.all([
         mailApi.listMessages({
           folder: starredOnly ? undefined : folder,
           starred: starredOnly,
@@ -50,12 +48,10 @@ const Inbox = () => {
           page: 1,
         }),
         mailApi.counts(),
-        mailApi.listLabels(),
       ]);
       setItems(list.items || []);
       setTotal(list.total ?? 0);
       setCounts(c);
-      setLabels(lab || []);
     } catch (e) {
       setError(e?.message || t("emailPage.loadError"));
       setItems([]);
@@ -257,20 +253,6 @@ const Inbox = () => {
                       <i className="ri-spam-line"></i> {t("emailPage.spam")}
                     </Nav.Link>
                   </Nav>
-                  <h6 className="mt-4 mb-3">{t("emailPage.labels")}</h6>
-                  <ul className="iq-email-ui iq-email-label list-unstyled">
-                    {(labels || []).map((lb) => (
-                      <li key={lb._id}>
-                        <span className="me-1" style={{ color: lb.color || "#6c757d" }}>
-                          ●
-                        </span>
-                        {lb.name}
-                      </li>
-                    ))}
-                    <li>
-                      <span className="text-muted small">{t("emailPage.addLabel")} — API</span>
-                    </li>
-                  </ul>
                 </div>
               </Card.Body>
             </Card>

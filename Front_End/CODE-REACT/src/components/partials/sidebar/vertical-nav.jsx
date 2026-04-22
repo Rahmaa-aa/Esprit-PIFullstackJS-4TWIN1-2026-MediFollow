@@ -61,19 +61,7 @@ const VerticalNav = () => {
         navigate(wasDoctor || wasPatient || wasNurse ? "/auth/sign-in" : "/auth/lock-screen")
     }
 
-    const emailItems = [
-        { path: "/email/inbox", nameKey: "emailInbox", icon: "ri-inbox-fill" },
-        { path: "/email/email-compose", nameKey: "emailCompose", icon: "ri-edit-2-fill" },
-    ];
-    const isEmailPathActive = (path) => {
-        if (path === "/email/email-compose") {
-            return (
-                location.pathname === "/email/email-compose" ||
-                location.pathname.startsWith("/email/email-compose/")
-            );
-        }
-        return location.pathname === path;
-    };
+    const isEmailSectionActive = () => location.pathname.startsWith("/email");
 
     /** Menu accordéon « Doctor » (admin / démo) — pas les outils du médecin connecté (voir branche isDoctor). */
     const doctorItems = [
@@ -196,47 +184,18 @@ const VerticalNav = () => {
         );
     }
 
-    /** E-mail (inbox + rédiger) — même bloc accordéon que le menu démo. */
-    function renderEmailAccordion() {
-        const emailActive = location.pathname.startsWith("/email");
+    /** Boîte de réception (plus d’accordéon : un seul sous-lien). */
+    function renderEmailNavItem() {
         return (
-            <Accordion bsPrefix="bg-none" onSelect={() => {}} defaultActiveKey={emailActive ? "Email" : undefined}>
-                <Accordion.Item as="li" className={`nav-item ${emailActive ? "active" : ""}`}>
-                    <div className="colors">
-                        <CustomToggle
-                            eventKey="Email"
-                            activeClass={emailItems.some((item) => isEmailPathActive(item.path))}
-                            onClick={() => {}}
-                        >
-                            <OverlayTrigger
-                                key="Email-nav"
-                                placement="right"
-                                overlay={<Tooltip id="tooltip-email-nav">{t("sidebar.tooltipEmail")}</Tooltip>}
-                            >
-                                <i className="ri-mail-open-fill"></i>
-                            </OverlayTrigger>
-                            <span className="item-name">{t("sidebar.email")}</span>
-                            <i className="right-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" className="icon-18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </i>
-                        </CustomToggle>
-                        <Accordion.Collapse eventKey="Email" as="ul" className="sub-nav" id="Email-sub">
-                            <>
-                                {emailItems.map(({ path, nameKey, icon }) => (
-                                    <li key={path}>
-                                        <Link className={`nav-link ${isEmailPathActive(path) ? "active" : ""}`} to={path}>
-                                            <i className={`icon ${icon}`}></i>
-                                            <span className="item-name">{t(`sidebar.${nameKey}`)}</span>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </>
-                        </Accordion.Collapse>
-                    </div>
-                </Accordion.Item>
-            </Accordion>
+            <Nav.Item as="li">
+                <Link
+                    to="/email/inbox"
+                    className={`nav-link ${isEmailSectionActive() ? "active" : ""}`}
+                >
+                    <i className="ri-inbox-fill"></i>
+                    <span className="item-name">{t("sidebar.emailInbox")}</span>
+                </Link>
+            </Nav.Item>
         );
     }
 
@@ -255,7 +214,7 @@ const VerticalNav = () => {
                         <span className="item-name">{t("sidebar.secureMessaging")}</span>
                     </Link>
                 </Nav.Item>
-                {renderEmailAccordion()}
+                {renderEmailNavItem()}
                 <Nav.Item as="li">
                     <Link
                         to="/notifications"
@@ -357,7 +316,7 @@ const VerticalNav = () => {
                         <span className="item-name">{t("sidebar.secureMessaging")}</span>
                     </Link>
                 </Nav.Item>
-                {renderEmailAccordion()}
+                {renderEmailNavItem()}
                 <Nav.Item as="li">
                     <Link
                         to="/video-meeting"
@@ -402,7 +361,7 @@ const VerticalNav = () => {
                         <span className="item-name">{t("sidebar.secureMessaging")}</span>
                     </Link>
                 </Nav.Item>
-                {renderEmailAccordion()}
+                {renderEmailNavItem()}
                 <Nav.Item as="li">
                     <Link
                         to="/notifications"
@@ -893,43 +852,20 @@ const VerticalNav = () => {
                             </Link>
                         </OverlayTrigger>
                     </Nav.Item>
-                    <Accordion bsPrefix="bg-none" onSelect={(e) => setActiveMenu(e)}>
-                        <Accordion.Item as="li" className={`nav-item ${active === "Email" && "active"} ${location.pathname.startsWith("/email") ? "active" : ""}`} onClick={() => setActive("Email")}>
-                            <div className="colors">
-                                <CustomToggle
-                                    eventKey="Email"
-                                    activeClass={emailItems.some((item) => isEmailPathActive(item.path))}
-                                    onClick={(activeKey) => setActiveMenu(activeKey)}
-                                >
-                                    <OverlayTrigger
-                                        key="Email-admin"
-                                        placement="right"
-                                        overlay={<Tooltip id="Email-admin">{t("sidebar.tooltipEmail")}</Tooltip>}
-                                    >
-                                        <i className="ri-mail-open-fill"></i>
-                                    </OverlayTrigger>
-                                    <span className="item-name">{t("sidebar.email")}</span>
-                                    <i className="right-icon">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" className="icon-18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </i>
-                                </CustomToggle>
-                                <Accordion.Collapse eventKey="Email" as="ul" className="sub-nav" id="Email-admin">
-                                    <>
-                                        {emailItems.map(({ path, nameKey, icon }) => (
-                                            <li key={path}>
-                                                <Link className={`nav-link ${isEmailPathActive(path) ? "active" : ""}`} to={path}>
-                                                    <i className={`icon ${icon}`}></i>
-                                                    <span className="item-name">{t(`sidebar.${nameKey}`)}</span>
-                                                </Link>
-                                            </li>
-                                        ))}
-                                    </>
-                                </Accordion.Collapse>
-                            </div>
-                        </Accordion.Item>
-                    </Accordion>
+                    <Nav.Item as="li">
+                        <OverlayTrigger
+                            placement="right"
+                            overlay={<Tooltip id="Email-admin">{t("sidebar.tooltipEmail")}</Tooltip>}
+                        >
+                            <Link
+                                to="/email/inbox"
+                                className={`nav-link sidebar-nav-link--multiline ${isEmailSectionActive() ? "active" : ""}`}
+                            >
+                                <i className="ri-inbox-fill flex-shrink-0"></i>
+                                <span className="item-name">{t("sidebar.emailInbox")}</span>
+                            </Link>
+                        </OverlayTrigger>
+                    </Nav.Item>
                 </ul>
             </>
         );
@@ -1056,47 +992,21 @@ const VerticalNav = () => {
                             <span className="mini-icon">-</span>
                         </Nav.Link>
                     </Nav.Item>
-                    <Accordion.Item as="li" className={`nav-item ${active === "Email" && 'active'} ${location.pathname.startsWith("/email") ? "active" : ""}`} onClick={() => setActive("Email")}>
-                        <div className="colors">
-                            <CustomToggle
-                                eventKey="Email"
-                                activeClass={emailItems.some(item => isEmailPathActive(item.path))}
-                                onClick={(activeKey) => setActiveMenu(activeKey)}
+                    <Nav.Item as="li">
+                        <Link
+                            to="/email/inbox"
+                            className={`nav-link ${isEmailSectionActive() ? "active" : ""}`}
+                        >
+                            <OverlayTrigger
+                                key="Email-inbox"
+                                placement="right"
+                                overlay={<Tooltip id="Email-inbox">{t("sidebar.tooltipEmail")}</Tooltip>}
                             >
-                                <OverlayTrigger
-                                    key={"Email"}
-                                    placement={"right"}
-                                    overlay={
-                                        <Tooltip id="Email">
-                                            {t("sidebar.tooltipEmail")}
-                                        </Tooltip>
-                                    }
-                                >
-                                    <i className="ri-mail-open-fill"></i>
-                                </OverlayTrigger>
-                                <span className="item-name">{t("sidebar.email")}</span>
-                                <i className="right-icon">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" className="icon-18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </i>
-                            </CustomToggle>
-
-                            <Accordion.Collapse eventKey="Email" as="ul" className="sub-nav" id="Email">
-                                <>
-                                    {emailItems.map(({ path, nameKey, icon }) => (
-                                        <li key={path}>
-                                            <Link className={`nav-link ${isEmailPathActive(path) ? "active" : ""}`} to={path}>
-                                                <i className={`icon ${icon}`}></i>
-                                                <span className="item-name">{t(`sidebar.${nameKey}`)}</span>
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </>
-                            </Accordion.Collapse>
-                        </div>
-
-                    </Accordion.Item>
+                                <i className="ri-inbox-fill"></i>
+                            </OverlayTrigger>
+                            <span className="item-name">{t("sidebar.emailInbox")}</span>
+                        </Link>
+                    </Nav.Item>
 
                     <Nav.Item as="li">
                         <Link
