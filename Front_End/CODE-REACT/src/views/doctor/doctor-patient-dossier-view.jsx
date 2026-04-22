@@ -171,6 +171,93 @@ function formatAppointmentStatus(status, t) {
   return status || "—";
 }
 
+/** Tuiles constantes pour une ligne d’alerte / escalade (même lecture que le relevé concerné). */
+function VitalSnapshotForAlertRow({ vitals, t }) {
+  const v = vitals && typeof vitals === "object" ? vitals : {};
+  const hr = hrStatus(v.heartRate, t);
+  const bp = bpStatus(v.bloodPressureSystolic, t);
+  const o2 = o2Status(v.oxygenSaturation, t);
+  const tp = tempStatus(v.temperature, t);
+  const wt = weightStatus(v.weight, t);
+  const hasAny = ["heartRate", "bloodPressureSystolic", "oxygenSaturation", "temperature", "weight"].some(
+    (k) => v[k] != null && v[k] !== ""
+  );
+  if (!hasAny) {
+    return (
+      <div className="dossier-vital-closure-row__vitals dossier-vital-closure-row__vitals--empty" role="status">
+        <i className="ri-pulse-line" aria-hidden />
+        <span>{t("doctorPatientDossier.alertRowNoVitals")}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="dossier-vital-closure-row__vitals">
+      <div className="dossier-vital-closure-row__vitals-head">
+        <span className="dossier-vital-closure-row__vitals-title">{t("doctorPatientDossier.alertRowVitalsTitle")}</span>
+      </div>
+      <Row className="g-3 mb-0 dossier-vital-closure-row__vitals-grid">
+        <Col sm={6} xl={4}>
+          <VitalMetricTile
+            icon="ri-heart-pulse-fill"
+            accent="#dc3545"
+            title={t("doctorPatientDossier.tileHeartRate")}
+            value={v.heartRate}
+            unit="bpm"
+            status={hr}
+            noDataMsg={t("doctorPatientDossier.notRecorded")}
+          />
+        </Col>
+        <Col sm={6} xl={4}>
+          <VitalMetricTile
+            icon="ri-drop-fill"
+            accent="#089bab"
+            title={t("doctorPatientDossier.tileBloodPressure")}
+            value={
+              v.bloodPressureSystolic ? `${v.bloodPressureSystolic}/${v.bloodPressureDiastolic ?? "—"}` : null
+            }
+            unit="mmHg"
+            status={bp}
+            noDataMsg={t("doctorPatientDossier.notRecorded")}
+          />
+        </Col>
+        <Col sm={6} xl={4}>
+          <VitalMetricTile
+            icon="ri-lungs-fill"
+            accent="#6f42c1"
+            title={t("doctorPatientDossier.tileO2")}
+            value={v.oxygenSaturation}
+            unit="%"
+            status={o2}
+            noDataMsg={t("doctorPatientDossier.notRecorded")}
+          />
+        </Col>
+        <Col sm={6} xl={4}>
+          <VitalMetricTile
+            icon="ri-temp-hot-fill"
+            accent="#fd7e14"
+            title={t("doctorPatientDossier.tileTemperature")}
+            value={v.temperature}
+            unit="°C"
+            status={tp}
+            noDataMsg={t("doctorPatientDossier.notRecorded")}
+          />
+        </Col>
+        <Col sm={6} xl={4}>
+          <VitalMetricTile
+            icon="ri-scales-3-line"
+            accent="#198754"
+            title={t("doctorPatientDossier.tileWeight")}
+            value={v.weight}
+            unit="kg"
+            status={wt}
+            noDataMsg={t("doctorPatientDossier.notRecorded")}
+          />
+        </Col>
+      </Row>
+    </div>
+  );
+}
+
 function SectionCard({ icon, title, children, className = "", sectionId }) {
   return (
     <Card id={sectionId || undefined} className={`dossier-section-card mb-4 ${className}`}>
@@ -690,12 +777,15 @@ export default function DoctorPatientDossierView({ patient }) {
                                 ) : null}
                               </div>
                             </div>
-                            <Form.Group className="mb-0 w-100 mt-1">
-                              <Form.Label className="small text-muted mb-1">{t("doctorPatientDossier.instructionRequiredLabel")}</Form.Label>
+                            <VitalSnapshotForAlertRow vitals={log.vitals} t={t} />
+                            <Form.Group className="mb-0 w-100 mt-1 dossier-vital-closure-row__instruction">
+                              <Form.Label className="dossier-vital-closure-row__instruction-label">
+                                {t("doctorPatientDossier.instructionRequiredLabel")}
+                              </Form.Label>
                               <Form.Control
                                 as="textarea"
                                 rows={3}
-                                className="small"
+                                className="dossier-vital-closure-row__textarea"
                                 placeholder={t("doctorPatientDossier.instructionPlaceholder")}
                                 value={rowNote}
                                 onChange={(e) =>

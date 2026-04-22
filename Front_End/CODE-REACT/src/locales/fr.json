@@ -398,6 +398,8 @@
     "noVitalsYet": "Aucun relevé de constantes pour ce patient.",
     "lastReadingOk": "Dernier relevé sans alerte automatique sur les seuils affichés.",
     "lastCheckinNoVitals": "Dernier check-in sans mesures de constantes détaillées.",
+    "alertRowVitalsTitle": "Constantes à ce relevé",
+    "alertRowNoVitals": "Aucune mesure de constantes sur ce relevé.",
     "vitalClosureTitle": "Chaîne d’alerte constantes — clôture",
     "vitalClosureLead": "Rédigez la solution ou les consignes pour le patient : elles seront envoyées dans la messagerie sécurisée (fil avec vous) au moment où vous clôturez. Chaque ligne = un relevé distinct ; « Tout clôturer » envoie la même consigne pour chaque relevé listé ci-dessous.",
     "closing": "Clôture…",

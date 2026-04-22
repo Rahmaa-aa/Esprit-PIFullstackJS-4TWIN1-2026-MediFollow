@@ -398,6 +398,8 @@
     "noVitalsYet": "No vital readings for this patient.",
     "lastReadingOk": "Last reading with no automatic threshold alerts.",
     "lastCheckinNoVitals": "Last check-in without detailed vital measurements.",
+    "alertRowVitalsTitle": "Vitals at this reading",
+    "alertRowNoVitals": "No vital measurements on this reading.",
     "vitalClosureTitle": "Vital alerts — resolve",
     "vitalClosureLead": "Write the solution or instructions for the patient: they will be sent in secure messaging when you resolve. Each row = one distinct reading; \"Resolve all\" sends the same note for each reading listed below.",
     "closing": "Closing…",
