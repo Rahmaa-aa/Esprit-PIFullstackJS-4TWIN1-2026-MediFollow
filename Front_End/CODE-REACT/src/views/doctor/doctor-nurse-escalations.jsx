@@ -488,10 +488,9 @@ const DoctorNurseEscalations = () => {
                               <Dropdown as={ButtonGroup}>
                                 <Dropdown.Toggle
                                   variant="primary"
-                                  size="sm"
                                   id={`urg-actions-${row.id}`}
                                   disabled={resolveBusyId != null}
-                                  className="d-inline-flex align-items-center px-2"
+                                  className="d-inline-flex align-items-center justify-content-center px-3 py-2 fs-5"
                                   title={t("doctorNurseEscalations.actionsTooltip")}
                                 >
                                   <span className="visually-hidden">{t("doctorNurseEscalations.actionsTooltip")}</span>
