@@ -1,171 +1,144 @@
+import { lazy } from "react";
 import { Navigate } from "react-router-dom";
 
-import DefaultLayout from "../layouts/defaultLayout"
-import Index from "../views"
+import DefaultLayout from "../layouts/defaultLayout";
+import BlankLayout from "../layouts/blank-layout";
+import Home from "../views/home";
+import About from "../views/about";
+import Features from "../views/features";
+import Contact from "../views/contact";
+import Blog from "../views/landing/blog";
+import SignIn from "../views/auth/sign-in";
+import ConformMail from "../views/auth/confirm-mail";
+import SignUp from "../views/auth/sign-up";
+import RecoverPassword from "../views/auth/recover-password";
+import LockScreen from "../views/auth/lock-screen";
+import ConfirmLogin from "../views/auth/confirm-login";
+import AuditorSessionGuard from "../components/routing/auditor-session-guard";
 
-// Dashboard Page
-import HospitalDashboardOne from "../views/dashboard-pages/hospital-dashboard-one"
-import HospitalDashboardTwo from "../views/dashboard-pages/hospital-dashboard-two"
-import PatientDashboard from "../views/dashboard-pages/patient-dashboard"
-import PatientMedicationHistory from "../views/dashboard-pages/patient-medication-history"
-import PatientVitalsHistory from "../views/dashboard-pages/patient-vitals-history"
-import PatientAppointmentRequest from "../views/dashboard-pages/patient-appointment-request"
-import PatientQuestionnairesPage from "../views/dashboard-pages/patient-questionnaires"
-import PatientLabAnalysisPage from "../views/dashboard-pages/patient-lab-analysis"
-import NurseDashboard from "../views/dashboard-pages/nurse-dashboard"
-import CareCoordinatorDashboard from "../views/dashboard-pages/care-coordinator-dashboard"
-import CareCoordinatorPatients from "../views/dashboard-pages/care-coordinator-patients"
-import CareCoordinatorPatientDetail from "../views/dashboard-pages/care-coordinator-patient-detail"
-import CareCoordinatorAppointments from "../views/dashboard-pages/care-coordinator-appointments"
-import CareCoordinatorCommunication from "../views/dashboard-pages/care-coordinator-communication"
-import Covid19Dashboard from "../views/dashboard-pages/covid-19-dashboard"
-
-// Email Page
-import Inbox from "../views/email/inbox"
-import EmailCompose from "../views/email/email-compose"
-
-// Doctor Page
-import AddDoctor from "../views/doctor/add-doctor"
-import DoctorList from "../views/doctor/doctor-list"
-import DoctorProfile from "../views/doctor/doctor-profile"
-import EditDoctor from "../views/doctor/edit-doctor"
-import DoctorPrescriptions from "../views/doctor/doctor-prescriptions"
-import DoctorMyPatients from "../views/doctor/doctor-my-patients"
-import DoctorPatientDossierPage from "../views/doctor/doctor-patient-dossier"
-import DoctorDepartmentNurses from "../views/doctor/doctor-department-nurses"
-import DoctorDepartmentDoctors from "../views/doctor/doctor-department-doctors"
-import DoctorAvailabilityCalendar from "../views/doctor/doctor-availability-calendar"
-import DoctorNurseEscalations from "../views/doctor/doctor-nurse-escalations"
-import DoctorBrainMri from "../views/doctor/doctor-brain-mri"
-import PatientBrainMri from "../views/patient/patient-brain-mri"
-
-// Patient Page
-import AddPatient from "../views/patient/add-patient"
-import PatientList from "../views/patient/patient-list"
-import PatientProfile from "../views/patient/patient-profile"
-import EditPatient from "../views/patient/edit-patient"
-
-// Nurse Page
-import AddNurse from "../views/nurse/add-nurse"
-import NurseList from "../views/nurse/nurse-list"
-import NurseProfile from "../views/nurse/nurse-profile"
-import EditNurse from "../views/nurse/edit-nurse"
-
-// Calendar Page
-import Calendar from "../views/calendar/calendar"
-import VideoMeeting from "../views/video-meeting/video-meeting"
-import HealthcareChatbot from "../views/chatbot/healthcare-chatbot"
-
-// Chat Page
-import Chat from "../views/chat/chat"
-import NotificationsCenterPage from "../views/notifications/notifications-center"
-
-// UI Elements
-import Alerts from "../views/ui-elements/alerts";
-import Badges from "../views/ui-elements/badges";
-import Breadcrumb from "../views/ui-elements/breadcrumb";
-import Buttons from "../views/ui-elements/buttons";
-import Cards from "../views/ui-elements/cards";
-import Carousels from "../views/ui-elements/carousel";
-import Colors from "../views/ui-elements/colors";
-import Grid from "../views/ui-elements/grid";
-import Images from "../views/ui-elements/images";
-import ListGroups from "../views/ui-elements/listGroup";
-import Modals from "../views/ui-elements/modal";
-import Notification from "../views/ui-elements/notification";
-import Paginations from "../views/ui-elements/pagination";
-import Popovers from "../views/ui-elements/popovers";
-import Progressbars from "../views/ui-elements/progressbars";
-import Tabs from "../views/ui-elements/tabs";
-import Tooltips from "../views/ui-elements/tooltips";
-import Typography from "../views/ui-elements/typography";
-import Video from "../views/ui-elements/video";
-
-// Form Page
-import FormCheckbox from "../views/forms/form-checkbox"
-import FormElements from "../views/forms/form-elements"
-import FormRadio from "../views/forms/form-radio"
-import FormSwitch from "../views/forms/form-switch"
-import FormValidatioins from "../views/forms/form-validations"
-
-// Wizard Page
-import SimpalWizard from "../views/wizard/simple-wizard"
-import ValidteWizard from "../views/wizard/validate-wizard"
-import VerticalWizard from "../views/wizard/vertical-wizard"
-
-// Table Page
-import BasicTable from "../views/tables/basic-table"
-import DataTable from "../views/tables/data-table"
-import EditTable from "../views/tables/editable-table"
-
-// Charts Page
-import ApexChart from "../views/charts/apex-chart"
-import ChartAm from "../views/charts/chart-am"
-import ChartPage from "../views/charts/chart-page"
-import EChart from "../views/charts/e-chart"
-
-// Icons Page
-import Dripicons from "../views/icons/dripicons"
-import FontAwsomeFive from "../views/icons/fontawesome-Five"
-import Lineawesome from "../views/icons/line-awesome"
-import Remixicon from "../views/icons/remixicon"
-import Unicons from "../views/icons/unicons"
-
-// Maps 
-import GoogleMap from "../views/maps/google-map"
-
-// Extra Page
-import AccountSetting from "../views/extra-pages/account-setting"
-import AdminDashboard from "../views/extra-pages/admin-dashboard"
-import AdminProfile from "../views/admin/admin-profile"
-import AdminEditProfile from "../views/admin/admin-edit-profile"
-import AdminDepartments from "../views/admin/admin-departments"
-import AdminDepartmentDetail from "../views/admin/admin-department-detail"
-import AdminAppointmentRequests from "../views/admin/admin-appointment-requests"
-import AdminQuestionnaireBank from "../views/admin/admin-questionnaire-bank"
-import SuperAdminDashboard from "../views/super-admin/super-admin-dashboard"
-import UserList from "../views/super-admin/user-list"
-import AuditorList from "../views/super-admin/auditor-list"
-import AddAuditor from "../views/super-admin/add-auditor"
-import EditAuditor from "../views/super-admin/edit-auditor"
-import ViewAuditor from "../views/super-admin/view-auditor"
-import CareCoordinatorList from "../views/super-admin/care-coordinator-list"
-import AddCareCoordinator from "../views/super-admin/add-care-coordinator"
-import EditCareCoordinator from "../views/super-admin/edit-care-coordinator"
-import ViewCareCoordinator from "../views/super-admin/view-care-coordinator"
-import SuperAdminProfile from "../views/super-admin/super-admin-profile"
-import PlatformUsersHub from "../views/super-admin/platform-users-hub"
-import AddPlatformAdmin from "../views/super-admin/add-platform-admin"
-import AdminList from "../views/super-admin/admin-list"
-import ViewAdmin from "../views/super-admin/view-admin"
-import EditAdmin from "../views/super-admin/edit-admin"
-import AuditorDashboard from "../views/auditor/auditor-dashboard"
-import AuditorLogsPage from "../views/auditor/auditor-logs"
-import AuditorSessionGuard from "../components/routing/auditor-session-guard"
-import CommingSoon from "../views/extra-pages/pages-comingsoon"
-import Error404 from "../views/extra-pages/pages-error-404"
-import Error500 from "../views/extra-pages/pages-error-500"
-import Faq from "../views/extra-pages/pages-faq"
-import Invoice from "../views/extra-pages/pages-invoice"
-import Maintenance from "../views/extra-pages/pages-maintenance"
-import PricingOne from "../views/extra-pages/pages-pricing-one"
-import Pricing from "../views/extra-pages/pages-pricing"
-import Timeline from "../views/extra-pages/pages-timeline"
-import PrivacyPolicy from "../views/extra-pages/privacy-policy"
-import PrivacySetting from "../views/extra-pages/privacy-setting"
-import TermsOfService from "../views/extra-pages/terms-of-service"
-import BlankLayout from "../layouts/blank-layout"
-import Home from "../views/home"
-import About from "../views/about"
-import Features from "../views/features"
-import Contact from "../views/contact"
-import Blog from "../views/landing/blog"
-import SignIn from "../views/auth/sign-in"
-import ConformMail from "../views/auth/confirm-mail"
-import SignUp from "../views/auth/sign-up"
-import RecoverPassword from "../views/auth/recover-password"
-import LockScreen from "../views/auth/lock-screen"
-import ConfirmLogin from "../views/auth/confirm-login"
+/** Vues app : chargées à la demande pour réduire le JS initial (LCP landing / délai d’affichage). */
+const Index = lazy(() => import("../views/index"));
+const HospitalDashboardOne = lazy(() => import("../views/dashboard-pages/hospital-dashboard-one"));
+const HospitalDashboardTwo = lazy(() => import("../views/dashboard-pages/hospital-dashboard-two"));
+const PatientDashboard = lazy(() => import("../views/dashboard-pages/patient-dashboard"));
+const PatientMedicationHistory = lazy(() => import("../views/dashboard-pages/patient-medication-history"));
+const PatientVitalsHistory = lazy(() => import("../views/dashboard-pages/patient-vitals-history"));
+const PatientAppointmentRequest = lazy(() => import("../views/dashboard-pages/patient-appointment-request"));
+const PatientQuestionnairesPage = lazy(() => import("../views/dashboard-pages/patient-questionnaires"));
+const PatientLabAnalysisPage = lazy(() => import("../views/dashboard-pages/patient-lab-analysis"));
+const NurseDashboard = lazy(() => import("../views/dashboard-pages/nurse-dashboard"));
+const CareCoordinatorDashboard = lazy(() => import("../views/dashboard-pages/care-coordinator-dashboard"));
+const CareCoordinatorPatients = lazy(() => import("../views/dashboard-pages/care-coordinator-patients"));
+const CareCoordinatorPatientDetail = lazy(() => import("../views/dashboard-pages/care-coordinator-patient-detail"));
+const CareCoordinatorAppointments = lazy(() => import("../views/dashboard-pages/care-coordinator-appointments"));
+const CareCoordinatorCommunication = lazy(() => import("../views/dashboard-pages/care-coordinator-communication"));
+const Covid19Dashboard = lazy(() => import("../views/dashboard-pages/covid-19-dashboard"));
+const Inbox = lazy(() => import("../views/email/inbox"));
+const EmailCompose = lazy(() => import("../views/email/email-compose"));
+const AddDoctor = lazy(() => import("../views/doctor/add-doctor"));
+const DoctorList = lazy(() => import("../views/doctor/doctor-list"));
+const DoctorProfile = lazy(() => import("../views/doctor/doctor-profile"));
+const EditDoctor = lazy(() => import("../views/doctor/edit-doctor"));
+const DoctorPrescriptions = lazy(() => import("../views/doctor/doctor-prescriptions"));
+const DoctorMyPatients = lazy(() => import("../views/doctor/doctor-my-patients"));
+const DoctorPatientDossierPage = lazy(() => import("../views/doctor/doctor-patient-dossier"));
+const DoctorDepartmentNurses = lazy(() => import("../views/doctor/doctor-department-nurses"));
+const DoctorDepartmentDoctors = lazy(() => import("../views/doctor/doctor-department-doctors"));
+const DoctorAvailabilityCalendar = lazy(() => import("../views/doctor/doctor-availability-calendar"));
+const DoctorNurseEscalations = lazy(() => import("../views/doctor/doctor-nurse-escalations"));
+const DoctorBrainMri = lazy(() => import("../views/doctor/doctor-brain-mri"));
+const PatientBrainMri = lazy(() => import("../views/patient/patient-brain-mri"));
+const AddPatient = lazy(() => import("../views/patient/add-patient"));
+const PatientList = lazy(() => import("../views/patient/patient-list"));
+const PatientProfile = lazy(() => import("../views/patient/patient-profile"));
+const EditPatient = lazy(() => import("../views/patient/edit-patient"));
+const AddNurse = lazy(() => import("../views/nurse/add-nurse"));
+const NurseList = lazy(() => import("../views/nurse/nurse-list"));
+const NurseProfile = lazy(() => import("../views/nurse/nurse-profile"));
+const EditNurse = lazy(() => import("../views/nurse/edit-nurse"));
+const Calendar = lazy(() => import("../views/calendar/calendar"));
+const VideoMeeting = lazy(() => import("../views/video-meeting/video-meeting"));
+const HealthcareChatbot = lazy(() => import("../views/chatbot/healthcare-chatbot"));
+const Chat = lazy(() => import("../views/chat/chat"));
+const NotificationsCenterPage = lazy(() => import("../views/notifications/notifications-center"));
+const Alerts = lazy(() => import("../views/ui-elements/alerts"));
+const Badges = lazy(() => import("../views/ui-elements/badges"));
+const Breadcrumb = lazy(() => import("../views/ui-elements/breadcrumb"));
+const Buttons = lazy(() => import("../views/ui-elements/buttons"));
+const Cards = lazy(() => import("../views/ui-elements/cards"));
+const Carousels = lazy(() => import("../views/ui-elements/carousel"));
+const Colors = lazy(() => import("../views/ui-elements/colors"));
+const Grid = lazy(() => import("../views/ui-elements/grid"));
+const Images = lazy(() => import("../views/ui-elements/images"));
+const ListGroups = lazy(() => import("../views/ui-elements/listGroup"));
+const Modals = lazy(() => import("../views/ui-elements/modal"));
+const Notification = lazy(() => import("../views/ui-elements/notification"));
+const Paginations = lazy(() => import("../views/ui-elements/pagination"));
+const Popovers = lazy(() => import("../views/ui-elements/popovers"));
+const Progressbars = lazy(() => import("../views/ui-elements/progressbars"));
+const Tabs = lazy(() => import("../views/ui-elements/tabs"));
+const Tooltips = lazy(() => import("../views/ui-elements/tooltips"));
+const Typography = lazy(() => import("../views/ui-elements/typography"));
+const Video = lazy(() => import("../views/ui-elements/video"));
+const FormCheckbox = lazy(() => import("../views/forms/form-checkbox"));
+const FormElements = lazy(() => import("../views/forms/form-elements"));
+const FormRadio = lazy(() => import("../views/forms/form-radio"));
+const FormSwitch = lazy(() => import("../views/forms/form-switch"));
+const FormValidatioins = lazy(() => import("../views/forms/form-validations"));
+const SimpalWizard = lazy(() => import("../views/wizard/simple-wizard"));
+const ValidteWizard = lazy(() => import("../views/wizard/validate-wizard"));
+const VerticalWizard = lazy(() => import("../views/wizard/vertical-wizard"));
+const BasicTable = lazy(() => import("../views/tables/basic-table"));
+const DataTable = lazy(() => import("../views/tables/data-table"));
+const EditTable = lazy(() => import("../views/tables/editable-table"));
+const ApexChart = lazy(() => import("../views/charts/apex-chart"));
+const ChartAm = lazy(() => import("../views/charts/chart-am"));
+const ChartPage = lazy(() => import("../views/charts/chart-page"));
+const EChart = lazy(() => import("../views/charts/e-chart"));
+const Dripicons = lazy(() => import("../views/icons/dripicons"));
+const FontAwsomeFive = lazy(() => import("../views/icons/fontawesome-Five"));
+const Lineawesome = lazy(() => import("../views/icons/line-awesome"));
+const Remixicon = lazy(() => import("../views/icons/remixicon"));
+const Unicons = lazy(() => import("../views/icons/unicons"));
+const GoogleMap = lazy(() => import("../views/maps/google-map"));
+const AccountSetting = lazy(() => import("../views/extra-pages/account-setting"));
+const AdminDashboard = lazy(() => import("../views/extra-pages/admin-dashboard"));
+const AdminProfile = lazy(() => import("../views/admin/admin-profile"));
+const AdminEditProfile = lazy(() => import("../views/admin/admin-edit-profile"));
+const AdminDepartments = lazy(() => import("../views/admin/admin-departments"));
+const AdminDepartmentDetail = lazy(() => import("../views/admin/admin-department-detail"));
+const AdminAppointmentRequests = lazy(() => import("../views/admin/admin-appointment-requests"));
+const AdminQuestionnaireBank = lazy(() => import("../views/admin/admin-questionnaire-bank"));
+const SuperAdminDashboard = lazy(() => import("../views/super-admin/super-admin-dashboard"));
+const UserList = lazy(() => import("../views/super-admin/user-list"));
+const AuditorList = lazy(() => import("../views/super-admin/auditor-list"));
+const AddAuditor = lazy(() => import("../views/super-admin/add-auditor"));
+const EditAuditor = lazy(() => import("../views/super-admin/edit-auditor"));
+const ViewAuditor = lazy(() => import("../views/super-admin/view-auditor"));
+const CareCoordinatorList = lazy(() => import("../views/super-admin/care-coordinator-list"));
+const AddCareCoordinator = lazy(() => import("../views/super-admin/add-care-coordinator"));
+const EditCareCoordinator = lazy(() => import("../views/super-admin/edit-care-coordinator"));
+const ViewCareCoordinator = lazy(() => import("../views/super-admin/view-care-coordinator"));
+const SuperAdminProfile = lazy(() => import("../views/super-admin/super-admin-profile"));
+const PlatformUsersHub = lazy(() => import("../views/super-admin/platform-users-hub"));
+const AddPlatformAdmin = lazy(() => import("../views/super-admin/add-platform-admin"));
+const AdminList = lazy(() => import("../views/super-admin/admin-list"));
+const ViewAdmin = lazy(() => import("../views/super-admin/view-admin"));
+const EditAdmin = lazy(() => import("../views/super-admin/edit-admin"));
+const AuditorDashboard = lazy(() => import("../views/auditor/auditor-dashboard"));
+const AuditorLogsPage = lazy(() => import("../views/auditor/auditor-logs"));
+const CommingSoon = lazy(() => import("../views/extra-pages/pages-comingsoon"));
+const Error404 = lazy(() => import("../views/extra-pages/pages-error-404"));
+const Error500 = lazy(() => import("../views/extra-pages/pages-error-500"));
+const Faq = lazy(() => import("../views/extra-pages/pages-faq"));
+const Invoice = lazy(() => import("../views/extra-pages/pages-invoice"));
+const Maintenance = lazy(() => import("../views/extra-pages/pages-maintenance"));
+const PricingOne = lazy(() => import("../views/extra-pages/pages-pricing-one"));
+const Pricing = lazy(() => import("../views/extra-pages/pages-pricing"));
+const Timeline = lazy(() => import("../views/extra-pages/pages-timeline"));
+const PrivacyPolicy = lazy(() => import("../views/extra-pages/privacy-policy"));
+const PrivacySetting = lazy(() => import("../views/extra-pages/privacy-setting"));
+const TermsOfService = lazy(() => import("../views/extra-pages/terms-of-service"));
 export const DefaultRoute = [
   {
     path: "",

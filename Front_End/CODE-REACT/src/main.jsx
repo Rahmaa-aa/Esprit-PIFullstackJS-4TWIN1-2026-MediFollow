@@ -1,5 +1,5 @@
 // import { StrictMode } from 'react'
-import { Fragment } from "react";
+import { Fragment, Suspense } from "react";
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
 import "swiper/css";
@@ -32,6 +32,15 @@ import { Provider } from "react-redux";
 
 const router = createBrowserRouter([...LayoutsRoute], { basename: import.meta.env.BASE_URL });
 
+const routeLazyFallback = (
+  <div
+    className="d-flex min-vh-100 align-items-center justify-content-center"
+    style={{ background: "var(--bs-body-bg, #f8f9fa)" }}
+  >
+    <div className="spinner-border text-primary" role="status" aria-label="Loading" />
+  </div>
+);
+
 function loadDeferredIconFonts() {
   import("./deferred-icon-fonts.js").catch(() => {});
 }
@@ -47,7 +56,9 @@ createRoot(document.getElementById('root')).render(
   <Fragment>
     <Provider store={store}>
       <App>
-        <RouterProvider router={router}></RouterProvider>
+        <Suspense fallback={routeLazyFallback}>
+          <RouterProvider router={router} />
+        </Suspense>
       </App>
     </Provider>
   </Fragment>
