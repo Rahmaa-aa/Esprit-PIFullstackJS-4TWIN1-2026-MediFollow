@@ -706,10 +706,15 @@ export default function DoctorPatientDossierView({ patient }) {
                             {openVitalAlerts.length > 1 ? (
                               <Button
                                 type="button"
-                                variant="outline-danger"
+                                variant="danger"
                                 size="sm"
-                                className="text-nowrap"
+                                className="text-nowrap dossier-vital-resolve-all-btn"
                                 disabled={resolveBusyId != null || !bulkResolutionNote.trim()}
+                                title={
+                                  resolveBusyId != null || bulkResolutionNote.trim()
+                                    ? undefined
+                                    : t("doctorPatientDossier.noteBeforeResolveAll")
+                                }
                                 onClick={resolveAllOpenVitalAlerts}
                               >
                                 {resolveBusyId === "__all__" ? (
