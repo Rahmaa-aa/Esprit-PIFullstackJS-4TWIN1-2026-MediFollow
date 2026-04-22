@@ -242,11 +242,12 @@ export class HealthLogService {
     const mergedForScore = { ...data, symptomStructured: structured, symptoms };
     const { score, flagged } = computeRiskScore(mergedForScore, { previousWeightKg });
 
-    const location =
-      data.location && typeof data.location === 'object' &&
-      typeof data.location.lat === 'number' && typeof data.location.lng === 'number'
-        ? { lat: data.location.lat, lng: data.location.lng }
-        : undefined;
+    let location: { lat: number; lng: number } | undefined;
+    if (data.location && typeof data.location === 'object') {
+      const lat = num((data.location as any).lat ?? (data.location as any).latitude);
+      const lng = num((data.location as any).lng ?? (data.location as any).longitude);
+      if (lat != null && lng != null) location = { lat, lng };
+    }
 
     const payload: any = {
       patientId: pid,
@@ -663,7 +664,11 @@ export class HealthLogService {
   }
 
   async getLatest(patientId: string) {
-    return this.healthLogModel.findOne(this.patientIdFilter(patientId)).sort({ createdAt: -1 }).exec();
+    return this.healthLogModel
+      .findOne(this.patientIdFilter(patientId))
+      .sort({ recordedAt: -1, createdAt: -1 })
+      .lean()
+      .exec();
   }
 
   /** Dernière consigne écrite par le médecin lors de la clôture d’une alerte (affichage dashboard patient). */

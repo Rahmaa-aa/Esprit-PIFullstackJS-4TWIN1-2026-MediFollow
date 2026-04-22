@@ -21,7 +21,7 @@ const Home = () => {
           height={1080}
           sizes="100vw"
           decoding="async"
-          fetchPriority="high"
+          fetchpriority="high"
         />
         <Container className="py-5">
           <Row className="justify-content-start">

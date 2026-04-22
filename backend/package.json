@@ -6,7 +6,7 @@
     "test:db": "node test-mongo-connection.js",
     "build": "nest build",
     "dev": "nest start --watch",
-    "start": "nest start",
+    "start": "nest build && node dist/main.js",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
     "test": "jest",

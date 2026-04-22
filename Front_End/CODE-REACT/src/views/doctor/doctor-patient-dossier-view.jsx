@@ -259,10 +259,19 @@ function VitalSnapshotForAlertRow({ vitals, t }) {
   );
 }
 
+/** Normalise lat/lng (API JSON, anciens enregistrements, chaînes). */
+function normalizeEmergencyLocation(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const lat = Number(raw.lat ?? raw.latitude);
+  const lng = Number(raw.lng ?? raw.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+}
+
 /** Bandeau unique : SOS + alertes cliniques, clignotement si urgence (danger / SOS / relevé flaggé). */
 function VitalsEmergencyBundle({ latestLog, doctorAlerts, t }) {
-  const loc = latestLog?.location;
-  const hasSos = loc != null && loc.lat != null && loc.lng != null;
+  const loc = normalizeEmergencyLocation(latestLog?.location);
+  const hasSos = loc != null;
   const alerts = Array.isArray(doctorAlerts) ? doctorAlerts : [];
   const bundleVisible = hasSos || alerts.length > 0;
   const hasDanger = alerts.some((a) => a.severity === "danger");
@@ -274,7 +283,7 @@ function VitalsEmergencyBundle({ latestLog, doctorAlerts, t }) {
   useEffect(() => {
     if (hasSos) setSosModalOpen(true);
     else setSosModalOpen(false);
-  }, [hasSos, loc?.lat, loc?.lng]);
+  }, [hasSos, loc?.lat, loc?.lng, latestLog?.location]);
 
   /** Nouveau SOS : autoriser à nouveau la sirène */
   useEffect(() => {
@@ -1196,10 +1205,10 @@ export default function DoctorPatientDossierView({ patient }) {
 
           <SectionCard icon="ri-draft-line" title={t("doctorPatientDossier.sectionProtocol")}>
             {qsLoading && (
-              <p className="text-muted small mb-0">
-                <Spinner animation="border" size="sm" className="me-2" />
-                {t("doctorPatientDossier.loadingQs")}
-              </p>
+              <div className="text-muted small mb-0 d-flex align-items-center gap-2">
+                <Spinner animation="border" size="sm" />
+                <span>{t("doctorPatientDossier.loadingQs")}</span>
+              </div>
             )}
             {qsErr && (
               <Alert variant="warning" className="py-2 mb-3">

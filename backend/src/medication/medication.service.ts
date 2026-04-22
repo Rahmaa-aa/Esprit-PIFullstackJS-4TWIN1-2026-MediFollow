@@ -19,12 +19,28 @@ import {
   buildPrescriptionPdfBuffer,
   type PrescriptionLineInput,
 } from './prescription-pdf.util';
+import { resolveProfileImageBufferForPdf } from './profile-image-buffer.util';
 import { NotificationService } from '../notification/notification.service';
 
 const localDateString = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
+
+function ageFromBirthDateYmd(ymd: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(ymd).trim());
+  if (!m) return '';
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const day = Number(m[3]);
+  const birth = new Date(y, mo, day);
+  if (Number.isNaN(birth.getTime())) return '';
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const md = today.getMonth() - birth.getMonth();
+  if (md < 0 || (md === 0 && today.getDate() < birth.getDate())) age -= 1;
+  return String(Math.max(0, age));
+}
 
 type JwtUser = {
   id: unknown;
@@ -284,7 +300,7 @@ export class MedicationService {
 
     const doctorLean = await this.doctorModel
       .findById(String(user.id))
-      .select('specialty department academicTitle firstName lastName')
+      .select('specialty department academicTitle firstName lastName email phone profileImage')
       .lean()
       .exec();
     const doctorDisplayName = this.doctorDisplayNameFromUser(user, doctorLean as Record<string, unknown> | null);
@@ -323,14 +339,27 @@ export class MedicationService {
 
     const p = patient as Record<string, unknown>;
     const dobRaw = p.dateOfBirth ? String(p.dateOfBirth) : '';
+    const dobYmd = dobRaw ? dobRaw.slice(0, 10) : '';
+    const addrParts = [p.address, p.city, p.country].filter(Boolean).map(String);
+    const patientAddressLine = addrParts.length ? addrParts.join(', ') : '';
     const issuedDateYmd = localDateString();
+    const doctorAvatarBuffer = await resolveProfileImageBufferForPdf(
+      doctorLean ? String((doctorLean as any).profileImage || '') : '',
+    );
     const buffer = await buildPrescriptionPdfBuffer({
       patientFirstName: String(p.firstName || ''),
       patientLastName: String(p.lastName || ''),
-      patientDob: dobRaw ? dobRaw.slice(0, 10) : undefined,
+      patientDob: dobYmd || undefined,
+      patientAge: dobYmd ? ageFromBirthDateYmd(dobYmd) : undefined,
+      patientAddressLine: patientAddressLine || undefined,
+      patientCity: p.city ? String(p.city) : undefined,
       doctorDisplayName,
       doctorSpecialty: doctorLean ? String((doctorLean as any).specialty || '') : '',
       doctorDepartment: doctorLean ? String((doctorLean as any).department || '') : '',
+      doctorEmail: doctorLean ? String((doctorLean as any).email || '') : '',
+      doctorPhone: doctorLean ? String((doctorLean as any).phone || '') : '',
+      doctorAvatarBuffer,
+      clinicWeb: process.env.MEDIFOLLOW_SITE_LABEL || 'medifollow.app',
       issuedDateYmd,
       lines: lineInputs,
     });

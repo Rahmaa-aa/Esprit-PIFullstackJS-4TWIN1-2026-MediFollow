@@ -98,6 +98,28 @@ function getVitalCriticalWarnings(vitals, t, lastRecordedWeightKg) {
   return w;
 }
 
+/** Aligné sur le risque « urgence » (score / flagged côté serveur) : GPS si vitaux critiques ou signes + douleur / humeur. */
+function shouldAttachEmergencyLocation(cleanVitals, form, vitalWarnings) {
+  const isCritical =
+    (cleanVitals.oxygenSaturation != null && cleanVitals.oxygenSaturation < 95) ||
+    (cleanVitals.heartRate != null && (cleanVitals.heartRate > 120 || cleanVitals.heartRate < 50)) ||
+    (cleanVitals.bloodPressureSystolic != null &&
+      (cleanVitals.bloodPressureSystolic >= 180 || cleanVitals.bloodPressureSystolic < 90)) ||
+    (cleanVitals.temperature != null && (cleanVitals.temperature >= 38.5 || cleanVitals.temperature < 35));
+  if (isCritical) return true;
+  if (Array.isArray(vitalWarnings) && vitalWarnings.length > 0) return true;
+  if (Number(form.painLevel) >= 7) return true;
+  if (form.mood === "poor") return true;
+  const ss = form.symptomStructured || {};
+  const fatigue = Number(ss.fatigue) || 0;
+  const chestPain = Number(ss.chestPain) || 0;
+  const shortBreath = Number(ss.shortBreath) || 0;
+  const nausea = Number(ss.nausea) || 0;
+  if (chestPain >= 3 || shortBreath >= 2 || fatigue >= 5 || nausea >= 3) return true;
+  if (ss.feltFever || ss.palpitations || ss.dizzinessConfusion) return true;
+  return false;
+}
+
 const defaultSymptomStructured = () => ({
   fatigue: 0,
   chestPain: 0,
@@ -225,15 +247,11 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog, lastRecordedWeightK
         if (v !== "" && v !== null) cleanVitals[k] = Number(v);
       });
 
-      // ── SOS Geolocation: try to grab GPS if any vital is critical ──
-      const isCritical =
-        (cleanVitals.oxygenSaturation != null && cleanVitals.oxygenSaturation < 95) ||
-        (cleanVitals.heartRate != null && (cleanVitals.heartRate > 120 || cleanVitals.heartRate < 50)) ||
-        (cleanVitals.bloodPressureSystolic != null && (cleanVitals.bloodPressureSystolic >= 180 || cleanVitals.bloodPressureSystolic < 90)) ||
-        (cleanVitals.temperature != null && (cleanVitals.temperature >= 38.5 || cleanVitals.temperature < 35));
+      const vitalWarnings = getVitalCriticalWarnings(form.vitals, t, lastRecordedWeightKg);
+      const tryGeo = shouldAttachEmergencyLocation(cleanVitals, form, vitalWarnings);
 
       let location = undefined;
-      if (isCritical && navigator.geolocation) {
+      if (tryGeo && navigator.geolocation) {
         try {
           const pos = await new Promise((resolve, reject) =>
             navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000, enableHighAccuracy: true })

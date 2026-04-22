@@ -29,7 +29,9 @@ export default function OptimizedSiteLogo({
         className={className}
         style={style}
         decoding={decoding}
-        fetchPriority={fetchPriority}
+        {...(fetchPriority != null && fetchPriority !== ""
+          ? { fetchpriority: fetchPriority }
+          : {})}
       />
     </picture>
   );
