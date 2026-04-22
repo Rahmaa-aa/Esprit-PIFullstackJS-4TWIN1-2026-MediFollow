@@ -18,6 +18,11 @@ export function landingImg(name) {
   return generatePath(`assets/images/landing/${name}`);
 }
 
+/** Srcset WebP pour l’image « à propos » (colonnes ~454px sur desktop). */
+export function chuAboutImgWebpSrcSet() {
+  return `${landingImg("chu-about-480.webp")} 480w, ${landingImg("chu-about-720.webp")} 720w, ${landingImg("chu-about-960.webp")} 960w`;
+}
+
 /**
  * Carousel auth : scènes de soins (médecin / infirmier / patient), tons cliniques compatibles cyan & bleu template.
  * Unsplash (licence Unsplash) — dégradé CSS en complément dans custom-style (voile primary/secondary/dark).

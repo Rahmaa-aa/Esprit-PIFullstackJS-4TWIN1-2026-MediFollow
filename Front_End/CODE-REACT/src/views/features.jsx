@@ -14,7 +14,7 @@ const Features = () => {
       <div
         className="container-fluid bg-primary py-5 mb-5 hero-header landing-hero about-page-hero"
         style={{
-          backgroundImage: `url(${landingImg("chu-hero.jpg")})`,
+          backgroundImage: `url(${landingImg("chu-hero.webp")})`,
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",

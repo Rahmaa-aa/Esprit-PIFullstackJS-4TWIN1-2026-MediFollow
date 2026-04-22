@@ -3,7 +3,7 @@ import { Container, Button, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import LandingShell from "../components/landing/LandingShell";
-import { landingImg } from "./landing/landingPaths";
+import { landingImg, chuAboutImgWebpSrcSet } from "./landing/landingPaths";
 import { LANDING_FEATURE_CARDS } from "./landing/landingFeatureCards";
 
 const Home = () => {
@@ -14,7 +14,7 @@ const Home = () => {
       <div
         className="container-fluid bg-primary py-5 mb-5 hero-header landing-hero"
         style={{
-          backgroundImage: `url(${landingImg("chu-hero.jpg")})`,
+          backgroundImage: `url(${landingImg("chu-hero.webp")})`,
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
@@ -45,17 +45,20 @@ const Home = () => {
           <Row className="gx-5 align-items-center">
             <Col lg={5} className="mb-4 mb-lg-0">
               <div className="rounded overflow-hidden shadow-sm" style={{ minHeight: "280px" }}>
-                <img
-                  className="w-100 h-100"
-                  src={landingImg("chu-about.jpg")}
-                  alt={t("landing.aboutImageAlt")}
-                  width={960}
-                  height={640}
-                  sizes="(max-width: 991px) 100vw, 454px"
-                  decoding="async"
-                  loading="lazy"
-                  style={{ objectFit: "cover", minHeight: "280px" }}
-                />
+                <picture>
+                  <source type="image/webp" srcSet={chuAboutImgWebpSrcSet()} sizes="(max-width: 991px) 100vw, 454px" />
+                  <img
+                    className="w-100 h-100"
+                    src={landingImg("chu-about-960.jpg")}
+                    alt={t("landing.aboutImageAlt")}
+                    width={960}
+                    height={640}
+                    sizes="(max-width: 991px) 100vw, 454px"
+                    decoding="async"
+                    loading="lazy"
+                    style={{ objectFit: "cover", minHeight: "280px" }}
+                  />
+                </picture>
               </div>
             </Col>
             <Col lg={7}>

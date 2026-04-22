@@ -9,6 +9,7 @@ import {
   LANDING_FLAG_WIDTH,
   LANDING_PARTNERSHIP_FLAG_WIDTH,
 } from "../../views/landing/landingPaths";
+import OptimizedSiteLogo from "./OptimizedSiteLogo";
 
 /**
  * En-tête + pied de page communs aux pages publiques (accueil, à propos, fonctionnalités, contact).
@@ -99,11 +100,11 @@ export default function LandingShell({ navActive = "home", children }) {
         <Container>
           <Navbar expand="lg" bg="white" variant="light" className="py-3 py-lg-0" expanded={expanded} onToggle={setExpanded}>
             <Navbar.Brand as={Link} to="/">
-              <img
-                src={generatePath("assets/images/logosite.png")}
+              <OptimizedSiteLogo
                 alt="MediFollow"
                 width={160}
                 height={90}
+                sizes="140px"
                 decoding="async"
                 fetchPriority="high"
                 style={{ maxHeight: "45px", width: "auto", height: "auto" }}

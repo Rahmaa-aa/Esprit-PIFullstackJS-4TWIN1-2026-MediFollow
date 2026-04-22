@@ -32,7 +32,7 @@ const About = () => {
       <div
         className="container-fluid bg-primary py-5 mb-5 hero-header landing-hero about-page-hero"
         style={{
-          backgroundImage: `url(${landingImg("chu-about.jpg")})`,
+          backgroundImage: `url(${landingImg("chu-about-hero.webp")})`,
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",

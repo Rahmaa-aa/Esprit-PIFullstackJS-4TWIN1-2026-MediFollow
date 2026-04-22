@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Container, Row, Col, Spinner, Alert } from "react-bootstrap";
 import { authApi } from "../../services/api";
+import OptimizedSiteLogo from "../../components/landing/OptimizedSiteLogo";
 
 const generatePath = (path) => {
   return window.origin + import.meta.env.BASE_URL + path;
@@ -48,7 +49,14 @@ const ConfirmLogin = () => {
           <Col md={6} className="text-center z-2">
             <div className="sign-in-detail text-white">
               <a href={generatePath("/")} className="sign-in-logo mb-2">
-                <img src={generatePath("/assets/images/logosite.png")} className="img-fluid" alt="Logo" style={{ maxWidth: "320px", maxHeight: "100px", objectFit: "contain" }} />
+                <OptimizedSiteLogo
+                  className="img-fluid"
+                  alt="Logo"
+                  style={{ maxWidth: "320px", maxHeight: "100px", objectFit: "contain" }}
+                  sizes="300px"
+                  width={320}
+                  height={180}
+                />
               </a>
             </div>
           </Col>

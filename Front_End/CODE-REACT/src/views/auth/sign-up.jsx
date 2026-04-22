@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { Form, Container, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { generatePath } from "../landing/landingPaths";
 import AuthCarouselMedifollow from "../../components/auth/AuthCarouselMedifollow";
+import OptimizedSiteLogo from "../../components/landing/OptimizedSiteLogo";
 
 const SignUp = () => {
   const { t } = useTranslation();
@@ -17,7 +17,14 @@ const SignUp = () => {
             <Col md={6} className="text-center z-2">
               <div className="sign-in-detail text-white">
                 <Link to="/" className="sign-in-logo mb-2">
-                  <img src={generatePath("assets/images/logosite.png")} className="img-fluid" alt={t("signUp.logoAlt")} style={{ maxWidth: "320px", maxHeight: "100px", objectFit: "contain" }} />
+                  <OptimizedSiteLogo
+                    className="img-fluid"
+                    alt={t("signUp.logoAlt")}
+                    style={{ maxWidth: "320px", maxHeight: "100px", objectFit: "contain" }}
+                    sizes="300px"
+                    width={320}
+                    height={180}
+                  />
                 </Link>
                 <AuthCarouselMedifollow
                   interval={4000}
