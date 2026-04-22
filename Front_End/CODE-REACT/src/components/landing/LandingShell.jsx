@@ -25,9 +25,18 @@ export default function LandingShell({ navActive = "home", children }) {
   const activeLang = LANDING_LANGS.find((l) => l.code === currentLang) || LANDING_LANGS[0];
 
   useEffect(() => {
-    const handleScroll = () => setShowBackToTop(window.scrollY > 100);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    let raf = 0;
+    const handleScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        setShowBackToTop(window.scrollY > 100);
+      });
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   const scrollToTop = () => {

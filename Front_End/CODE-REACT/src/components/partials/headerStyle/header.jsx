@@ -353,19 +353,20 @@ const Header = () => {
    }, [stopPageReading]);
 
    useEffect(() => {
+      let raf = 0;
       const handleScrolld = () => {
-         if (window.scrollY >= 75) {
-            setIsScrolled(true);
-         } else {
-            setIsScrolled(false);
-         }
+         cancelAnimationFrame(raf);
+         raf = requestAnimationFrame(() => {
+            const y = window.scrollY;
+            setIsScrolled(y >= 75);
+         });
       };
 
-      window.addEventListener('scroll', handleScrolld);
+      window.addEventListener("scroll", handleScrolld, { passive: true });
 
-      // Cleanup event listener on component unmount
       return () => {
-         window.removeEventListener('scroll', handleScrolld);
+         cancelAnimationFrame(raf);
+         window.removeEventListener("scroll", handleScrolld);
       };
    }, [])
 
@@ -408,6 +409,7 @@ const Header = () => {
    const handleSidebar = () => {
       let aside = document.getElementsByTagName("ASIDE")[0];
       if (aside) {
+         const isNarrowViewport = window.innerWidth < 990;
          if (!aside.classList.contains('sidebar-mini')) {
             aside.classList.toggle("sidebar-mini");
             aside.classList.toggle("sidebar-hover");
@@ -416,7 +418,7 @@ const Header = () => {
             aside.classList.remove("sidebar-hover");
          }
 
-         if (window.innerWidth < 990) {
+         if (isNarrowViewport) {
             if (!aside.classList.contains('sidebar-mini')) {
                aside.classList.remove("sidebar-mini")
                aside.classList.toggle("sidebar-hover");

@@ -52,12 +52,15 @@ const HealthcareChatbot = ({ variant = "page" }) => {
 
   useEffect(() => { scrollToBottom(); }, [messages, isTyping, scrollToBottom]);
 
-  // Auto-resize textarea
+  // Auto-resize textarea (rAF évite lecture scrollHeight dans la même synchro que le commit React)
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "44px";
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + "px";
-    }
+    const el = textareaRef.current;
+    if (!el) return;
+    const id = requestAnimationFrame(() => {
+      el.style.height = "44px";
+      el.style.height = Math.min(el.scrollHeight, 120) + "px";
+    });
+    return () => cancelAnimationFrame(id);
   }, [input]);
 
   const quickTopics = [
