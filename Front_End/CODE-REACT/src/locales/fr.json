@@ -470,6 +470,7 @@
     "dueDateLabel": "Échéance",
     "dueDateInline": "échéance {{date}}",
     "add": "Ajouter",
+    "addDisabledHint": "Choisissez d’abord un questionnaire complémentaire.",
     "activeProtocolOn": "Protocole actif — sortie le {{date}}",
     "viewResponse": "Voir réponse",
     "addonsTitle": "Compléments",

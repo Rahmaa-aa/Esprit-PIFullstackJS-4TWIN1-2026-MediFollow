@@ -470,6 +470,7 @@
     "dueDateLabel": "Due date",
     "dueDateInline": "due {{date}}",
     "add": "Add",
+    "addDisabledHint": "Choose a supplemental questionnaire first.",
     "activeProtocolOn": "Active protocol — discharged on {{date}}",
     "viewResponse": "View response",
     "addonsTitle": "Add-ons",

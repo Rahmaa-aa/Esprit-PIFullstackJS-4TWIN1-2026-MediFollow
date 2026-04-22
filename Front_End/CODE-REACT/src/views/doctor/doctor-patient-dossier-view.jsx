@@ -1255,7 +1255,13 @@ export default function DoctorPatientDossierView({ patient }) {
                     <input type="date" className="form-control" value={addonDue} onChange={(e) => setAddonDue(e.target.value)} />
                   </Col>
                   <Col md={3} className="d-flex align-items-end">
-                    <button type="button" className="btn btn-outline-primary w-100 fw-semibold" disabled={qsBusy || !addonPick} onClick={addAddon}>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary w-100 fw-semibold dossier-protocol-addon-btn"
+                      disabled={qsBusy || !addonPick}
+                      title={!addonPick && !qsBusy ? t("doctorPatientDossier.addDisabledHint") : undefined}
+                      onClick={addAddon}
+                    >
                       {t("doctorPatientDossier.add")}
                     </button>
                   </Col>

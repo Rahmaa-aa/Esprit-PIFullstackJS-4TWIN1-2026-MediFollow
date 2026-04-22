@@ -136,6 +136,43 @@
   font-size: 0.9375rem;
 }
 
+/* Bouton « Ajouter » : ne pas dépendre du parent .dossier-protocol-form (2e Row sans cette classe) */
+button.dossier-protocol-addon-btn.btn {
+  font-size: 0.9375rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-width: 2px;
+  font-weight: 600;
+}
+
+/* Actif : texte toujours contrasté (évite fond teal plein sans libellé) */
+button.dossier-protocol-addon-btn.btn-outline-primary:not(:disabled):not(.disabled) {
+  color: #0f4c54 !important;
+  background-color: #ffffff !important;
+  border-color: #089bab !important;
+  -webkit-text-fill-color: #0f4c54;
+}
+
+button.dossier-protocol-addon-btn.btn-outline-primary:not(:disabled):not(.disabled):hover {
+  color: #06343a !important;
+  background-color: rgba(8, 155, 171, 0.12) !important;
+  border-color: #067a86 !important;
+  -webkit-text-fill-color: #06343a;
+}
+
+button.dossier-protocol-addon-btn:disabled,
+button.dossier-protocol-addon-btn.disabled,
+fieldset:disabled button.dossier-protocol-addon-btn {
+  opacity: 1 !important;
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b;
+  background-color: #e2e8f0 !important;
+  background-image: none !important;
+  border-color: #64748b !important;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+
 .dossier-protocol-divider {
   border-color: rgba(148, 163, 184, 0.25) !important;
 }

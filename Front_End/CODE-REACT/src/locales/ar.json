@@ -470,6 +470,7 @@
     "dueDateLabel": "الاستحقاق",
     "dueDateInline": "الاستحقاق {{date}}",
     "add": "إضافة",
+    "addDisabledHint": "اختر استبيانًا إضافيًا أولًا.",
     "activeProtocolOn": "بروتوكول نشط — خروج في {{date}}",
     "viewResponse": "عرض الإجابة",
     "addonsTitle": "إضافات",
