@@ -96,8 +96,10 @@
     }
 }
 
+/* Image par défaut retirée (fichier absent) — les pages landing définissent leur fond (inline / WebP). */
 .hero-header {
-    background: url(../img/hero.jpg) top right no-repeat;
+    background-position: top right;
+    background-repeat: no-repeat;
     background-size: cover;
 }
 
@@ -271,6 +273,11 @@
 .hospital-home .hero-header.landing-hero {
     position: relative;
     background-color: var(--dark);
+}
+
+/* Accueil : réserve de hauteur pour limiter le CLS (texte + polices + voile ::before). */
+.hospital-home .hero-header.landing-hero:not(.about-page-hero) {
+    min-height: clamp(300px, 48vh, 560px);
 }
 
 .hospital-home .hero-header.landing-hero::before {

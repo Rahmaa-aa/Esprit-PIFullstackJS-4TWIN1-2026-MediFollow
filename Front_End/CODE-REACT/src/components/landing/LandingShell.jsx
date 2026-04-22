@@ -4,12 +4,13 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LanguageFlag, SvgFlagTn, SvgFlagDz } from "../language-flag-svgs";
 import {
-  generatePath,
   LANDING_LANGS,
   LANDING_FLAG_WIDTH,
   LANDING_PARTNERSHIP_FLAG_WIDTH,
 } from "../../views/landing/landingPaths";
 import OptimizedSiteLogo from "./OptimizedSiteLogo";
+/* Bundle avec le shell : évite le CLS dû au chargement tardif du CSS injecté en useEffect. */
+import "../../../public/hospital/css/style.css";
 
 /**
  * En-tête + pied de page communs aux pages publiques (accueil, à propos, fonctionnalités, contact).
@@ -22,18 +23,6 @@ export default function LandingShell({ navActive = "home", children }) {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const currentLang = String(i18n.language || "en").split("-")[0];
   const activeLang = LANDING_LANGS.find((l) => l.code === currentLang) || LANDING_LANGS[0];
-
-  useEffect(() => {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = generatePath("hospital/css/style.css");
-    link.id = "hospital-template-css";
-    document.head.appendChild(link);
-    return () => {
-      const el = document.getElementById("hospital-template-css");
-      if (el) el.remove();
-    };
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => setShowBackToTop(window.scrollY > 100);
