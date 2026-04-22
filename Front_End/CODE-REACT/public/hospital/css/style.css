@@ -1,0 +1,582 @@
+/********** Template CSS **********/
+:root {
+    --primary: #13C5DD;
+    --secondary: #354F8E;
+    --light: #EFF5F9;
+    --dark: #1D2A4D;
+}
+
+.btn {
+    font-weight: 700;
+    transition: .5s;
+}
+
+.btn:hover {
+    -webkit-box-shadow: 0 8px 6px -6px #555555;
+    -moz-box-shadow: 0 8px 6px -6px #555555;
+    box-shadow: 0 8px 6px -6px #555555;
+}
+
+.btn-primary {
+    color: #FFFFFF;
+}
+
+.btn-square {
+    width: 36px;
+    height: 36px;
+}
+
+.btn-sm-square {
+    width: 28px;
+    height: 28px;
+}
+
+.btn-lg-square {
+    width: 46px;
+    height: 46px;
+}
+
+.btn-square,
+.btn-sm-square,
+.btn-lg-square {
+    padding-left: 0;
+    padding-right: 0;
+    text-align: center;
+}
+
+.back-to-top {
+    position: fixed;
+    display: none;
+    right: 30px;
+    bottom: 0;
+    border-radius: 50% 50% 0 0;
+    z-index: 99;
+}
+
+.navbar-light .navbar-nav .nav-link {
+    font-family: 'Jost', sans-serif;
+    position: relative;
+    margin-left: 30px;
+    padding: 30px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--dark);
+    outline: none;
+    transition: .5s;
+}
+
+.navbar-light .navbar-nav .nav-link:hover,
+.navbar-light .navbar-nav .nav-link.active {
+    color: var(--primary);
+}
+
+@media (min-width: 992px) {
+    .navbar-light .navbar-nav .nav-link::before {
+        position: absolute;
+        content: "";
+        width: 0;
+        height: 5px;
+        bottom: 0;
+        left: 50%;
+        background: var(--primary);
+        transition: .5s;
+    }
+
+    .navbar-light .navbar-nav .nav-link:hover::before,
+    .navbar-light .navbar-nav .nav-link.active::before {
+        width: 100%;
+        left: 0;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .navbar-light .navbar-nav .nav-link  {
+        margin-left: 0;
+        padding: 10px 0;
+    }
+}
+
+.hero-header {
+    background: url(../img/hero.jpg) top right no-repeat;
+    background-size: cover;
+}
+
+.service-item {
+    position: relative;
+    height: 350px;
+    padding: 0 30px;
+    transition: .5s;
+}
+
+.service-item .service-icon {
+    width: 150px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    border-radius: 50%;
+    transform: rotate(-14deg);
+}
+
+.service-item .service-icon i {
+    transform: rotate(15deg);
+}
+
+/* Landing MediFollow — ovale un peu plus grand pour accueillir les grosses icônes */
+.hospital-home .service-item .service-icon {
+    width: 175px;
+    height: 118px;
+}
+
+.hospital-home .service-item .service-icon .landing-feature-icon {
+    font-size: clamp(3rem, 5vw, 4.25rem);
+    line-height: 1;
+}
+
+.service-item a.btn {
+    position: absolute;
+    width: 60px;
+    bottom: -48px;
+    left: 50%;
+    margin-left: -30px;
+    opacity: 0;
+}
+
+.service-item:hover a.btn {
+    bottom: -24px;
+    opacity: 1;
+}
+
+.price-carousel::after {
+    position: absolute;
+    content: "";
+    width: 100%;
+    height: 50%;
+    bottom: 0;
+    left: 0;
+    background: var(--primary);
+    border-radius: 8px 8px 50% 50%;
+    z-index: -1;
+}
+
+.price-carousel .owl-nav {
+    margin-top: 35px;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+}
+
+.price-carousel .owl-nav .owl-prev,
+.price-carousel .owl-nav .owl-next{
+    position: relative;
+    margin: 0 5px;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    background: #FFFFFF;
+    font-size: 22px;
+    border-radius: 45px;
+    transition: .5s;
+}
+
+.price-carousel .owl-nav .owl-prev:hover,
+.price-carousel .owl-nav .owl-next:hover {
+    color: var(--dark);
+}
+
+@media (min-width: 576px) {
+    .team-item .row {
+        height: 350px;
+    }
+}
+
+.team-carousel .owl-nav {
+    position: absolute;
+    padding: 0 45px;
+    width: 100%;
+    height: 45px;
+    top: calc(50% - 22.5px);
+    left: 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.team-carousel .owl-nav .owl-prev,
+.team-carousel .owl-nav .owl-next {
+    position: relative;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    background: var(--primary);
+    border-radius: 45px;
+    font-size: 22px;
+    transition: .5s;
+}
+
+.team-carousel .owl-nav .owl-prev:hover,
+.team-carousel .owl-nav .owl-next:hover {
+    background: var(--dark);
+}
+
+.testimonial-carousel .owl-dots {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.testimonial-carousel .owl-dot {
+    position: relative;
+    display: inline-block;
+    margin: 0 5px;
+    width: 20px;
+    height: 20px;
+    background: var(--light);
+    border: 2px solid var(--primary);
+    border-radius: 20px;
+    transition: .5s;
+}
+
+.testimonial-carousel .owl-dot.active {
+    width: 40px;
+    height: 40px;
+    background: var(--primary);
+}
+
+.testimonial-carousel .owl-item img {
+    width: 150px;
+    height: 150px;
+}
+
+/* MediFollow landing — même ligne verticale pour liens, langue et boutons */
+@media (min-width: 992px) {
+    .hospital-home .navbar-nav {
+        align-items: center;
+    }
+    .hospital-home .navbar-nav .nav-item {
+        display: flex;
+        align-items: center;
+    }
+}
+
+/* MediFollow landing — hero lisible sur photo claire (voile + ombres) */
+.hospital-home .hero-header.landing-hero {
+    position: relative;
+    background-color: var(--dark);
+}
+
+.hospital-home .hero-header.landing-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(
+        105deg,
+        rgba(29, 42, 77, 0.92) 0%,
+        rgba(29, 42, 77, 0.78) 42%,
+        rgba(29, 42, 77, 0.45) 72%,
+        rgba(29, 42, 77, 0.25) 100%
+    );
+}
+
+.hospital-home .hero-header.landing-hero > .container {
+    position: relative;
+    z-index: 1;
+}
+
+.hospital-home .hero-header.landing-hero h1.display-1 {
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 4px 28px rgba(0, 0, 0, 0.35);
+}
+
+.hospital-home .hero-header.landing-hero .lead.text-white {
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55), 0 2px 14px rgba(0, 0, 0, 0.35);
+}
+
+.hospital-home .hero-header.landing-hero .hero-kicker {
+    color: var(--primary) !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+    border-bottom-color: var(--primary) !important;
+}
+
+/* About page — hero secondaire (même voile / couleurs que l’accueil) */
+.hospital-home .hero-header.landing-hero.about-page-hero {
+    min-height: 340px;
+    margin-bottom: 0;
+}
+
+@media (min-width: 992px) {
+    .hospital-home .hero-header.landing-hero.about-page-hero {
+        min-height: 380px;
+    }
+}
+
+.hospital-home .about-page-hero h1.display-3 {
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.hospital-home .about-page-hero .lead.text-white {
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55), 0 2px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* Cartes mission : même ovale primary, hauteur fluide (sans bouton flottant) */
+.hospital-home .about-mission-item.service-item {
+    height: auto;
+    min-height: 300px;
+    padding-bottom: 2rem;
+}
+
+.hospital-home .about-mission-item.service-item .service-icon {
+    width: 150px;
+    height: 100px;
+}
+
+.hospital-home .about-mission-item .about-mission-icon {
+    font-size: clamp(2.25rem, 4vw, 3rem);
+    line-height: 1;
+}
+
+/* About — fusion principes + engagements sur fond clair */
+.hospital-home .about-engage-in-light {
+    border-top: 1px solid rgba(53, 79, 142, 0.12);
+}
+
+/* About — principes : cartes blanches, icônes ovales comme la landing */
+.hospital-home .about-values-section {
+    background-color: var(--light);
+}
+
+.hospital-home .about-value-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1.25rem rgba(29, 42, 77, 0.08);
+    border: 1px solid rgba(53, 79, 142, 0.08);
+    padding: 2rem 1.5rem 2.25rem;
+    height: 100%;
+    transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+@media (min-width: 992px) {
+    .hospital-home .about-value-card {
+        padding: 2.5rem 1.75rem 2.5rem;
+    }
+}
+
+.hospital-home .about-value-card:hover {
+    box-shadow: 0 0.75rem 1.75rem rgba(29, 42, 77, 0.12);
+    transform: translateY(-2px);
+}
+
+.hospital-home .about-value-card .service-icon {
+    width: 150px;
+    height: 100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.hospital-home .about-value-card .about-value-icon {
+    font-size: clamp(2.5rem, 4.5vw, 3.25rem);
+    line-height: 1;
+}
+
+.hospital-home .about-value-card .about-value-title {
+    color: var(--dark);
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.35;
+}
+
+.hospital-home .about-value-card .about-value-text {
+    color: #5a6578;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 0;
+}
+
+/* About — engagements (fond clair, même section que principes) */
+.hospital-home .about-engage-grid {
+    --engage-gap: 1.25rem;
+}
+
+.hospital-home .about-engage-card--light {
+    background: #fff;
+    border: 1px solid rgba(53, 79, 142, 0.1);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.35rem 1rem rgba(29, 42, 77, 0.06);
+    padding: 1.5rem 1rem;
+    min-height: 132px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+
+@media (min-width: 768px) {
+    .hospital-home .about-engage-card--light {
+        padding: 1.75rem 1.25rem;
+        min-height: 148px;
+    }
+}
+
+.hospital-home .about-engage-card--light:hover {
+    box-shadow: 0 0.5rem 1.25rem rgba(29, 42, 77, 0.1);
+    border-color: rgba(19, 197, 221, 0.35);
+    transform: translateY(-2px);
+}
+
+.hospital-home .about-engage-card-icon--light {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 50%;
+    background: rgba(19, 197, 221, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.45rem;
+    margin-bottom: 0.85rem;
+    flex-shrink: 0;
+}
+
+.hospital-home .about-engage-card-icon--light i {
+    color: var(--primary);
+}
+
+.hospital-home .about-engage-card-text--light {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--dark);
+    margin: 0;
+    max-width: 15rem;
+}
+
+@media (min-width: 992px) {
+    .hospital-home .about-engage-card-text--light {
+        font-size: 0.95rem;
+        max-width: none;
+    }
+}
+
+/* About — CTA bas : boutons équilibrés sur le cyan */
+.hospital-home .about-cta-bar .about-cta-lead {
+    max-width: 36rem;
+}
+
+.hospital-home .about-cta-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+}
+
+@media (min-width: 576px) {
+    .hospital-home .about-cta-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+@media (min-width: 992px) {
+    .hospital-home .about-cta-actions {
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        min-width: 220px;
+    }
+}
+
+.hospital-home .about-cta-btn-home {
+    background: #fff !important;
+    color: var(--dark) !important;
+    border: 2px solid #fff !important;
+    font-weight: 700 !important;
+    padding: 0.65rem 1.75rem !important;
+    box-shadow: 0 4px 14px rgba(29, 42, 77, 0.15);
+}
+
+.hospital-home .about-cta-btn-home:hover {
+    background: var(--light) !important;
+    color: var(--dark) !important;
+    border-color: var(--light) !important;
+}
+
+.hospital-home .about-cta-btn-signin {
+    border-width: 2px !important;
+    font-weight: 700 !important;
+    padding: 0.65rem 1.75rem !important;
+    color: #fff !important;
+}
+
+.hospital-home .about-cta-btn-signin:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #fff !important;
+}
+
+/* Page Contact — cartes coordonnées */
+.hospital-home .contact-info-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(53, 79, 142, 0.1);
+    box-shadow: 0 0.35rem 1rem rgba(29, 42, 77, 0.06);
+    padding: 2rem 1.5rem;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.hospital-home .contact-info-card:hover {
+    box-shadow: 0 0.5rem 1.25rem rgba(29, 42, 77, 0.1);
+    transform: translateY(-2px);
+}
+
+.hospital-home .contact-info-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    background: rgba(19, 197, 221, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    color: var(--primary);
+    margin-bottom: 1.1rem;
+}
+
+.hospital-home .contact-info-card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 0.65rem;
+}
+
+.hospital-home .contact-info-card-body {
+    color: #5a6578;
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.hospital-home .contact-info-card-link {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+    word-break: break-word;
+}
+
+.hospital-home .contact-info-card-link:hover {
+    color: var(--secondary);
+    text-decoration: underline;
+}
+
+.hospital-home .contact-emergency-alert {
+    background: rgba(239, 245, 249, 0.95) !important;
+    color: var(--dark);
+}

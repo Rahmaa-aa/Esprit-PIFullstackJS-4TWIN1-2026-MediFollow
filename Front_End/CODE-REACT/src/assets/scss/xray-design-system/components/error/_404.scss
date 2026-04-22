@@ -1,0 +1,27 @@
+.error {
+    width: 100%;
+    overflow: hidden;
+    display: inline-block;
+
+    h2 {
+        font-size: 2.6rem !important;
+        line-height: 1.2;
+    }
+
+    .text-in-box {
+        font-size: 6rem !important;
+        font-weight: 700;
+        line-height: 1.5;
+    }
+}
+
+.error>img {
+    width: 70%;
+}
+
+@media (min-width: 768px) {
+
+    .error>img {
+        width: 40%;
+    }
+}

@@ -1,0 +1,29 @@
+.doctor-profile {
+    margin-top: -70px;
+}
+
+ul.doctoe-sedual {
+    li {
+      list-style: none;
+      flex: 1;
+      border-left: 1px solid rgba(0, 0, 0, 0.1);
+  
+      &:first-child {
+        border-left: none;
+      }
+    }
+  }
+  
+  .speciality-list {
+    .user-img {
+      > a {
+        height: 40px;
+        width: 40px;
+        display: block;
+        text-align: center;
+        line-height: 40px;
+        border-radius: 50%;
+      }
+    }
+  }
+  

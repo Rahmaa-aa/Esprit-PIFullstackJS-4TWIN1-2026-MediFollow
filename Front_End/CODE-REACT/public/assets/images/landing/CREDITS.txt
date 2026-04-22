@@ -1,0 +1,6 @@
+Visuels de la page d’accueil MediFollow (illustrations génériques d’environnement hospitalier).
+
+- chu-hero.jpg — Unsplash (https://unsplash.com/photos/photo-1519494026892-80bbd2d6fd0d), licence Unsplash.
+- chu-about.jpg — Unsplash (https://unsplash.com/photos/photo-1576091160399-112ba8d25d1d), licence Unsplash.
+
+Remplacer ces fichiers par des photos officielles du CHU si vous disposez des droits d’utilisation.

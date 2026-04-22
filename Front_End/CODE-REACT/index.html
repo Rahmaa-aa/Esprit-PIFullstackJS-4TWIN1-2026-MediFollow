@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    (function () {
+      const savedTheme = sessionStorage.getItem('themeColor');
+
+      if (savedTheme) {
+        const settings = JSON.parse(savedTheme);
+        document.documentElement.setAttribute('data-bs-theme', settings);
+      }
+    })();
+    (function () {
+      try {
+        if (localStorage.getItem("medifollow_dyslexia_mode") === "1") {
+          document.documentElement.classList.add("medifollow-dyslexia-mode");
+        }
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css?family=Poppins:200,200i,300,400,500,600,700,800,900&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+  <title>MediFollow | React </title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <!-- TensorFlow.js pour le modèle d’émotion : importé dans src/services/face-emotions.js (pas en global : sinon conflit avec face-api.js / tfjs-core 1.7) -->
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>

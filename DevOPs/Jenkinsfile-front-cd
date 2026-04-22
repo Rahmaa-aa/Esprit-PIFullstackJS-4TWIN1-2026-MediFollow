@@ -1,0 +1,42 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Checkout Repository') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build Docker Image (Nginx)') {
+            steps {
+                dir('Front_End/CODE-REACT') {
+                    echo "Building Frontend Docker Image..."
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                        sh 'docker build --network=host -t "$DOCKER_USER/medifollow-front:latest" .'
+                    }
+                }
+            }
+        }
+        stage('Push to DockerHub') {
+            steps {
+                echo "Logging into DockerHub (bypassing 2FA via Token) and pushing image..."
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                    sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                    sh 'docker push "$DOCKER_USER/medifollow-front:latest"'
+                }
+            }
+        }
+        stage('Deploy to Vercel') {
+            steps {
+                dir('Front_End/CODE-REACT') {
+                    echo "Triggering Vercel Cloud Automation..."
+                    // Force lowercase name override to bypass Vercel API crash
+                    sh 'echo \'{"name": "medifollow-frontend"}\' > vercel.json'
+                    withCredentials([string(credentialsId: 'VERCEL_TOKEN', variable: 'VERCEL_TOKEN')]) {
+                        sh 'npx vercel --prod --yes --token $VERCEL_TOKEN'
+                    }
+                }
+            }
+        }
+    }
+}

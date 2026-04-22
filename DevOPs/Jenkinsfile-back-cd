@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Checkout Repository') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build Docker Image (Node)') {
+            steps {
+                dir('backend') {
+                    echo "Building Backend Docker Image..."
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                        sh 'docker build --network=host -t "$DOCKER_USER/medifollow-backend:latest" .'
+                    }
+                }
+            }
+        }
+        stage('Push to DockerHub') {
+            steps {
+                echo "Logging into DockerHub (bypassing 2FA via Token) and pushing backend image..."
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                    sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                    sh 'docker push "$DOCKER_USER/medifollow-backend:latest"'
+                }
+            }
+        }
+        stage('Deploy to Production (Render)') {
+            steps {
+                echo "Triggering Render via Webhook..."
+            }
+        }
+        stage('Deploy to Staging (Kubeadm)') {
+            steps {
+                echo "Applying Kubernetes YAML to local Kubeadm cluster..."
+                // Ready for Phase 3 K8s YAML deployment
+            }
+        }
+    }
+}

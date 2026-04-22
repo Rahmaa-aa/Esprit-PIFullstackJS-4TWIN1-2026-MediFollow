@@ -1,0 +1,63 @@
+/* Mode lecture adaptée dyslexie — html.medifollow-dyslexia-mode */
+html.medifollow-dyslexia-mode {
+  font-family: "Lexend", "Segoe UI", system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.14em;
+  word-spacing: 0.2em;
+}
+
+html.medifollow-dyslexia-mode body,
+html.medifollow-dyslexia-mode .App,
+html.medifollow-dyslexia-mode .wrapper {
+  font-family: inherit;
+  letter-spacing: inherit;
+  word-spacing: inherit;
+}
+
+/* Propagation de l’espacement sur la plupart du texte (icônes exclues plus bas) */
+html.medifollow-dyslexia-mode .main-content,
+html.medifollow-dyslexia-mode .content-inner,
+html.medifollow-dyslexia-mode .card-body,
+html.medifollow-dyslexia-mode .navbar,
+html.medifollow-dyslexia-mode aside {
+  letter-spacing: 0.14em;
+  word-spacing: 0.2em;
+}
+
+html.medifollow-dyslexia-mode p,
+html.medifollow-dyslexia-mode li,
+html.medifollow-dyslexia-mode td,
+html.medifollow-dyslexia-mode th,
+html.medifollow-dyslexia-mode label,
+html.medifollow-dyslexia-mode .form-control,
+html.medifollow-dyslexia-mode .form-select,
+html.medifollow-dyslexia-mode textarea,
+html.medifollow-dyslexia-mode .nav-link span.item-name,
+html.medifollow-dyslexia-mode .btn,
+html.medifollow-dyslexia-mode .dropdown-item,
+html.medifollow-dyslexia-mode .alert,
+html.medifollow-dyslexia-mode small,
+html.medifollow-dyslexia-mode .table,
+html.medifollow-dyslexia-mode a:not([class^="ri-"]):not([class*=" ri-"]) {
+  line-height: 1.65;
+  letter-spacing: 0.15em;
+  word-spacing: 0.22em;
+}
+
+html.medifollow-dyslexia-mode h1,
+html.medifollow-dyslexia-mode h2,
+html.medifollow-dyslexia-mode h3,
+html.medifollow-dyslexia-mode h4,
+html.medifollow-dyslexia-mode h5,
+html.medifollow-dyslexia-mode h6,
+html.medifollow-dyslexia-mode .card-title {
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  word-spacing: 0.16em;
+}
+
+html.medifollow-dyslexia-mode i[class^="ri-"],
+html.medifollow-dyslexia-mode .ri {
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+}

@@ -1,0 +1,106 @@
+/* Aligné sur .sign-in-page.a11y-large-text (custom-style.scss) pour l’espace auditeur */
+
+/* Bloc extérieur : évite tout débordement du cadre sur le fond de page */
+.auditor-a11y-toolbar-block {
+  width: 100%;
+}
+
+/* Cadre accessibilité : fond opaque + overflow pour des coins nets (évite les « trous » blancs aux arrondis) */
+.auditor-a11y-toolbar.a11y-toolbar {
+  position: relative;
+  z-index: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  box-sizing: border-box;
+  /* Fond lavande opaque (pas de transparence sur les bords = pas d’artefacts aux coins) */
+  background-color: #f3f1ff;
+  /* Contour sans border CSS (les borders + border-radius peuvent laisser voir le fond parent) */
+  box-shadow:
+    inset 0 0 0 1px rgba(99, 91, 255, 0.18),
+    0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.auditor-a11y-toolbar__inner {
+  padding: 0.875rem 1.125rem;
+}
+
+.auditor-a11y-toolbar .a11y-toolbar-title {
+  margin-bottom: 0.55rem;
+  letter-spacing: 0.02em;
+}
+
+.auditor-a11y-root.a11y-large-text {
+  font-size: 1.25rem;
+  line-height: 1.55;
+}
+
+.auditor-a11y-root.a11y-large-text .auditor-dash__title,
+.auditor-a11y-root.a11y-large-text .auditor-logs__title {
+  font-size: 2.1rem;
+  line-height: 1.25;
+}
+
+.auditor-a11y-root.a11y-large-text .auditor-dash__subtitle,
+.auditor-a11y-root.a11y-large-text .auditor-logs__subtitle,
+.auditor-a11y-root.a11y-large-text .auditor-kpi__label,
+.auditor-a11y-root.a11y-large-text .auditor-table th,
+.auditor-a11y-root.a11y-large-text .auditor-logs__label {
+  font-size: 1.12rem;
+}
+
+.auditor-a11y-root.a11y-large-text .auditor-kpi__value {
+  font-size: 2.05rem;
+}
+
+.auditor-a11y-root.a11y-large-text .auditor-table td,
+.auditor-a11y-root.a11y-large-text .auditor-logs__table td {
+  font-size: 1.08rem;
+}
+
+.auditor-a11y-root.a11y-large-text .auditor-logs__toolbar-meta,
+.auditor-a11y-root.a11y-large-text .auditor-logs__footer-info,
+.auditor-a11y-root.a11y-large-text .auditor-logs__legend-desc {
+  font-size: 1.05rem;
+}
+
+.auditor-a11y-root.a11y-large-text .badge {
+  font-size: 0.95rem;
+  padding: 0.4em 0.65em;
+}
+
+.auditor-a11y-root.a11y-large-text .form-control,
+.auditor-a11y-root.a11y-large-text .form-select {
+  font-size: 1.15rem;
+  min-height: 3rem;
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+}
+
+.auditor-a11y-root.a11y-large-text .btn {
+  font-size: 1.08rem;
+  padding: 0.55rem 1rem;
+  min-height: 2.75rem;
+}
+
+.auditor-a11y-root.a11y-large-text .auditor-chart-card__title,
+.auditor-a11y-root.a11y-large-text .auditor-table-card__title,
+.auditor-a11y-root.a11y-large-text .auditor-logs__toolbar-title {
+  font-size: 1.45rem;
+}
+
+.auditor-a11y-root.a11y-large-text .a11y-toolbar-title {
+  font-size: 0.95rem;
+}
+
+.auditor-a11y-root.a11y-large-text .a11y-toolbar-actions .a11y-btn {
+  min-height: 2.85rem;
+  font-size: 1.05rem;
+}
+
+.auditor-a11y-skip:focus {
+  outline: 3px solid #0d6efd;
+  outline-offset: 2px;
+}

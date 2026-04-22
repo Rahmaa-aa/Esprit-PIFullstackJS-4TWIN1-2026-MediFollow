@@ -1,0 +1,61 @@
+.timeline0 li .timeline-dots1 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 3px solid #05bbc9;
+    border-radius: 90px;
+    padding: 5px;
+    background: white;
+    height: 2.5rem;
+    width: 2.5rem;
+    line-height: 25px;
+    text-align: center;
+}
+
+.timeline0:before {
+    content: '';
+    position: absolute;
+    left: 17px;
+    transform: translateX(-50%);
+    width: 2px ;
+    height: 100%;
+    background-color: #ccc;
+}
+
+.timeline0 ul li:nth-child(odd) {
+    float: left;
+    text-align: left;
+    width: 100%;
+    padding: 0 0 0 60px;
+    margin-bottom: 20px;
+}
+
+.timeline0 ul li {
+    width: 50%;
+    padding: 5px 30px 2.5rem 30px;
+    cursor: pointer;
+    margin: 0px;
+}
+
+.timeline0 li {
+    margin-left: 2.188rem;
+    position: relative;
+    padding: 15px 15px 0 5px;
+    list-style-type: none;
+}
+
+[dir="rtl"] .timeline0 li .timeline-dots1 {
+    left: auto;
+    right: 0;
+}
+
+[dir="rtl"] .timeline0:before {
+    left: auto;
+    right: 15px;
+}
+
+[dir="rtl"] .timeline0 ul li:nth-child(odd), [dir="rtl"] .timeline0 ul li:nth-child(even) {
+    float: right;
+    text-align: right;
+    padding: 0 60px 0 0;
+}

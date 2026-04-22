@@ -1,0 +1,17 @@
+.btn {
+    border-radius: $btn-border-radius;
+    .btn-inner {
+        .icon {
+            &::before {
+                right: 0;
+                left: auto;
+            }
+        }
+    }
+}
+.btn-sm {
+    border-radius: $btn-border-radius-sm;
+}
+.btn-lg {
+    border-radius: $btn-border-radius-lg;
+}

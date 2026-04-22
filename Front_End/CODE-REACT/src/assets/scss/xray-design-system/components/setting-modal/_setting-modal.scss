@@ -1,0 +1,46 @@
+.setting-modal{
+
+    [data-bs-dismiss="modal"]{
+        right: -10px;
+        top: -10px;
+    }
+    
+    .nav-tabs{
+        .nav-link{
+            position: relative;
+            padding: 0 0 1rem 0;
+            background-color: transparent;
+            color: var(--#{$variable-prefix}text-body);
+    
+            &.active, &:hover{
+                color: var(--#{$variable-prefix}primary);
+                background-color: transparent;
+
+                &::after{
+                    transform: scale(1);
+                }
+            }
+
+            &::after{
+                content: "";
+                background-color: var(--#{$variable-prefix}primary);
+                height: 1.5px;
+                width: 100%;
+                transform: scale(0);
+                position: absolute;
+                left: 0;
+                bottom: 0;
+                transition: transform .5s ease-in-out;
+            }
+        }
+    }
+
+    form {
+        textarea{
+            &.form-control{
+                height: 92px;
+                resize: none;
+            }
+        }
+    }
+}
