@@ -230,6 +230,10 @@ const DoctorProfile = () => {
     const emailVal = displayDoctor.email?.trim();
     const phoneVal = displayDoctor.phone?.trim();
 
+    const showNotificationsCard = isDoctorViewingOwnProfile(id);
+    const showScheduleCard = showSchedule;
+    const professionalColMd = !showNotificationsCard && !showScheduleCard ? 12 : 6;
+
     if (!id) {
         if (loading) {
             return (
@@ -426,7 +430,7 @@ const DoctorProfile = () => {
                 </Col>
                 <Col lg={8}>
                     <Row>
-                        <Col md={6}>
+                        <Col md={professionalColMd}>
                             <Card>
                                 <Card.Header className="d-flex justify-content-between">
                                     <Card.Header.Title>
@@ -488,8 +492,8 @@ const DoctorProfile = () => {
                                 </Card.Body>
                             </Card>
                         </Col>
-                        <Col md={6}>
-                            {isDoctorViewingOwnProfile(id) ? (
+                        {showNotificationsCard ? (
+                            <Col md={6}>
                                 <Card>
                                     <Card.Header className="d-flex justify-content-between">
                                         <Card.Header.Title>
@@ -522,58 +526,52 @@ const DoctorProfile = () => {
                                         )}
                                     </Card.Body>
                                 </Card>
-                            ) : (
+                            </Col>
+                        ) : null}
+                        {showScheduleCard ? (
+                            <Col md={6}>
                                 <Card>
+                                    <Card.Header className="d-flex justify-content-between">
+                                        <Card.Header.Title>
+                                            <h4 className="card-title mb-0">{t("doctorProfile.cardSchedule")}</h4>
+                                        </Card.Header.Title>
+                                    </Card.Header>
                                     <Card.Body>
-                                        <p className="text-muted small mb-0">{t("doctorProfile.notificationsOtherProfile")}</p>
+                                        {apptLoading ? (
+                                            <div className="text-center py-3">
+                                                <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                                            </div>
+                                        ) : appointments.length === 0 ? (
+                                            <p className="text-muted small mb-0">{t("doctorProfile.scheduleEmpty")}</p>
+                                        ) : (
+                                            <ul className="list-inline m-0 p-0">
+                                                {appointments.map((apt, idx) => {
+                                                    const badge = SCHEDULE_BADGES[idx % SCHEDULE_BADGES.length];
+                                                    const patientName = appointmentPatientName(apt);
+                                                    const title = apt.title || t("doctorProfile.apptDefaultTitle");
+                                                    return (
+                                                        <li key={apt._id || idx} className="mb-3">
+                                                            <h6 className="float-start mb-1">
+                                                                {patientName}
+                                                                <span className="text-muted fw-normal"> — {title}</span>
+                                                            </h6>
+                                                            <small className="float-end mt-1 text-muted">
+                                                                {apptDayLabel(apt.date, t)}
+                                                            </small>
+                                                            <div className="d-inline-block w-100">
+                                                                <span className={`badge text-bg-${badge}`}>
+                                                                    {apt.time || EM_DASH}
+                                                                </span>
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        )}
                                     </Card.Body>
                                 </Card>
-                            )}
-                        </Col>
-                        <Col md={6}>
-                            <Card>
-                                <Card.Header className="d-flex justify-content-between">
-                                    <Card.Header.Title>
-                                        <h4 className="card-title mb-0">{t("doctorProfile.cardSchedule")}</h4>
-                                    </Card.Header.Title>
-                                </Card.Header>
-                                <Card.Body>
-                                    {!showSchedule ? (
-                                        <p className="text-muted small mb-0">{t("doctorProfile.scheduleRestricted")}</p>
-                                    ) : apptLoading ? (
-                                        <div className="text-center py-3">
-                                            <div className="spinner-border spinner-border-sm text-primary" role="status" />
-                                        </div>
-                                    ) : appointments.length === 0 ? (
-                                        <p className="text-muted small mb-0">{t("doctorProfile.scheduleEmpty")}</p>
-                                    ) : (
-                                        <ul className="list-inline m-0 p-0">
-                                            {appointments.map((apt, idx) => {
-                                                const badge = SCHEDULE_BADGES[idx % SCHEDULE_BADGES.length];
-                                                const patientName = appointmentPatientName(apt);
-                                                const title = apt.title || t("doctorProfile.apptDefaultTitle");
-                                                return (
-                                                    <li key={apt._id || idx} className="mb-3">
-                                                        <h6 className="float-start mb-1">
-                                                            {patientName}
-                                                            <span className="text-muted fw-normal"> — {title}</span>
-                                                        </h6>
-                                                        <small className="float-end mt-1 text-muted">
-                                                            {apptDayLabel(apt.date, t)}
-                                                        </small>
-                                                        <div className="d-inline-block w-100">
-                                                            <span className={`badge text-bg-${badge}`}>
-                                                                {apt.time || EM_DASH}
-                                                            </span>
-                                                        </div>
-                                                    </li>
-                                                );
-                                            })}
-                                        </ul>
-                                    )}
-                                </Card.Body>
-                            </Card>
-                        </Col>
+                            </Col>
+                        ) : null}
                     </Row>
                 </Col>
             </Row>
