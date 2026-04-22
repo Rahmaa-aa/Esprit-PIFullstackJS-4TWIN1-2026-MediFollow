@@ -125,6 +125,12 @@ const createDefaultForm = () => ({
   notes: "",
 });
 
+/** Indices d’étapes — symptômes avant constantes (parcours patient). */
+const STEP_SYMPTOMS = 0;
+const STEP_VITALS = 1;
+const STEP_WELLBEING = 2;
+const STEP_REVIEW = 3;
+
 const DailyCheckIn = ({ patientId, onSubmitted, existingLog, lastRecordedWeightKg }) => {
   const { t, i18n } = useTranslation();
 
@@ -137,8 +143,8 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog, lastRecordedWeightK
 
   const STEPS = useMemo(
     () => [
-      t("dailyCheckIn.stepVitals"),
       t("dailyCheckIn.stepSymptoms"),
+      t("dailyCheckIn.stepVitals"),
       t("dailyCheckIn.stepWellbeing"),
       t("dailyCheckIn.stepReview"),
     ],
@@ -180,7 +186,7 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog, lastRecordedWeightK
   };
 
   const goNextStep = () => {
-    if (step === 0) {
+    if (step === STEP_VITALS) {
       const errs = validateVitals(form.vitals, t);
       if (Object.keys(errs).length > 0) {
         setVitalsErrors(errs);
@@ -202,7 +208,7 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog, lastRecordedWeightK
     const vitalErrs = validateVitals(form.vitals, t);
     if (Object.keys(vitalErrs).length > 0) {
       setVitalsErrors(vitalErrs);
-      setStep(0);
+      setStep(STEP_VITALS);
       setError(t("dailyCheckIn.errorFixVitals"));
       setLoading(false);
       return;
@@ -408,8 +414,8 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog, lastRecordedWeightK
 
           {error && <div className="alert alert-danger py-2 small">{error}</div>}
 
-          {/* Step 0: Vitals */}
-          {step === 0 && (
+          {/* Step 1: Constantes */}
+          {step === STEP_VITALS && (
             <div>
               <p className="text-muted small mb-3">{t("dailyCheckIn.enterVitals")}</p>
               <p className="text-muted small mb-2" style={{ fontSize: "0.8rem" }}>
@@ -567,8 +573,8 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog, lastRecordedWeightK
             </div>
           )}
 
-          {/* Step 1: Symptoms — scores (int) + présence (bool), pas de texte libre pour l’analyse */}
-          {step === 1 && (
+          {/* Step 0: Symptômes — scores (int) + présence (bool), pas de texte libre pour l’analyse */}
+          {step === STEP_SYMPTOMS && (
             <div>
               <p className="text-muted small mb-3">{t("dailyCheckIn.symptomsIntroStructured")}</p>
 
@@ -724,8 +730,8 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog, lastRecordedWeightK
             </div>
           )}
 
-          {/* Step 2: Wellbeing */}
-          {step === 2 && (
+          {/* Step 2: Bien-être */}
+          {step === STEP_WELLBEING && (
             <div>
               <div className="mb-4">
                 <label className="form-label fw-bold">{t("dailyCheckIn.painQuestion")} <span className="text-primary">{form.painLevel}/10</span></label>
@@ -758,8 +764,8 @@ const DailyCheckIn = ({ patientId, onSubmitted, existingLog, lastRecordedWeightK
             </div>
           )}
 
-          {/* Step 3: Review */}
-          {step === 3 && (
+          {/* Step 3: Vérification */}
+          {step === STEP_REVIEW && (
             <div>
               <p className="text-muted small mb-3">{t("dailyCheckIn.reviewIntro")}</p>
               <div className="row g-2 mb-3">
