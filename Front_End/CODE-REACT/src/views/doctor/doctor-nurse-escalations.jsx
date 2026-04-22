@@ -494,7 +494,7 @@ const DoctorNurseEscalations = () => {
                                   className="d-inline-flex align-items-center px-2"
                                   title={t("doctorNurseEscalations.actionsTooltip")}
                                 >
-                                  <i className="ri-add-line fs-6" />
+                                  <span className="visually-hidden">{t("doctorNurseEscalations.actionsTooltip")}</span>
                                 </Dropdown.Toggle>
                                 <Dropdown.Menu
                                   align="end"
