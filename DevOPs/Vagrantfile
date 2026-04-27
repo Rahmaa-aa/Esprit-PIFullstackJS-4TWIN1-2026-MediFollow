@@ -2,11 +2,6 @@ Vagrant.configure("2") do |config|
   config.vm.box = "bento/ubuntu-22.04"
 
   MASTER_IP = "192.168.33.10"
-  WORKER_IPS = {
-    "worker1" => "192.168.33.11",
-    "worker2" => "192.168.33.12",
-    "worker3" => "192.168.33.13",
-  }
 
   common_setup = <<-SHELL
     set -e
@@ -128,30 +123,6 @@ EOF
     echo "Join command written to /vagrant/kubeadm-join.sh"
   SHELL
 
-  worker_join = <<-SHELL
-    set -e
-    if [ -f /etc/kubernetes/kubelet.conf ]; then
-      echo "Worker already joined, skipping join."
-      exit 0
-    fi
-
-    echo "Waiting for /vagrant/kubeadm-join.sh from control-plane..."
-    for _i in $(seq 1 120); do
-      if [ -f /vagrant/kubeadm-join.sh ]; then
-        break
-      fi
-      sleep 5
-    done
-
-    if [ ! -f /vagrant/kubeadm-join.sh ]; then
-      echo "Join script not found after waiting. Re-run: vagrant provision default then vagrant provision <worker>."
-      exit 1
-    fi
-
-    sudo bash /vagrant/kubeadm-join.sh
-    echo "Worker joined successfully."
-  SHELL
-
   config.vm.define "default", primary: true do |master|
     master.vm.hostname = "medifollow-master"
     master.vm.network "private_network", ip: MASTER_IP
@@ -172,20 +143,5 @@ EOF
 
     master.vm.provision "shell", inline: common_setup
     master.vm.provision "shell", inline: master_setup
-  end
-
-  WORKER_IPS.each do |name, ip|
-    config.vm.define name do |worker|
-      worker.vm.hostname = "medifollow-#{name}"
-      worker.vm.network "private_network", ip: ip
-
-      worker.vm.provider "virtualbox" do |vb|
-        vb.memory = 3072
-        vb.cpus = 2
-      end
-
-      worker.vm.provision "shell", inline: common_setup
-      worker.vm.provision "shell", inline: worker_join
-    end
   end
 end
