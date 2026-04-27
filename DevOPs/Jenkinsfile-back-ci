@@ -27,8 +27,21 @@ pipeline {
         }
         stage('SonarQube Security Scan') {
             steps {
-                echo "Running Code Quality Checks..."
-                // Ready for Phase 4 Sonar Token
+                dir('backend') {
+                    echo "Running Code Quality Checks..."
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        sh '''
+                        docker run --rm \
+                          --network=host \
+                          -v "$(pwd):/usr/src" \
+                          sonarsource/sonar-scanner-cli:5.0 \
+                          -Dsonar.projectKey=MediFollow-Backend \
+                          -Dsonar.sources=. \
+                          -Dsonar.host.url=http://localhost:9000 \
+                          -Dsonar.login=$SONAR_TOKEN
+                        '''
+                    }
+                }
             }
         }
     }
@@ -36,7 +49,8 @@ pipeline {
     post {
         success {
             // Automatically trigger the Backend CD pipeline when CI passes!
-            build job: 'MediFollow-Back-CD', wait: false
+            // wait: true ensures CI only reports success AFTER CD also succeeds
+            build job: 'MediFollow-Back-CD', wait: true
         }
     }
 }

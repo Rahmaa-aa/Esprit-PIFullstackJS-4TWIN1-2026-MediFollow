@@ -28,13 +28,11 @@ pipeline {
         }
         stage('Deploy to Vercel') {
             steps {
-                dir('Front_End/CODE-REACT') {
-                    echo "Triggering Vercel Cloud Automation..."
-                    // Force lowercase name override to bypass Vercel API crash
-                    sh 'echo \'{"name": "medifollow-frontend"}\' > vercel.json'
-                    withCredentials([string(credentialsId: 'VERCEL_TOKEN', variable: 'VERCEL_TOKEN')]) {
-                        sh 'npx vercel --prod --yes --token $VERCEL_TOKEN'
-                    }
+                echo "Triggering Vercel Cloud Automation..."
+                // Force lowercase name override to bypass Vercel API crash
+                sh 'echo \'{"name": "medifollow-frontend"}\' > vercel.json'
+                withCredentials([string(credentialsId: 'VERCEL_TOKEN', variable: 'VERCEL_TOKEN')]) {
+                    sh 'npx vercel --prod --yes --token $VERCEL_TOKEN'
                 }
             }
         }
