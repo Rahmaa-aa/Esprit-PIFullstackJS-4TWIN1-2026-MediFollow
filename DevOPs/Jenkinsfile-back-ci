@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    environment {
+        SONAR_HOST_URL = 'http://localhost:9000'
+    }
     
     stages {
         stage('Checkout Repository') {
@@ -29,18 +32,29 @@ pipeline {
             steps {
                 dir('backend') {
                     echo "Running Code Quality Checks..."
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        sh '''
-                        docker run --rm \
-                          --network=host \
-                          --add-host=host.docker.internal:host-gateway \
-                          -v "$(pwd):/usr/src" \
-                          sonarsource/sonar-scanner-cli:5.0 \
-                          -Dsonar.projectKey=MediFollow-Backend \
-                          -Dsonar.sources=. \
-                          -Dsonar.host.url=http://host.docker.internal:9000 \
-                          -Dsonar.login=$SONAR_TOKEN
-                        '''
+                    script {
+                        // Keep CI/CD moving when SonarQube service is temporarily down.
+                        int sonarReachable = sh(
+                            script: 'curl -sSf "$SONAR_HOST_URL/api/system/status" >/dev/null',
+                            returnStatus: true
+                        )
+
+                        if (sonarReachable != 0) {
+                            echo "WARNING: SonarQube unreachable at ${SONAR_HOST_URL}; skipping scan for this run."
+                        } else {
+                            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                                sh '''
+                                docker run --rm \
+                                  --network=host \
+                                  -v "$(pwd):/usr/src" \
+                                  sonarsource/sonar-scanner-cli:5.0 \
+                                  -Dsonar.projectKey=MediFollow-Backend \
+                                  -Dsonar.sources=. \
+                                  -Dsonar.host.url=$SONAR_HOST_URL \
+                                  -Dsonar.login=$SONAR_TOKEN
+                                '''
+                            }
+                        }
                     }
                 }
             }
