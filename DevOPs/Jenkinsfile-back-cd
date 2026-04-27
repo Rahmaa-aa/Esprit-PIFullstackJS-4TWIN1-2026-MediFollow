@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    environment {
+        K8S_NAMESPACE = 'medifollow-staging'
+    }
     
     stages {
         stage('Checkout Repository') {
@@ -33,8 +36,31 @@ pipeline {
         }
         stage('Deploy to Staging (Kubeadm)') {
             steps {
-                echo "Applying Kubernetes YAML to local Kubeadm cluster..."
-                // Ready for Phase 3 K8s YAML deployment
+                echo "Deploying backend to kubeadm staging cluster..."
+                withCredentials([
+                    file(credentialsId: 'kubeconfig-staging', variable: 'KUBECONFIG_FILE'),
+                    usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER'),
+                    string(credentialsId: 'k8s-mongo-uri', variable: 'MONGO_URI'),
+                    string(credentialsId: 'k8s-cloudinary-url', variable: 'CLOUDINARY_URL')
+                ]) {
+                    sh '''
+                        set -eu
+                        export KUBECONFIG="$KUBECONFIG_FILE"
+
+                        kubectl version --client
+                        kubectl apply -f DevOPs/k8s/namespace.yaml
+
+                        kubectl -n "$K8S_NAMESPACE" create secret generic medifollow-secrets \
+                          --from-literal=MONGO_URI="$MONGO_URI" \
+                          --from-literal=CLOUDINARY_URL="$CLOUDINARY_URL" \
+                          --dry-run=client -o yaml | kubectl apply -f -
+
+                        kubectl apply -f DevOPs/k8s/backend-deployment.yaml
+                        kubectl apply -f DevOPs/k8s/backend-service.yaml
+                        kubectl -n "$K8S_NAMESPACE" set image deployment/medifollow-backend-deployment medifollow-backend="$DOCKER_USER/medifollow-backend:latest"
+                        kubectl rollout status deployment/medifollow-backend-deployment -n "$K8S_NAMESPACE" --timeout=180s
+                    '''
+                }
             }
         }
     }

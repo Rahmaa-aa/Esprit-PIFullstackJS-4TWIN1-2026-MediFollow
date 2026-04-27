@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    environment {
+        K8S_NAMESPACE = 'medifollow-staging'
+    }
     
     stages {
         stage('Checkout Repository') {
@@ -33,6 +36,27 @@ pipeline {
                 sh 'echo \'{"name": "medifollow-frontend"}\' > vercel.json'
                 withCredentials([string(credentialsId: 'VERCEL_TOKEN', variable: 'VERCEL_TOKEN')]) {
                     sh 'npx vercel --prod --yes --token $VERCEL_TOKEN'
+                }
+            }
+        }
+        stage('Deploy to Staging (Kubeadm)') {
+            steps {
+                echo "Deploying frontend to kubeadm staging cluster..."
+                withCredentials([
+                    file(credentialsId: 'kubeconfig-staging', variable: 'KUBECONFIG_FILE'),
+                    usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')
+                ]) {
+                    sh '''
+                        set -eu
+                        export KUBECONFIG="$KUBECONFIG_FILE"
+
+                        kubectl version --client
+                        kubectl apply -f DevOPs/k8s/namespace.yaml
+                        kubectl apply -f DevOPs/k8s/frontend-deployment.yaml
+                        kubectl apply -f DevOPs/k8s/frontend-service.yaml
+                        kubectl -n "$K8S_NAMESPACE" set image deployment/medifollow-frontend-deployment medifollow-frontend="$DOCKER_USER/medifollow-front:latest"
+                        kubectl rollout status deployment/medifollow-frontend-deployment -n "$K8S_NAMESPACE" --timeout=180s
+                    '''
                 }
             }
         }
