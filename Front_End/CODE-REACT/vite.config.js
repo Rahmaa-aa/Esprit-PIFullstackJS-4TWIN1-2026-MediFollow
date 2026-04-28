@@ -171,19 +171,57 @@ function landingHeroLcpPreloadPlugin(viteBase) {
   };
 }
 
+/**
+ * Vite nomme le CSS d’entrée d’après la *clé* de `rollupOptions.input` (`main` → `main-*.css`,
+ * sinon `index-*.css`). Cible donc les CSS importés par les chunks `isEntry` du bundle, et au
+ * besoin (pas de bundle, ex. dev) un fallback regex (`main|index`).
+ */
 function asyncEntryCssPlugin() {
   return {
     name: "async-entry-css",
-    enforce: "post",
-    transformIndexHtml(html) {
-      return html.replace(
-        /<link\s+rel="stylesheet"\s+([^>]*?)href="([^"]*assets\/index-[^"]+\.css)"([^>]*)>/gi,
-        (_, _before, href, _after) => {
-          const cross = /crossorigin/i.test(`${_before}${_after}`) ? " crossorigin" : "";
-          return `<link rel="preload" as="style"${cross} href="${href}" onload="this.onload=null;this.rel='stylesheet'">
+    transformIndexHtml: {
+      order: "post",
+      handler(html, ctx) {
+        const entryCssFiles = new Set();
+        const bundle = ctx?.bundle;
+        if (bundle) {
+          for (const item of Object.values(bundle)) {
+            if (
+              item &&
+              item.type === "chunk" &&
+              item.isEntry &&
+              /* Cette feuille est déjà chargée en non-bloquant par `deferredIconFontsEarlyCssPlugin`. */
+              item.name !== "deferred-icon-fonts" &&
+              item.viteMetadata?.importedCss
+            ) {
+              for (const css of item.viteMetadata.importedCss) {
+                entryCssFiles.add(css);
+              }
+            }
+          }
+        }
+
+        return html.replace(
+          /<link\s+rel="stylesheet"\s+([^>]*?)href="([^"]+\.css)"([^>]*)>/gi,
+          (match, before, href, after) => {
+            let isEntryCss = false;
+            if (entryCssFiles.size > 0) {
+              for (const css of entryCssFiles) {
+                if (href.endsWith(css) || href.includes(`/${css}`)) {
+                  isEntryCss = true;
+                  break;
+                }
+              }
+            } else {
+              isEntryCss = /\/assets\/(?:main|index)-[^/"]+\.css$/.test(href);
+            }
+            if (!isEntryCss) return match;
+            const cross = /crossorigin/i.test(`${before}${after}`) ? " crossorigin" : "";
+            return `<link rel="preload" as="style"${cross} href="${href}" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet"${cross} href="${href}"></noscript>`;
-        },
-      );
+          },
+        );
+      },
     },
   };
 }
