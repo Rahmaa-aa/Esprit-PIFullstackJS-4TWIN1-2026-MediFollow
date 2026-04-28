@@ -24,6 +24,8 @@ import FloatingChatbotWidget from "../components/FloatingChatbotWidget";
 import "../assets/scss/xray-dashboard.scss";
 import "../assets/scss/customizer.scss";
 import "../assets/vendor/phosphor-icons/Fonts/regular/style.css";
+import "../assets/vendor/phosphor-icons/Fonts/duotone/style.css";
+import "../assets/vendor/phosphor-icons/Fonts/fill/style.css";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
