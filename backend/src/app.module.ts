@@ -22,6 +22,7 @@ import { VideoMeetingModule } from './video-meeting/video-meeting.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
 import { ContactModule } from './contact/contact.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { MlCnnModule } from './ml-cnn/ml-cnn.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     VideoMeetingModule,
     ChatbotModule,
     ContactModule,
+    MlCnnModule,
   ],
 })
 export class AppModule {}
