@@ -1,15 +1,18 @@
 import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { Nurse } from './schemas/nurse.schema';
 import { EmailService } from '../auth/email.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { resolveProfileImageDataUrlIfNeeded } from '../cloudinary/profile-image-data-url.util';
 
 @Injectable()
 export class NurseService {
   constructor(
     @InjectModel(Nurse.name) private nurseModel: Model<Nurse>,
     private emailService: EmailService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   async create(data: Partial<Nurse>) {
@@ -18,10 +21,23 @@ export class NurseService {
     if (!data.password) throw new BadRequestException('Le mot de passe est requis');
     const plainPassword = data.password;
     const hashed = await bcrypt.hash(plainPassword, 10);
-    const nurse = await this.nurseModel.create({
+
+    const newId = new Types.ObjectId();
+    const createPayload: Partial<Nurse> & { _id: Types.ObjectId; password: string } = {
       ...data,
+      _id: newId,
       password: hashed,
-    });
+    };
+    if (createPayload.profileImage) {
+      createPayload.profileImage = await resolveProfileImageDataUrlIfNeeded(this.cloudinaryService, {
+        profileImage: createPayload.profileImage as string,
+        previousUrl: undefined,
+        folder: 'medifollow/avatars/nurse',
+        publicIdForUpload: `nurse_${String(newId)}`,
+      }) as string;
+    }
+
+    const nurse = await this.nurseModel.create(createPayload);
     try {
       await this.emailService.sendNurseCredentials(
         nurse.email,
@@ -61,6 +77,14 @@ export class NurseService {
       delete updateData.password;
     }
     delete updateData._id;
+    if (Object.prototype.hasOwnProperty.call(updateData, 'profileImage')) {
+      updateData.profileImage = await resolveProfileImageDataUrlIfNeeded(this.cloudinaryService, {
+        profileImage: updateData.profileImage as string | undefined,
+        previousUrl: nurse.profileImage,
+        folder: 'medifollow/avatars/nurse',
+        publicIdForUpload: `nurse_${String(id)}`,
+      });
+    }
     const updated = await this.nurseModel.findByIdAndUpdate(id, { $set: updateData }, { new: true }).select('-password').exec();
     return updated;
   }

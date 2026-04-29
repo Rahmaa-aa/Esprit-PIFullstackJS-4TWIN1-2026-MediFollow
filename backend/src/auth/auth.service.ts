@@ -19,6 +19,8 @@ import { PasskeyCredential } from './schemas/passkey-credential.schema';
 import { PasskeyChallenge } from './schemas/passkey-challenge.schema';
 import { FaceLoginProfile } from './schemas/face-login-profile.schema';
 import { DepartmentCatalog } from '../department/schemas/department-catalog.schema';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { resolveProfileImageDataUrlIfNeeded } from '../cloudinary/profile-image-data-url.util';
 
 const {
   generateAuthenticationOptions,
@@ -41,7 +43,75 @@ export class AuthService {
     @InjectModel(DepartmentCatalog.name) private departmentCatalogModel: Model<DepartmentCatalog>,
     private jwtService: JwtService,
     private emailService: EmailService,
+    private cloudinaryService: CloudinaryService,
   ) {}
+
+  /**
+   * Upload la photo de profil de l'utilisateur connecté sur Cloudinary,
+   * met à jour le champ `profileImage` dans la collection correspondant au rôle,
+   * et tente de supprimer l'ancienne image Cloudinary si elle existait.
+   */
+  async updateMyProfileImage(
+    userId: string,
+    role: string,
+    file: { buffer: Buffer; mimetype: string },
+  ) {
+    if (!userId) {
+      throw new BadRequestException('Identifiant utilisateur manquant.');
+    }
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Fichier image manquant.');
+    }
+    const allowedMime = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']);
+    if (!allowedMime.has(file.mimetype)) {
+      throw new BadRequestException('Format non supporté (JPEG, PNG, WebP ou GIF requis).');
+    }
+
+    const targetRole = String(role || '').toLowerCase();
+    const collectionMap: Record<string, Model<unknown>> = {
+      doctor: this.doctorModel as Model<unknown>,
+      patient: this.patientModel as Model<unknown>,
+      nurse: this.nurseModel as Model<unknown>,
+      admin: this.userModel as Model<unknown>,
+      superadmin: this.userModel as Model<unknown>,
+      auditor: this.userModel as Model<unknown>,
+      carecoordinator: this.userModel as Model<unknown>,
+    };
+    const model = collectionMap[targetRole];
+    if (!model) {
+      throw new BadRequestException(`Rôle non supporté: ${role}`);
+    }
+
+    const current = await model.findById(userId).lean<{ profileImage?: string } | null>().exec();
+    if (!current) {
+      throw new UnauthorizedException('Utilisateur introuvable.');
+    }
+
+    const upload = await this.cloudinaryService.uploadImage(
+      file.buffer,
+      `medifollow/avatars/${targetRole}`,
+      `user_${userId}`,
+    );
+
+    await model.updateOne({ _id: userId }, { $set: { profileImage: upload.url } }).exec();
+
+    const previousUrl = current.profileImage;
+    if (previousUrl && previousUrl !== upload.url) {
+      const previousPublicId = this.cloudinaryService.extractPublicIdFromUrl(previousUrl);
+      const isSameAsNew = previousPublicId === upload.publicId;
+      if (previousPublicId && !isSameAsNew && previousPublicId.startsWith('medifollow/')) {
+        await this.cloudinaryService.deleteResource(previousPublicId, 'image');
+      }
+    }
+
+    return {
+      profileImage: upload.url,
+      publicId: upload.publicId,
+      width: upload.width,
+      height: upload.height,
+      bytes: upload.bytes,
+    };
+  }
 
   private async releaseAdminCatalogAssignments(adminId: Types.ObjectId | string) {
     const oid = new Types.ObjectId(String(adminId));
@@ -715,7 +785,14 @@ export class AuthService {
     if (data.password) {
       updateData.password = await bcrypt.hash(data.password, 10);
     }
-    if (data.profileImage !== undefined) updateData.profileImage = data.profileImage;
+    if (data.profileImage !== undefined) {
+      updateData.profileImage = await resolveProfileImageDataUrlIfNeeded(this.cloudinaryService, {
+        profileImage: data.profileImage,
+        previousUrl: user.profileImage,
+        folder: `medifollow/avatars/${String(user.role)}`,
+        publicIdForUpload: `user_${userId}`,
+      });
+    }
     if (data.alternateEmail !== undefined) updateData.alternateEmail = data.alternateEmail;
     if (data.languages !== undefined) updateData.languages = data.languages;
     if (data.socialMedia !== undefined) updateData.socialMedia = data.socialMedia;

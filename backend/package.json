@@ -4,6 +4,8 @@
   "description": "MediFollow API - NestJS + MongoDB Atlas",
   "scripts": {
     "test:db": "node test-mongo-connection.js",
+    "cloudinary:ping": "node scripts/cloudinary-ping.js",
+    "cloudinary:test-upload": "node scripts/cloudinary-test-upload.js",
     "build": "nest build",
     "dev": "nest start --watch",
     "start": "nest build && node dist/main.js",
@@ -24,6 +26,7 @@
     "@nestjs/websockets": "^10.4.22",
     "@simplewebauthn/server": "^13.2.3",
     "bcrypt": "^5.1.1",
+    "cloudinary": "^2.10.0",
     "lodash": "^4.17.21",
     "mongodb": "^7.1.0",
     "mongoose": "^8.0.0",

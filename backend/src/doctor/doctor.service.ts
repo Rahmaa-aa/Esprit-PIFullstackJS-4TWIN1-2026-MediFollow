@@ -1,12 +1,14 @@
 import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { Doctor } from './schemas/doctor.schema';
 import { Patient } from '../patient/schemas/patient.schema';
 import { Appointment } from '../appointment/schemas/appointment.schema';
 import { EmailService } from '../auth/email.service';
 import { normalizeDoctorId } from '../doctor-availability/doctor-availability.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { resolveProfileImageDataUrlIfNeeded } from '../cloudinary/profile-image-data-url.util';
 
 @Injectable()
 export class DoctorService {
@@ -15,6 +17,7 @@ export class DoctorService {
     @InjectModel(Patient.name) private patientModel: Model<Patient>,
     @InjectModel(Appointment.name) private appointmentModel: Model<Appointment>,
     private emailService: EmailService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   private localTodayYmd(): string {
@@ -37,11 +40,25 @@ export class DoctorService {
     if (!data.password) throw new BadRequestException('Le mot de passe est requis');
     const plainPassword = data.password;
     const hashed = await bcrypt.hash(plainPassword, 10);
-    const doctor = await this.doctorModel.create({
+
+    const newId = new Types.ObjectId();
+
+    const createPayload: Partial<Doctor> & { _id: Types.ObjectId; password: string } = {
       ...data,
+      _id: newId,
       password: hashed,
       academicTitle: this.normalizeAcademicTitle(data.academicTitle),
-    });
+    };
+    if (createPayload.profileImage) {
+      createPayload.profileImage = await resolveProfileImageDataUrlIfNeeded(this.cloudinaryService, {
+        profileImage: createPayload.profileImage as string,
+        previousUrl: undefined,
+        folder: 'medifollow/avatars/doctor',
+        publicIdForUpload: `doctor_${String(newId)}`,
+      }) as string;
+    }
+
+    const doctor = await this.doctorModel.create(createPayload);
     try {
       await this.emailService.sendDoctorCredentials(
         doctor.email,
@@ -104,6 +121,14 @@ export class DoctorService {
     delete updateData._id;
     if (data.academicTitle !== undefined && data.academicTitle !== null) {
       updateData.academicTitle = this.normalizeAcademicTitle(data.academicTitle);
+    }
+    if (Object.prototype.hasOwnProperty.call(updateData, 'profileImage')) {
+      updateData.profileImage = await resolveProfileImageDataUrlIfNeeded(this.cloudinaryService, {
+        profileImage: updateData.profileImage as string | undefined,
+        previousUrl: doctor.profileImage,
+        folder: 'medifollow/avatars/doctor',
+        publicIdForUpload: `doctor_${String(id)}`,
+      });
     }
     const updated = await this.doctorModel.findByIdAndUpdate(id, { $set: updateData }, { new: true }).select('-password').lean().exec();
     if (!updated) throw new NotFoundException('Médecin non trouvé');
