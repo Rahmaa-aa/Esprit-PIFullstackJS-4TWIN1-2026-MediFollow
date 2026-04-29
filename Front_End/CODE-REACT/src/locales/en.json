@@ -3092,9 +3092,9 @@
     "mlModels": {
       "brain_tumor": "Brain MRI (4 classes)",
       "bone_break": "Bone / fractures — subtypes (e.g. avulsion, spiral)",
-      "lung_cancer": "Chest / lung (4 classes)",
-      "renal": "Kidney (4 classes)",
-      "skin_lesions": "Skin lesions (2 classes)"
+      "lung_cancer": "Lungs — subtypes (adenocarcinoma, SCC, etc.)",
+      "renal": "Kidney — cyst / stone / mass pattern",
+      "skin_lesions": "Skin — benign vs high-risk"
     },
     "multiclassPrediction": "Top prediction",
     "classProbabilities": "Class probabilities",

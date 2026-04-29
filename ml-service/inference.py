@@ -27,9 +27,22 @@ MODEL_FILES: dict[str, str] = {
 # Libellés indicatifs (datasets courants) — à ajuster si besoin via labels.json
 DEFAULT_LABELS: dict[str, list[str]] = {
     "brain_tumor": ["glioma", "meningioma", "pituitary", "no_tumor"],
-    "lung_cancer": ["class_0", "class_1", "class_2", "class_3"],
-    "renal": ["class_0", "class_1", "class_2", "class_3"],
-    "skin_lesions": ["benign", "malignant"],
+    "lung_cancer": [
+        "Adenocarcinoma (pattern NSCLC)",
+        "Squamous cell carcinoma pattern",
+        "Large cell / other NSCLC pattern",
+        "No primary lung malignancy (benign / non-cancer baseline)",
+    ],
+    "renal": [
+        "Normal kidney / no focal lesion",
+        "Simple benign cyst",
+        "Calculus / obstructive pattern",
+        "Solid mass / mass-like lesion (suspicion)",
+    ],
+    "skin_lesions": [
+        "Benign / low malignant concern",
+        "Malignant or high-risk lesion (e.g. melanoma-like)",
+    ],
     "bone_break": [
         "Avulsion fracture",
         "Comminuted fracture",

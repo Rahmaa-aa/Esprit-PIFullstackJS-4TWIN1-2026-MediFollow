@@ -3092,9 +3092,9 @@
     "mlModels": {
       "brain_tumor": "Tumeur cérébrale (IRM — 4 classes)",
       "bone_break": "Fractures / os — types (Avulsion, Spiral, etc.)",
-      "lung_cancer": "Thorax / poumon (4 classes)",
-      "renal": "Rein (4 classes)",
-      "skin_lesions": "Lésions cutanées (2 classes)"
+      "lung_cancer": "Poumon — sous-types (adénocarcinome, SCC, etc.)",
+      "renal": "Rein — kyste / calcul / masse, etc.",
+      "skin_lesions": "Peau — bénin vs haut risque"
     },
     "multiclassPrediction": "Prédiction principale",
     "classProbabilities": "Probabilités par classe",
