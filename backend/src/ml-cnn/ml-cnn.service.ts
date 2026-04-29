@@ -17,6 +17,7 @@ export const ML_CNN_MODEL_IDS = [
 
 export type MlCnnModelId = (typeof ML_CNN_MODEL_IDS)[number];
 
+/** Réponse agrégée (inférence + lecture clinique prudentielle du serveur ML). */
 export type MlCnnPredictResult = {
   modelKey: string;
   numClasses: number;
@@ -24,6 +25,13 @@ export type MlCnnPredictResult = {
   classIndex: number;
   label: string;
   labels: string[];
+  uncertaintyLevel?: string;
+  topProbabilityPct?: number;
+  marginPctPoints?: number;
+  entropyNormalized?: number;
+  runnerUpProbabilityPct?: number;
+  runnerUpIndex?: number;
+  runnerUpLabel?: string;
 };
 
 @Injectable()
@@ -100,10 +108,29 @@ export class MlCnnService {
     const classIndex = Number(body['classIndex']);
     const label = String(body['label'] ?? '');
     const labels = Array.isArray(body['labels']) ? (body['labels'] as string[]) : [];
+    const un = typeof body['uncertaintyLevel'] === 'string' ? String(body['uncertaintyLevel']).trim() : undefined;
+    const topPctRaw = Number(body['topProbabilityPct']);
+    const marginPctRaw = Number(body['marginPctPoints']);
+    const entropyRaw = Number(body['entropyNormalized']);
+    const runnerUpPctRaw = Number(body['runnerUpProbabilityPct']);
+    const ruIdxRaw = body['runnerUpIndex'];
+    const runnerUpIdx =
+      ruIdxRaw === null || ruIdxRaw === undefined || ruIdxRaw === ''
+        ? undefined
+        : Number(ruIdxRaw);
+    const runnerUpLab =
+      typeof body['runnerUpLabel'] === 'string' ? String(body['runnerUpLabel']) : undefined;
 
     if (!Number.isFinite(numClasses) || !Array.isArray(probs)) {
       throw new BadGatewayException('Réponse ML incomplète.');
     }
+
+    const topProbabilityPct = Number.isFinite(topPctRaw) ? topPctRaw : undefined;
+    const marginPctPoints = Number.isFinite(marginPctRaw) ? marginPctRaw : undefined;
+    const entropyNormalized = Number.isFinite(entropyRaw) ? entropyRaw : undefined;
+    const runnerUpProbabilityPct = Number.isFinite(runnerUpPctRaw) ? runnerUpPctRaw : undefined;
+    const runnerUpIndex =
+      runnerUpIdx !== undefined && Number.isFinite(runnerUpIdx) ? runnerUpIdx : undefined;
 
     return {
       modelKey,
@@ -112,6 +139,13 @@ export class MlCnnService {
       classIndex,
       label,
       labels,
+      ...(un ? { uncertaintyLevel: un } : {}),
+      ...(topProbabilityPct !== undefined ? { topProbabilityPct } : {}),
+      ...(marginPctPoints !== undefined ? { marginPctPoints } : {}),
+      ...(entropyNormalized !== undefined ? { entropyNormalized } : {}),
+      ...(runnerUpProbabilityPct !== undefined ? { runnerUpProbabilityPct } : {}),
+      ...(runnerUpIndex !== undefined ? { runnerUpIndex } : {}),
+      ...(runnerUpLab ? { runnerUpLabel: runnerUpLab } : {}),
     };
   }
 

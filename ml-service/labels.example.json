@@ -1,0 +1,8 @@
+{
+  "_comment": "Copy to labels.json beside this file OR set path /app/labels.json. Order MUST match keras training outputs (same index as softmax). Rename values to match your datasets documentation.",
+  "bone_break": [],
+  "brain_tumor": [],
+  "lung_cancer": [],
+  "renal": [],
+  "skin_lesions": []
+}

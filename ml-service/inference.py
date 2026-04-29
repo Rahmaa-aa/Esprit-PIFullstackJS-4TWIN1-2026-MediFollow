@@ -30,7 +30,19 @@ DEFAULT_LABELS: dict[str, list[str]] = {
     "lung_cancer": ["class_0", "class_1", "class_2", "class_3"],
     "renal": ["class_0", "class_1", "class_2", "class_3"],
     "skin_lesions": ["benign", "malignant"],
-    "bone_break": [f"class_{i}" for i in range(11)],
+    "bone_break": [
+        "Avulsion fracture",
+        "Comminuted fracture",
+        "Fracture Dislocation",
+        "Greenstick fracture",
+        "Hairline Fracture",
+        "Impacted fracture",
+        "Longitudinal fracture",
+        "Lung Cancer Classification",
+        "Oblique fracture",
+        "Pathological fracture",
+        "Spiral Fracture",
+    ],
 }
 
 
@@ -79,6 +91,38 @@ class ModelRegistry:
 registry = ModelRegistry()
 
 
+def _multiclass_uncertainty(probs: np.ndarray) -> dict[str, Any]:
+    """Indicateurs lisibles médecins : pas un diagnostic."""
+    probs = np.asarray(probs, dtype=np.float64).flatten()
+    if probs.size < 2:
+        return {}
+    probs = probs / probs.sum() if probs.sum() > 0 else probs
+    sorted_p = np.sort(probs)[::-1]
+    top = float(sorted_p[0])
+    second = float(sorted_p[1]) if sorted_p.size > 1 else 0.0
+    margin = top - second
+    # seuils pragmatiques (softmax) : incertitude élevée si pas de classe dominante nette
+    if top < 0.35 or margin < 0.08:
+        level = "high"
+    elif top < 0.55 or margin < 0.15:
+        level = "moderate"
+    else:
+        level = "low"
+    # entropie normalisée 0–1 (1 = très plat)
+    ent = float(-np.sum(probs * np.log(probs + 1e-12)))
+    denom = np.log(float(probs.size)) if probs.size > 1 else 1.0
+    entropy_norm = float(ent / denom) if denom > 1e-9 else 0.0
+
+    return {
+        "uncertaintyLevel": level,
+        "topProbabilityPct": round(top * 1000) / 10,
+        "marginPctPoints": round(margin * 1000) / 10,
+        "entropyNormalized": round(entropy_norm * 1000) / 10,
+        "runnerUpProbabilityPct": round(second * 1000) / 10,
+        "runnerUpIndex": int(np.argsort(-probs)[1]) if probs.size > 1 else None,
+    }
+
+
 def predict_image_bytes(key: str, raw: bytes) -> dict[str, Any]:
     model = registry.ensure_loaded(key)
     h, w = int(model.input_shape[1]), int(model.input_shape[2])
@@ -96,13 +140,17 @@ def predict_image_bytes(key: str, raw: bytes) -> dict[str, Any]:
         p_pos = float(probs.flat[0])
         p_pos = max(0.0, min(1.0, p_pos))
         labels = registry.labels_for(key, 2)
+        probs2 = np.asarray([1.0 - p_pos, p_pos], dtype=np.float64)
+        probs2 /= probs2.sum() if probs2.sum() > 0 else probs2
+        unc_meta = _multiclass_uncertainty(probs2)
         return {
             "modelKey": key,
             "numClasses": 2,
-            "probabilities": [1.0 - p_pos, p_pos],
+            "probabilities": [float(1.0 - p_pos), float(p_pos)],
             "classIndex": 1 if p_pos >= 0.5 else 0,
             "label": labels[1] if p_pos >= 0.5 else labels[0],
             "labels": labels,
+            **unc_meta,
         }
 
     if np.any(probs < 0) or np.any(probs > 1.0) or not np.isclose(probs.sum(), 1.0, atol=0.01):
@@ -113,6 +161,10 @@ def predict_image_bytes(key: str, raw: bytes) -> dict[str, Any]:
 
     class_index = int(np.argmax(probs))
     label_list = registry.labels_for(key, n)
+    out_unc = _multiclass_uncertainty(probs)
+    ru = out_unc.get("runnerUpIndex")
+    if isinstance(ru, int) and 0 <= ru < len(label_list):
+        out_unc["runnerUpLabel"] = label_list[ru]
     return {
         "modelKey": key,
         "numClasses": n,
@@ -120,4 +172,5 @@ def predict_image_bytes(key: str, raw: bytes) -> dict[str, Any]:
         "classIndex": class_index,
         "label": label_list[class_index] if class_index < len(label_list) else f"class_{class_index}",
         "labels": label_list,
+        **out_unc,
     }

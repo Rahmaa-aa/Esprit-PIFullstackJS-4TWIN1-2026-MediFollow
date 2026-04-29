@@ -14,12 +14,28 @@ import {
 } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { brainTumorApi } from "../services/api";
+import { brainTumorApi, mlCnnApi } from "../services/api";
 import { normalizeMongoId } from "../utils/mongoId";
 import "../views/doctor/doctor-brain-mri.scss";
 
 const MAX_BYTES = 16 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp", "image/bmp", "image/tiff", "image/gif"]);
+
+/** Aligné sur backend — modèles CNN (Render). */
+const ML_CNN_MODEL_IDS = ["brain_tumor", "bone_break", "lung_cancer", "renal", "skin_lesions"];
+
+function isMlCnnPayload(r) {
+  return !!(r && Array.isArray(r.probabilities) && typeof r.label === "string" && typeof r.modelKey === "string");
+}
+
+function legacyBinaryResult(r) {
+  return !!(
+    r &&
+    typeof r.prediction === "number" &&
+    typeof r.probability === "number" &&
+    !isMlCnnPayload(r)
+  );
+}
 
 function formatRecordDate(iso, localeTag) {
   if (!iso) return "—";
@@ -59,6 +75,7 @@ const BrainMriAnalysisPage = ({ variant = "doctor", patientId: patientIdProp, em
   /** Médecin avec dossier patient : historique filtré ; sinon historique « mes analyses ». */
   const doctorUsesPatientContext = !isPatient && !!normalizedPropPid;
 
+  const [selectedMlModel, setSelectedMlModel] = useState("brain_tumor");
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -141,16 +158,17 @@ const BrainMriAnalysisPage = ({ variant = "doctor", patientId: patientIdProp, em
     });
   };
 
-  const onAnalyze = async () => {
-    if (!file || isPatient) return;
+  const onRunCNN = async () => {
+    if (!file) return;
     setLoading(true);
     setError("");
     setResult(null);
     setCareTeamNotified(false);
     setPendingSent(false);
     try {
-      const savePid = normalizedPropPid || undefined;
-      const data = await brainTumorApi.predictDoctor(file, savePid);
+      const data = isPatient
+        ? await mlCnnApi.predictPatient(file, selectedMlModel)
+        : await mlCnnApi.predictDoctor(file, selectedMlModel);
       setResult(data);
       void loadHistory();
     } catch (e) {
@@ -202,12 +220,14 @@ const BrainMriAnalysisPage = ({ variant = "doctor", patientId: patientIdProp, em
   );
 
   const overlaySrc =
-    result?.overlayPngBase64 != null ? `data:image/png;base64,${result.overlayPngBase64}` : null;
-  const rawProb = Number(result?.probability);
+    legacyBinaryResult(result) && result?.overlayPngBase64 != null
+      ? `data:image/png;base64,${result.overlayPngBase64}`
+      : null;
+  const rawProb = legacyBinaryResult(result) ? Number(result?.probability) : NaN;
   const probPct = Number.isFinite(rawProb)
     ? Math.min(100, Math.max(0, Math.round(rawProb * 1000) / 10))
     : 0;
-  const isTumor = result?.prediction === 1;
+  const isTumor = legacyBinaryResult(result) && result?.prediction === 1;
 
   const heroNs = isPatient ? "patientBrainMri" : "doctorBrainMri";
   const showHistory = !!userId;
@@ -252,13 +272,31 @@ const BrainMriAnalysisPage = ({ variant = "doctor", patientId: patientIdProp, em
                   <Card.Body className="p-4">
                     <Form.Group className="mb-3">
                       <Form.Label className="small fw-semibold text-secondary text-uppercase">
+                        {t("doctorBrainMri.analysisType")}
+                      </Form.Label>
+                      <Form.Select
+                        value={selectedMlModel}
+                        onChange={(e) => setSelectedMlModel(e.target.value)}
+                        disabled={loading || sendLoading}
+                        className="form-select-sm"
+                      >
+                        {ML_CNN_MODEL_IDS.map((id) => (
+                          <option key={id} value={id}>
+                            {t(`doctorBrainMri.mlModels.${id}`)}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                      <Form.Label className="small fw-semibold text-secondary text-uppercase">
                         {t("doctorBrainMri.chooseFile")}
                       </Form.Label>
                       <Form.Control
                         type="file"
                         accept="image/*"
                         onChange={onPick}
-                        disabled={isPatient ? sendLoading : loading}
+                        disabled={loading || sendLoading}
                         className="form-control-sm"
                       />
                       {file && (
@@ -286,31 +324,51 @@ const BrainMriAnalysisPage = ({ variant = "doctor", patientId: patientIdProp, em
 
                     <div className="d-grid gap-2 mt-4">
                       {isPatient ? (
-                        <Button
-                          variant="primary"
-                          size="lg"
-                          className="fw-semibold"
-                          onClick={onSendToDoctor}
-                          disabled={!file || sendLoading}
-                        >
-                          {sendLoading ? (
-                            <>
-                              <Spinner animation="border" size="sm" className="me-2" role="status" />
-                              {t("patientBrainMri.sendingImage")}
-                            </>
-                          ) : (
-                            <>
-                              <i className="ri-send-plane-fill me-2" aria-hidden />
-                              {t("patientBrainMri.sendToDoctor")}
-                            </>
-                          )}
-                        </Button>
+                        <>
+                          <Button
+                            variant="primary"
+                            size="lg"
+                            className="fw-semibold"
+                            onClick={() => void onRunCNN()}
+                            disabled={!file || loading}
+                          >
+                            {loading ? (
+                              <>
+                                <Spinner animation="border" size="sm" className="me-2" role="status" />
+                                {t("doctorBrainMri.analyzing")}
+                              </>
+                            ) : (
+                              <>
+                                <i className="ri-radar-line me-2" aria-hidden />
+                                {t("doctorBrainMri.analyze")}
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            onClick={onSendToDoctor}
+                            disabled={!file || sendLoading || loading}
+                          >
+                            {sendLoading ? (
+                              <>
+                                <Spinner animation="border" size="sm" className="me-2" role="status" />
+                                {t("patientBrainMri.sendingImage")}
+                              </>
+                            ) : (
+                              <>
+                                <i className="ri-send-plane-line me-2" aria-hidden />
+                                {t("patientBrainMri.sendToDoctor")}
+                              </>
+                            )}
+                          </Button>
+                        </>
                       ) : (
                         <Button
                           variant="primary"
                           size="lg"
                           className="fw-semibold"
-                          onClick={onAnalyze}
+                          onClick={() => void onRunCNN()}
                           disabled={!file || loading}
                         >
                           {loading ? (
@@ -370,37 +428,159 @@ const BrainMriAnalysisPage = ({ variant = "doctor", patientId: patientIdProp, em
                             {t("patientBrainMri.careTeamNotified")}
                           </Alert>
                         )}
-                        <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
-                          <span className="dbm-score-label mb-0">{t("doctorBrainMri.prediction")}</span>
-                          <Badge
-                            pill
-                            bg={isTumor ? "warning" : "success"}
-                            text={isTumor ? "dark" : "white"}
-                            className="dbm-result-badge"
-                          >
-                            {isTumor ? t("doctorBrainMri.tumor") : t("doctorBrainMri.normal")}
-                          </Badge>
-                        </div>
+                        {isMlCnnPayload(result) && (
+                          <>
+                            <Alert
+                              variant={
+                                result.uncertaintyLevel === "high"
+                                  ? "warning"
+                                  : result.uncertaintyLevel === "moderate"
+                                    ? "info"
+                                    : result.uncertaintyLevel === "low"
+                                      ? "success"
+                                      : "light"
+                              }
+                              className="small border"
+                            >
+                              <div className="fw-semibold mb-2">{t("doctorBrainMri.clinicalSummaryTitle")}</div>
+                              <p className="mb-2">
+                                {t("doctorBrainMri.clinicalPrimaryLine", {
+                                  label: result.label,
+                                  pct:
+                                    result.topProbabilityPct ??
+                                    Math.min(
+                                      100,
+                                      Math.max(
+                                        0,
+                                        Math.round(
+                                          (Number(result.probabilities?.[result.classIndex]) || 0) * 1000,
+                                        ) / 10,
+                                      ),
+                                    ),
+                                })}
+                              </p>
+                              {result.uncertaintyLevel && (
+                                <p className="mb-2">{t(`doctorBrainMri.clinicalUncertainty.${result.uncertaintyLevel}`)}</p>
+                              )}
+                              {typeof result.marginPctPoints === "number" && (
+                                <p className="mb-2 text-muted small">
+                                  {t("doctorBrainMri.clinicalMarginLine", {
+                                    margin: result.marginPctPoints,
+                                  })}
+                                </p>
+                              )}
+                              {typeof result.runnerUpLabel === "string" && result.runnerUpLabel.length > 0 && (
+                                <p className="mb-2">
+                                  {t("doctorBrainMri.clinicalDifferentialLine", {
+                                    label: result.runnerUpLabel,
+                                    pct:
+                                      result.runnerUpProbabilityPct ??
+                                      Math.round(
+                                        (Number(
+                                          result.runnerUpIndex != null
+                                            ? result.probabilities?.[result.runnerUpIndex]
+                                            : NaN,
+                                        ) || 0) * 1000,
+                                      ) / 10,
+                                  })}
+                                </p>
+                              )}
+                              {typeof result.entropyNormalized === "number" && (
+                                <p className="mb-2 small text-muted">
+                                  {t("doctorBrainMri.clinicalEntropyLine", { ent: result.entropyNormalized })}
+                                </p>
+                              )}
+                              <p className="mb-0 fst-italic small">{t("doctorBrainMri.clinicalNotDiagnostic")}</p>
+                            </Alert>
 
-                        <div className="mb-4">
-                          <div className="dbm-score-label">{t("doctorBrainMri.modelConfidence")}</div>
-                          <div className="d-flex align-items-center gap-3 mb-1">
-                            <ProgressBar
-                              now={probPct}
-                              max={100}
-                              variant={isTumor ? "warning" : "success"}
-                              className="flex-grow-1"
-                              style={{ height: "10px" }}
-                              aria-valuenow={probPct}
-                              aria-valuemin={0}
-                              aria-valuemax={100}
-                            />
-                            <span className="small fw-semibold tabular-nums text-body">{probPct}%</span>
-                          </div>
-                          <div className="small text-muted">{t("doctorBrainMri.probabilityCaption")}</div>
-                        </div>
+                            <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+                              <span className="dbm-score-label mb-0">{t("doctorBrainMri.multiclassPrediction")}</span>
+                              <Badge pill bg="primary" className="dbm-result-badge">
+                                {result.label}
+                              </Badge>
+                            </div>
+                            <p className="small text-muted mb-3">
+                              {t(`doctorBrainMri.mlModels.${result.modelKey}`)}{" "}
+                              <span className="text-body">
+                                (
+                                {Math.min(
+                                  100,
+                                  Math.max(
+                                    0,
+                                    Math.round(
+                                      (Number(result.probabilities[result.classIndex]) || 0) * 1000,
+                                    ) / 10,
+                                  ),
+                                )}
+                                %)
+                              </span>
+                            </p>
+                            <div className="mb-3">
+                              <div className="dbm-score-label mb-2">{t("doctorBrainMri.classProbabilities")}</div>
+                              <Table size="sm" bordered responsive className="mb-0 small">
+                                <tbody>
+                                  {(result.labels || []).map((lab, i) => {
+                                    const p = Number(result.probabilities[i]);
+                                    const pct = Number.isFinite(p)
+                                      ? Math.min(100, Math.max(0, Math.round(p * 1000) / 10))
+                                      : 0;
+                                    const isTop = i === result.classIndex;
+                                    return (
+                                      <tr key={`${lab}-${i}`} className={isTop ? "table-primary" : ""}>
+                                        <td className="text-break" style={{ maxWidth: 180 }}>
+                                          {lab}
+                                        </td>
+                                        <td className="tabular-nums text-end" style={{ width: 56 }}>
+                                          {pct}%
+                                        </td>
+                                        <td style={{ minWidth: 120 }}>
+                                          <ProgressBar now={pct} max={100} variant={isTop ? "primary" : "secondary"} style={{ height: 8 }} />
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </Table>
+                            </div>
+                          </>
+                        )}
 
-                        {overlaySrc &&
+                        {legacyBinaryResult(result) && (
+                          <>
+                            <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+                              <span className="dbm-score-label mb-0">{t("doctorBrainMri.prediction")}</span>
+                              <Badge
+                                pill
+                                bg={isTumor ? "warning" : "success"}
+                                text={isTumor ? "dark" : "white"}
+                                className="dbm-result-badge"
+                              >
+                                {isTumor ? t("doctorBrainMri.tumor") : t("doctorBrainMri.normal")}
+                              </Badge>
+                            </div>
+
+                            <div className="mb-4">
+                              <div className="dbm-score-label">{t("doctorBrainMri.modelConfidence")}</div>
+                              <div className="d-flex align-items-center gap-3 mb-1">
+                                <ProgressBar
+                                  now={probPct}
+                                  max={100}
+                                  variant={isTumor ? "warning" : "success"}
+                                  className="flex-grow-1"
+                                  style={{ height: "10px" }}
+                                  aria-valuenow={probPct}
+                                  aria-valuemin={0}
+                                  aria-valuemax={100}
+                                />
+                                <span className="small fw-semibold tabular-nums text-body">{probPct}%</span>
+                              </div>
+                              <div className="small text-muted">{t("doctorBrainMri.probabilityCaption")}</div>
+                            </div>
+                          </>
+                        )}
+
+                        {legacyBinaryResult(result) &&
+                          overlaySrc &&
                           (previewUrl ? (
                             <Row className="g-3">
                               <Col md={6}>
@@ -454,6 +634,9 @@ const BrainMriAnalysisPage = ({ variant = "doctor", patientId: patientIdProp, em
                         : t("doctorBrainMri.historySubtitleDoctor")}
                     </span>
                   )}
+                  <span className="d-block text-muted fw-normal mt-2" style={{ fontSize: "0.78rem" }}>
+                    {t("doctorBrainMri.historyLegacyNote")}
+                  </span>
                 </Card.Header>
                 <Card.Body className="p-3 p-md-4">
                   {historyError && (
