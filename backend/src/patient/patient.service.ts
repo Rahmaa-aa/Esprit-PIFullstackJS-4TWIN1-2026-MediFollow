@@ -1,10 +1,12 @@
 import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { Patient } from './schemas/patient.schema';
 import { EmailService } from '../auth/email.service';
 import { SmsService } from '../auth/sms.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { resolveProfileImageDataUrlIfNeeded } from '../cloudinary/profile-image-data-url.util';
 
 @Injectable()
 export class PatientService {
@@ -12,7 +14,21 @@ export class PatientService {
     @InjectModel(Patient.name) private patientModel: Model<Patient>,
     private emailService: EmailService,
     private smsService: SmsService,
+    private cloudinaryService: CloudinaryService,
   ) {}
+
+  private async resolveProfileImageFromBody(
+    patientId: string,
+    profileImage: string | undefined,
+    previousUrl: string | undefined,
+  ): Promise<string | undefined> {
+    return resolveProfileImageDataUrlIfNeeded(this.cloudinaryService, {
+      profileImage,
+      previousUrl,
+      folder: 'medifollow/avatars/patient',
+      publicIdForUpload: `patient_${patientId}`,
+    });
+  }
 
   async create(data: Partial<Patient>) {
     const exists = await this.patientModel.findOne({ email: data.email }).exec();
@@ -22,9 +38,20 @@ export class PatientService {
     const plainPassword = data.password;
     const hashed = await bcrypt.hash(plainPassword, 10);
 
-    const createPayload: any = { ...data, password: hashed };
+    const newId = new Types.ObjectId();
+
+    const createPayload: any = { ...data, _id: newId, password: hashed };
     if (!createPayload.doctorId) delete createPayload.doctorId;
     if (!createPayload.nurseId) delete createPayload.nurseId;
+
+    if (createPayload.profileImage) {
+      createPayload.profileImage = await this.resolveProfileImageFromBody(
+        String(newId),
+        createPayload.profileImage,
+        undefined,
+      );
+    }
+
     for (const key of [
       'antecedentDiabetes',
       'antecedentHypertension',
@@ -119,6 +146,14 @@ export class PatientService {
       updateData.password = await bcrypt.hash(data.password, 10);
     } else {
       delete updateData.password;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(updateData, 'profileImage')) {
+      updateData.profileImage = await this.resolveProfileImageFromBody(
+        id,
+        updateData.profileImage,
+        patient.profileImage,
+      );
     }
 
     const $unset: Record<string, 1> = {};

@@ -1,0 +1,15 @@
+# Service ML (FastAPI + TensorFlow) — même dépôt, build Docker depuis la racine.
+# Rendre : créer une Web Service (Docker) avec ce fichier ou importer le Blueprint.
+#
+# Déploiement manuel sans Blueprint :
+# - Root Directory : VIDE = racine du repo (ne PAS mettre backend ni backend/models)
+# - Dockerfile path : ml-service/Dockerfile
+# - après déploiement : copier l’URL https://xxxx.onrender.com dans ML_SERVICE_URL (backend MediFollow).
+
+version: "1"
+services:
+  - type: web
+    name: medifollow-ml-cnn
+    env: docker
+    dockerfilePath: ./ml-service/Dockerfile
+    dockerContext: .

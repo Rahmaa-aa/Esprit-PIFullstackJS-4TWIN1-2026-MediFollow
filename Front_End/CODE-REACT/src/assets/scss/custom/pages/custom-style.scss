@@ -1083,3 +1083,22 @@ html.a11y-large-text {
         text-transform: none;
     }
 }
+
+// Bootstrap 5.3 ne fournit pas de variante .btn-primary-subtle (seulement .bg-primary-subtle).
+// Le thème l'utilise pourtant largement (sign-in, sign-up, formulaires, etc.) → sans cette règle
+// le bouton apparaît transparent. On reproduit le pattern subtle (fond clair + texte primaire).
+.btn-primary-subtle {
+    --bs-btn-color: var(--bs-primary-text-emphasis);
+    --bs-btn-bg: var(--bs-primary-bg-subtle);
+    --bs-btn-border-color: var(--bs-primary-bg-subtle);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--bs-primary);
+    --bs-btn-hover-border-color: var(--bs-primary);
+    --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--bs-primary);
+    --bs-btn-active-border-color: var(--bs-primary);
+    --bs-btn-disabled-color: var(--bs-primary-text-emphasis);
+    --bs-btn-disabled-bg: var(--bs-primary-bg-subtle);
+    --bs-btn-disabled-border-color: var(--bs-primary-bg-subtle);
+}

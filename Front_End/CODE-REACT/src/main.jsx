@@ -2,23 +2,19 @@
 import { Fragment, Suspense } from "react";
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/effect-fade";
-import "swiper/css/free-mode";
-import 'swiper/css/pagination'
-import 'swiper/css/autoplay'
-import 'swiper/css/effect-fade'
 import "./i18n/i18n.js";
-import './assets/scss/xray.scss'
+/*
+ * Sous-ensemble de xray pour landing/auth (Bootstrap + base xray uniquement).
+ * Le reste (composants riches, layout sidebar, plugins, customizer, swiper, FA4, phosphor regular)
+ * est charg\u00e9 paresseusement par `DefaultLayout` (cf. layouts/defaultLayout.jsx) afin de r\u00e9duire
+ * le CSS bloquant sur la landing (PageSpeed / LCP).
+ */
+import './assets/scss/xray-landing.scss'
 import './assets/scss/custom.scss'
 import './assets/scss/rtl.scss'
-import './assets/scss/customizer.scss'
- 
+
 import './assets/custom/custom.scss'
 import './assets/scss/dyslexia-mode.scss'
-import './assets/vendor/font-awesome/css/font-awesome.min.css'
-import './assets/vendor/phosphor-icons/Fonts/regular/style.css'
 
 //router
 import { RouterProvider, createBrowserRouter } from "react-router-dom";

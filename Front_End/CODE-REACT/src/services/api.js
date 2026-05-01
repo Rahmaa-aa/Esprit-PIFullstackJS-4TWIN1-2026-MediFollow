@@ -1231,6 +1231,26 @@ export const brainTumorApi = {
     api.getWithDoctorToken(`/brain-tumor/doctor/my-records?limit=${encodeURIComponent(limit)}`),
 };
 
+/** JWT — modèles CNN hébergés (Render). Multipart champ `file`. */
+export const mlCnnApi = {
+  predictDoctor: (file, modelId) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return api.postMultipartWithDoctorToken(
+      `/ml-cnn/predict/${encodeURIComponent(String(modelId))}`,
+      fd,
+    );
+  },
+  predictPatient: (file, modelId) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return api.postMultipartWithPatientToken(
+      `/ml-cnn/predict/${encodeURIComponent(String(modelId))}`,
+      fd,
+    );
+  },
+};
+
 export const appointmentApi = {
   create: (data) => api.post('/appointments', data),
   getByPatient: (patientId) => api.get(`/appointments/patient/${patientId}`),

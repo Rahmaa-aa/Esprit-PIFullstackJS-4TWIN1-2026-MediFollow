@@ -6,6 +6,8 @@ import { authApi } from "../../services/api";
 import AuthCarouselMedifollow from "../../components/auth/AuthCarouselMedifollow";
 import OptimizedSiteLogo from "../../components/landing/OptimizedSiteLogo";
 
+const generatePath = (path) => window.origin + import.meta.env.BASE_URL + path;
+
 const LockScreen = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -67,7 +69,7 @@ const LockScreen = () => {
             <Col md={6} className="position-relative z-2">
               <div className="sign-in-from d-flex flex-column justify-content-center">
                 <img
-                  src={generatePath("assets/images/login/Admin_photo.jpeg")}
+                  src={generatePath("/assets/images/login/Admin_photo.jpeg")}
                   alt={t("lockScreen.profileImageAlt")}
                   className="rounded-circle"
                   style={{

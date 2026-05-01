@@ -4,11 +4,13 @@
   "description": "MediFollow API - NestJS + MongoDB Atlas",
   "scripts": {
     "test:db": "node test-mongo-connection.js",
+    "cloudinary:ping": "node scripts/cloudinary-ping.js",
+    "cloudinary:test-upload": "node scripts/cloudinary-test-upload.js",
     "build": "nest build",
-    "dev": "npx ts-node --transpile-only -r tsconfig-paths/register src/main.ts",
-    "start": "npx ts-node --transpile-only -r tsconfig-paths/register src/main.ts",
-    "start:dev": "npx ts-node --transpile-only -r tsconfig-paths/register src/main.ts",
-    "start:prod": "node dist/main",
+    "dev": "nest start --watch",
+    "start": "nest build && node dist/main.js",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main.js",
     "test": "jest",
     "test:cov": "jest --coverage"
   },
@@ -24,6 +26,7 @@
     "@nestjs/websockets": "^10.4.22",
     "@simplewebauthn/server": "^13.2.3",
     "bcrypt": "^5.1.1",
+    "cloudinary": "^2.10.0",
     "lodash": "^4.17.21",
     "mongodb": "^7.1.0",
     "mongoose": "^8.0.0",
@@ -50,7 +53,6 @@
     "jest": "^29.5.0",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3"
   },
   "jest": {
@@ -59,7 +61,7 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "collectCoverageFrom": [
-      "*/.(t|j)s"
+      "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage"
   }

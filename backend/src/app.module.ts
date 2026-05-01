@@ -21,6 +21,8 @@ import { BrainTumorModule } from './brain-tumor/brain-tumor.module';
 import { VideoMeetingModule } from './video-meeting/video-meeting.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
 import { ContactModule } from './contact/contact.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { MlCnnModule } from './ml-cnn/ml-cnn.module';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { ContactModule } from './contact/contact.module';
       serverSelectionTimeoutMS: 10000,
       connectTimeoutMS: 10000,
     }),
+    CloudinaryModule,
     AuthModule,
     DoctorModule,
     PatientModule,
@@ -49,6 +52,7 @@ import { ContactModule } from './contact/contact.module';
     VideoMeetingModule,
     ChatbotModule,
     ContactModule,
+    MlCnnModule,
   ],
 })
 export class AppModule {}

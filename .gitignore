@@ -55,3 +55,8 @@ backend/detetction faciale/emotion_model_export.h5
 # Données FER (Kaggle) — trop volumineuses pour Git ; placer train/ test/ localement
 backend/detetction faciale/archive/train/
 backend/detetction faciale/archive/test/
+
+# ML model files (too large for GitHub)
+*.keras
+*.h5
+*.pkl

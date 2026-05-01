@@ -1,7 +1,9 @@
 import { lazy } from "react";
 import { Navigate } from "react-router-dom";
 
-import DefaultLayout from "../layouts/defaultLayout";
+/* Charg\u00e9 paresseusement : isole le CSS lourd du dashboard (xray-dashboard, customizer, swiper,
+ * phosphor regular) dans un chunk s\u00e9par\u00e9 \u2192 ne bloque plus le rendu de la landing (LCP). */
+const DefaultLayout = lazy(() => import("../layouts/defaultLayout"));
 import BlankLayout from "../layouts/blank-layout";
 import Home from "../views/home";
 import About from "../views/about";

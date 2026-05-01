@@ -6,12 +6,16 @@ import {
   Delete,
   Body,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   Request,
   Param,
   ForbiddenException,
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
@@ -121,6 +125,37 @@ export class AuthController {
     },
   ) {
     return this.authService.updateProfile(req.user.id, body);
+  }
+
+  /**
+   * Upload de la photo de profil de l'utilisateur connecté.
+   * Le fichier est poussé sur Cloudinary, l'URL retournée est sauvegardée
+   * dans la collection correspondant au rôle (doctor/patient/nurse/user).
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('me/profile-image')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const ok = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype);
+        if (ok) cb(null, true);
+        else cb(new BadRequestException('Image requise (JPEG, PNG, WebP ou GIF, max 5 Mo).') as never, false);
+      },
+    }),
+  )
+  async uploadMyProfileImage(
+    @Request() req: any,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Fichier image manquant.');
+    }
+    return this.authService.updateMyProfileImage(req.user.id, req.user.role, {
+      buffer: file.buffer,
+      mimetype: file.mimetype,
+    });
   }
 
   @Post('seed-admin')

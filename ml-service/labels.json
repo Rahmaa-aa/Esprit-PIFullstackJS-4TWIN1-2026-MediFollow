@@ -1,0 +1,32 @@
+{
+  "_comment": "Ordre des indices = ordre softmax à l'entraînement (0,1,2…). Si les probas ne correspondent pas, réordonnez les chaînes ou consultez class_indices du notebook d'entraînement.",
+  "bone_break": [
+    "Avulsion fracture",
+    "Comminuted fracture",
+    "Fracture Dislocation",
+    "Greenstick fracture",
+    "Hairline Fracture",
+    "Impacted fracture",
+    "Longitudinal fracture",
+    "Lung Cancer Classification",
+    "Oblique fracture",
+    "Pathological fracture",
+    "Spiral Fracture"
+  ],
+  "lung_cancer": [
+    "Adenocarcinoma (pattern NSCLC)",
+    "Squamous cell carcinoma pattern",
+    "Large cell / other NSCLC pattern",
+    "No primary lung malignancy (benign / non-cancer baseline)"
+  ],
+  "renal": [
+    "Normal kidney / no focal lesion",
+    "Simple benign cyst",
+    "Calculus / obstructive pattern",
+    "Solid mass / mass-like lesion (suspicion)"
+  ],
+  "skin_lesions": [
+    "Benign / low malignant concern",
+    "Malignant or high-risk lesion (e.g. melanoma-like)"
+  ]
+}
