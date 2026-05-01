@@ -110,6 +110,21 @@ kubeadm token create --print-join-command
 
 Share the full output line to teammates.
 
+### G) Start SonarQube services before CI/CD tests
+
+```bash
+# 1) Start DB first
+sudo docker start sonarqube-db
+
+# 2) Then start SonarQube
+sudo docker start sonarqube
+
+# 3) Verify both are up
+sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+curl http://localhost:9000/api/system/status
+```
+
 ---
 
 ## Part 2 - Worker Node Full Runbook (Teammates)
