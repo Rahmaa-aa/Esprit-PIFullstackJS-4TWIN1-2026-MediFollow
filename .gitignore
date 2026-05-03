@@ -41,6 +41,10 @@ backend/dist/
 # HTML template (static assets not needed)
 Front_End/CODE-REACT/hospital-website-template/
 
+# Kubernetes — admin kubeconfigs belong in Jenkins credentials only, never in Git
+DevOPs/kubeconfig-staging-uploadme
+**/kubeconfig-staging-uploadme
+
 # Vagrant specific
 .vagrant/
 

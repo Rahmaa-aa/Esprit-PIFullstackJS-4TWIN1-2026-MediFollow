@@ -1,0 +1,2 @@
+# Shell scripts on Windows must stay LF for Linux guests (Vagrant/SSH).
+*.sh text eol=lf

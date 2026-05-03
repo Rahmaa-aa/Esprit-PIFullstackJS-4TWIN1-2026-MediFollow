@@ -7,6 +7,12 @@ metadata:
     app: medifollow-backend
 spec:
   replicas: 2
+  progressDeadlineSeconds: 900
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: medifollow-backend
