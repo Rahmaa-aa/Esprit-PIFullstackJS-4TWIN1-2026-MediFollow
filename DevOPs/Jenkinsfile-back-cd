@@ -51,14 +51,20 @@ pipeline {
                         kubectl apply -f DevOPs/k8s/namespace.yaml
 
                         kubectl -n "$K8S_NAMESPACE" create secret generic medifollow-secrets \
-                          --from-literal=MONGO_URI="$MONGO_URI" \
+                          --from-literal=MONGODB_URI="$MONGO_URI" \
                           --from-literal=CLOUDINARY_URL="$CLOUDINARY_URL" \
                           --dry-run=client -o yaml | kubectl apply -f -
 
                         kubectl apply -f DevOPs/k8s/backend-deployment.yaml
                         kubectl apply -f DevOPs/k8s/backend-service.yaml
                         kubectl -n "$K8S_NAMESPACE" set image deployment/medifollow-backend-deployment medifollow-backend="$DOCKER_USER/medifollow-backend:latest"
-                        kubectl rollout status deployment/medifollow-backend-deployment -n "$K8S_NAMESPACE" --timeout=180s
+                        kubectl rollout status deployment/medifollow-backend-deployment -n "$K8S_NAMESPACE" --timeout=600s || {
+                          echo "Backend rollout diagnostics:"
+                          kubectl -n "$K8S_NAMESPACE" get pods -o wide
+                          kubectl -n "$K8S_NAMESPACE" describe pods -l app=medifollow-backend
+                          kubectl -n "$K8S_NAMESPACE" logs -l app=medifollow-backend --tail=80 --all-containers=true 2>/dev/null || true
+                          exit 1
+                        }
                     '''
                 }
             }
