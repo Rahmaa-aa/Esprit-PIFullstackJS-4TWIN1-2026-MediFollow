@@ -246,7 +246,10 @@ export default function LandingShell({ navActive = "home", children }) {
             <Col md={12} className="text-center text-md-start">
               <p className="mb-0">
                 &copy;{" "}
-                <Link to="/" className="text-primary text-decoration-none">
+                <Link
+                  to="/"
+                  className="text-primary text-decoration-underline link-offset-2"
+                >
                   MediFollow
                 </Link>
                 . {t("landing.footerRights")}{" "}
