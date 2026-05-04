@@ -4,7 +4,7 @@
 **Stack:** React 18 + Vite 5 + Bootstrap 5 (xray theme) + NestJS
 **Analyzed URL:** `https://medifollow-frontend.vercel.app/`
 **Report date:** April 28, 2026
-**Author:** CodeCraft
+**Author:** CodeCraft Team
 
 ---
 

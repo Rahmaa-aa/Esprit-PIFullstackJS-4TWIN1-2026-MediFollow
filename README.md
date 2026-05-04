@@ -38,7 +38,8 @@ link : https://medifollow-frontend.vercel.app/
 9. [Screenshots](#-screenshots)
 10. [Team](#-team)
 11. [Future Improvements](#-future-improvements)
-12. [License](#-license)
+12. [AI usage (transparency)](#-ai-usage-transparency)
+13. [License](#-license)
 
 ---
 
@@ -391,6 +392,14 @@ MediFollow/
 - [ ] Full internationalization (multi-language support)
 - [ ] Integration with hospital information systems (HL7/FHIR)
 - [ ] Extended accessibility: eye-tracking (gaze-based) navigation
+
+---
+
+## 🤖 AI usage (transparency)
+
+This repository includes a standalone disclosure of how **AI-assisted development** (Cursor IDE, Composer, Claude Sonnet 4.6, GPT‑5.3, etc.) was used during the MediFollow project—**prompt examples**, tasks, and limitations—for **academic integrity** and supervisor review.
+
+➡️ See **[`IA_USAGE.md`](IA_USAGE.md)** (English).
 
 ---
 

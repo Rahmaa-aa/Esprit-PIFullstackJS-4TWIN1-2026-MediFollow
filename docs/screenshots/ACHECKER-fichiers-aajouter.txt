@@ -1,0 +1,12 @@
+Captures achecker pour rapport-accessibilite-wcag.pdf :
+
+  docs/screenshots/achecker-wcag-niveau-a-96.png
+  docs/screenshots/achecker-wcag-niveau-a-92.jpg
+  docs/screenshots/achecker-wcag-niveau-aa-89.jpg
+
+Génération :
+
+  npm install --no-save marked
+  node docs/build-pdf-a11y.mjs
+
+Sortie : docs/rapport-accessibilite-wcag.html et docs/rapport-accessibilite-wcag.pdf
