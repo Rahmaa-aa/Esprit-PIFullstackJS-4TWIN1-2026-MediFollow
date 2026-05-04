@@ -248,7 +248,7 @@ export default function LandingShell({ navActive = "home", children }) {
                 &copy;{" "}
                 <Link
                   to="/"
-                  className="text-primary text-decoration-underline link-offset-2"
+                  className="text-primary landing-footer-home-link"
                 >
                   MediFollow
                 </Link>

@@ -599,3 +599,15 @@
     background: rgba(239, 245, 249, 0.95) !important;
     color: var(--dark);
 }
+
+/* WCAG 1.4.1 — copyright : le lien « MediFollow » doit être identifiable sans s’appuyer sur la seule couleur */
+.hospital-home .landing-footer-home-link {
+    text-decoration: underline !important;
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+}
+
+.hospital-home .landing-footer-home-link:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
