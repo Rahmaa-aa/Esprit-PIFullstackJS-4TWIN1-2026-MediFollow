@@ -41,7 +41,9 @@ pipeline {
                     file(credentialsId: 'kubeconfig-staging', variable: 'KUBECONFIG_FILE'),
                     usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER'),
                     string(credentialsId: 'k8s-mongo-uri', variable: 'MONGO_URI'),
-                    string(credentialsId: 'k8s-cloudinary-url', variable: 'CLOUDINARY_URL')
+                    string(credentialsId: 'k8s-cloudinary-url', variable: 'CLOUDINARY_URL'),
+                    // Origin(s) where staging UI is opened, e.g. http://100.x.x.x:30001 — required for Socket.IO CORS (comma-separated OK).
+                    string(credentialsId: 'k8s-staging-frontend-url', variable: 'STAGING_FRONTEND_URL')
                 ]) {
                     sh '''
                         set -eu
@@ -53,6 +55,7 @@ pipeline {
                         kubectl -n "$K8S_NAMESPACE" create secret generic medifollow-secrets \
                           --from-literal=MONGODB_URI="$MONGO_URI" \
                           --from-literal=CLOUDINARY_URL="$CLOUDINARY_URL" \
+                          --from-literal=FRONTEND_URL="$STAGING_FRONTEND_URL" \
                           --dry-run=client -o yaml | kubectl apply -f -
 
                         sed "s|REPLACE_DOCKER_USER|${DOCKER_USER}|g" DevOPs/k8s/backend-deployment.yaml | kubectl apply -f -
