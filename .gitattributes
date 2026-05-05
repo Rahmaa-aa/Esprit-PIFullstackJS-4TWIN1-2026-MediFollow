@@ -1,2 +1,5 @@
 # Shell scripts on Windows must stay LF for Linux guests (Vagrant/SSH).
 *.sh text eol=lf
+
+# Vagrantfile (Ruby + embedded shell): force LF so Windows checkouts match the index and Git stops showing phantom edits.
+DevOPs/worker/Vagrantfile text eol=lf
