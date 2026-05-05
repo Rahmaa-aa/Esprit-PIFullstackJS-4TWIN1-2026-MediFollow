@@ -22,7 +22,8 @@ spec:
     spec:
       containers:
       - name: medifollow-frontend
-        image: medifollow-front:latest
+        # Replaced by Jenkins (sed) — avoid docker.io/library/medifollow-front:latest
+        image: REPLACE_DOCKER_USER/medifollow-front:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 80
