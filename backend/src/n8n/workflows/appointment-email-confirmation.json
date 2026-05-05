@@ -1,0 +1,90 @@
+{
+  "name": "Appointment Email Confirmation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "appointment-confirmed",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook - Appointment Confirmed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "appointment-email-confirmation"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract appointment data from webhook\nconst appointment = $input.first().json.appointment;\nconst patientInfo = appointment.patientId || {};\n\n// Prepare email data\nreturn {\n  patientEmail: patientInfo.email || '',\n  patientName: `${patientInfo.firstName || ''} ${patientInfo.lastName || ''}`.trim(),\n  doctorName: appointment.doctorName || 'Your Doctor',\n  appointmentDate: appointment.date,\n  appointmentTime: appointment.time,\n  appointmentType: appointment.type || 'checkup',\n  location: appointment.location || 'Medical Center',\n  isVideoCall: appointment.isVideoCall || false,\n  appointmentId: appointment._id\n};"
+      },
+      "id": "function-1",
+      "name": "Prepare Email Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "appointments@medifollow.com",
+        "toEmail": "={{ $node['Prepare Email Data'].json.patientEmail }}",
+        "subject": "Appointment Confirmed - {{ $node['Prepare Email Data'].json.appointmentType }}",
+        "text": "Dear {{ $node['Prepare Email Data'].json.patientName }},\n\nYour appointment has been confirmed!\n\nAppointment Details:\n- Date: {{ $node['Prepare Email Data'].json.appointmentDate }}\n- Time: {{ $node['Prepare Email Data'].json.appointmentTime }}\n- Type: {{ $node['Prepare Email Data'].json.appointmentType }}\n- Doctor: {{ $node['Prepare Email Data'].json.doctorName }}\n- Location: {{ $node['Prepare Email Data'].json.location }}\n{% if $node['Prepare Email Data'].json.isVideoCall %}\n- This is a video call appointment. Link will be sent separately.\n{% endif %}\n\nPlease arrive 15 minutes early and bring your ID and insurance card.\n\nIf you need to reschedule or cancel, please call us at least 24 hours in advance.\n\nThank you,\nMediFollow Team",
+        "options": {}
+      },
+      "id": "email-1",
+      "name": "Send Confirmation Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Log the email sending result\nconst result = $input.first().json;\nconsole.log('Email sent successfully:', result);\n\nreturn {\n  success: true,\n  message: 'Appointment confirmation email sent successfully',\n  timestamp: new Date().toISOString(),\n  appointmentId: $node['Prepare Email Data'].json.appointmentId\n};"
+      },
+      "id": "function-2",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Appointment Confirmed": {
+      "main": [
+        [
+          {
+            "node": "Prepare Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Email Data": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Confirmation Email": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

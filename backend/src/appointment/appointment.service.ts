@@ -5,6 +5,7 @@ import { Appointment } from './schemas/appointment.schema';
 import { Patient } from '../patient/schemas/patient.schema';
 import { DoctorAvailabilityService, normalizeDateString, normalizeDoctorId, normalizeTime } from '../doctor-availability/doctor-availability.service';
 import { NotificationService } from '../notification/notification.service';
+import { N8nService } from '../n8n/n8n.service';
 
 @Injectable()
 export class AppointmentService {
@@ -13,6 +14,7 @@ export class AppointmentService {
     @InjectModel(Patient.name) private patientModel: Model<Patient>,
     private doctorAvailabilityService: DoctorAvailabilityService,
     private notificationService: NotificationService,
+    private n8nService: N8nService,
   ) {}
 
   private toObjectId(id: string) {
@@ -83,6 +85,8 @@ export class AppointmentService {
     if (status === 'confirmed' || status === 'scheduled') {
       try {
         await this.notificationService.notifyDoctorNewAppointment(doc.toObject());
+        await this.n8nService.triggerAppointmentCreated(doc.toObject());
+        await this.n8nService.triggerDoctorNotified(doc.toObject());
       } catch (e) {
         console.error('[Appointment] notifyDoctorNewAppointment:', e);
       }
@@ -91,6 +95,7 @@ export class AppointmentService {
     if (status === 'pending') {
       try {
         await this.notificationService.notifyAdminsAppointmentRequest(doc.toObject());
+        await this.n8nService.triggerAppointmentCreated(doc.toObject());
       } catch (e) {
         console.error('[Appointment] notifyAdminsAppointmentRequest:', e);
       }
@@ -233,8 +238,25 @@ export class AppointmentService {
       if (becameConfirmed) {
         try {
           await this.notificationService.notifyDoctorNewAppointment(doc.toObject());
+          await this.n8nService.triggerAppointmentCreated(doc.toObject());
+          await this.n8nService.triggerAppointmentApproved(doc.toObject());
+          await this.n8nService.triggerDoctorNotified(doc.toObject());
         } catch (e) {
           console.error('[Appointment] notifyDoctorNewAppointment (update):', e);
+        }
+      }
+      if (st === 'cancelled' && prevSt !== 'cancelled') {
+        try {
+          await this.n8nService.triggerAppointmentCancelled(doc.toObject());
+        } catch (e) {
+          console.error('[Appointment] triggerAppointmentCancelled:', e);
+        }
+      }
+      if (st === 'completed' && prevSt !== 'completed') {
+        try {
+          await this.n8nService.triggerAppointmentCompleted(doc.toObject());
+        } catch (e) {
+          console.error('[Appointment] triggerAppointmentCompleted:', e);
         }
       }
     }

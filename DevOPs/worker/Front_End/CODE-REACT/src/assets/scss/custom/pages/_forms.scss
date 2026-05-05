@@ -1,0 +1,268 @@
+// ----------------------------------
+//      Form Toggle(Switch)
+// ----------------------------------
+
+.custom-toggels {
+
+    /* toggle in label designing */
+    .toggles {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+        border-radius: 30px;
+        // border: 2px solid gray;
+    }
+
+    .toggles:before {
+        background-color: lightgray;
+    }
+
+    /* After slide changes */
+    .toggles:after {
+        content: '';
+        position: absolute;
+        width: 23px;
+        height: 22px;
+        border-radius: 50%;
+        background-color: white;
+        top: 2px;
+        left: 50%;
+        transition: all 0.5s;
+    }
+
+    /* Toggle text */
+    .texts {
+        font-family: Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        font-size: 11px;
+        line-height: 25px;
+    }
+
+    /* Checkbox checked effect */
+    .checkboxs:not(:checked)+.toggles::after {
+        left: 0%;
+        background-color: gray !important;
+        transition: all 0.5s !important;
+        top: 1px !important;
+    }
+
+    /* Checkbox checked toggle label bg color */
+    .checkboxs:not(:checked)+.toggles {
+        background: none !important;
+        border: 0.5px solid black;
+        color: black !important;
+    }
+
+    /* Checkbox vanished */
+    .checkboxs {
+        display: none;
+    }
+}
+
+
+
+// -------------------------------------
+//               Form Checkbox
+// ----------------------------------------
+
+
+.custom-checkboxs {
+    .form-check-input {
+        position: absolute;
+        left: 0;
+        z-index: -1;
+        width: 1rem;
+        height: 1.25rem;
+        opacity: 0;
+    }
+
+    .form-check-label {
+        position: relative;
+        margin-bottom: 0;
+        vertical-align: top;
+    }
+
+    .form-check-label::after {
+        position: absolute;
+        top: 0.25rem;
+        left: -1.5rem;
+        display: block;
+        width: 1rem;
+        height: 1rem;
+        content: "";
+        background: no-repeat 50%/50% 50%;
+    }
+
+
+    .form-check-label::before {
+        position: absolute;
+        top: 0.25rem;
+        left: -1.7rem;
+        display: block;
+        width: 1rem;
+        height: 1rem;
+        pointer-events: none;
+        content: "";
+        background-color: #fff;
+        border: #adb5bd solid 1px;
+        border-radius: 4px;
+    }
+
+    .custom-control {
+        position: relative;
+        display: block;
+        min-height: 1.5rem;
+        padding-left: 1.5rem;
+    }
+
+    .custom-checkbox.checkbox-icon label i {
+        position: absolute;
+        top: 4px;
+        left: -21px;
+        font-size: 10px;
+        transform: scale(0);
+        -webkit-transform: scale(0);
+        -webkit-transition: all .15s ease-in;
+        transition: all .15s ease-in;
+    }
+
+    .custom-checkbox.checkbox-icon input:checked~label i {
+        transform: scale(1);
+        -webkit-transform: scale(1);
+        color: #fff;
+    }
+
+    .custom-checkbox.checkbox-icon input:checked~label::after {
+        display: none;
+    }
+
+    .form-check-input:checked~.form-check-label::before {
+        border-color: var(--bs-primary);
+        background-color: var(--bs-primary);
+    }
+}
+
+// -------------------------------------
+//               Form Radio
+// ----------------------------------------
+input[type="radio"].text-success:checked {
+    background-color: var(--bs-success);
+    border: none;
+}
+
+input[type="radio"].text-danger:checked {
+    background-color: var(--bs-danger);
+    border: none;
+}
+
+input[type="radio"].text-warning:checked {
+    background-color: var(--bs-warning);
+    border: none;
+}
+
+input[type="radio"].text-gray:checked {
+    background-color: var(--bs-gray);
+    border: none;
+}
+
+input[type="radio"].text-info:checked {
+    background-color: var(--bs-info);
+    border: none;
+}
+
+// -------------------------------------
+//               Form Checkbox
+// ----------------------------------------
+
+input[type="checkbox"].text-success:checked {
+    background-color: var(--bs-success);
+    border: none;
+}
+
+input[type="checkbox"].text-danger:checked {
+    background-color: var(--bs-danger);
+    border: none;
+}
+
+input[type="checkbox"].text-warning:checked {
+    background-color: var(--bs-warning);
+    border: none;
+}
+
+input[type="checkbox"].text-gray:checked {
+    background-color: var(--bs-gray);
+    border: none;
+}
+
+input[type="checkbox"].text-info:checked {
+    background-color: var(--bs-info);
+    border: none;
+}
+
+.sign-in-from {
+    .form-control {
+        background: transparent;
+        border: 1px solid #d7dbda;
+        border-radius: 10px;
+    }
+}
+
+// -----------PH--------
+// ph-duotone icon size
+.ph-duotone {
+    font-size: 21px;
+}
+
+.ph:not(.custom-ph-icons) {
+    font-size: 21px;
+}
+
+// ---------- Form Element ----------
+
+.cust-form-elements {
+    .form-control {
+        background-color: transparent !important;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 10px !important;
+    }
+}
+
+// ---------------------  Dark Theam -------------------
+
+[data-bs-theme="dark"] .checkboxs:not(:checked)+.toggles {
+    color: white !important;
+}
+
+// -------------------- RTL Mode -------------------
+
+// ---- Form Element ----
+
+[dir="rtl"] {
+
+    input[type="date"],
+    input[type="month"],
+    input[type="week"],
+    input[type="time"],
+    input[type="datetime-local"] {
+        text-align: start;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        text-align: end;
+    }
+
+    .custom-checkboxs {
+        .custom-checkbox.checkbox-icon label i {
+            right: -16px;
+        }
+
+        .form-check-label::before {
+            right: -1.4rem;
+        }
+
+        .form-check-label {
+            right: 18px
+        }
+    }
+}

@@ -1,0 +1,144 @@
+// Page analyse laboratoire patient — ton médical sobre, hiérarchie lisible
+
+.patient-lab-analysis-page {
+  background: var(--bs-gray-100);
+  min-height: 100%;
+
+  .pla-header-back {
+    color: var(--bs-secondary);
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: var(--bs-primary);
+    }
+  }
+
+  .pla-disclaimer {
+    border-radius: 0.75rem;
+  }
+
+  .pla-upload-card,
+  .pla-result-panel,
+  .pla-table-card,
+  .pla-history-card {
+    border-radius: 0.75rem;
+  }
+
+  .pla-upload-preview {
+    border-radius: 0.5rem;
+    background: var(--bs-tertiary-bg);
+  }
+
+  .pla-result-panel {
+    .pla-history-banner {
+      border-radius: 0.5rem;
+    }
+  }
+
+  .pla-hint-block {
+    border-radius: 0.5rem;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color-translucent);
+  }
+
+  .pla-ocr-preview {
+    border-radius: 0.5rem;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color-translucent);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .pla-lab-table {
+    font-size: 0.9375rem;
+
+    thead th {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--bs-secondary);
+      border-bottom-width: 1px;
+      padding-top: 0.875rem;
+      padding-bottom: 0.875rem;
+    }
+
+    tbody td {
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+      vertical-align: middle;
+    }
+
+    tbody tr.pla-row--high td:first-child {
+      box-shadow: inset 3px 0 0 var(--bs-warning);
+    }
+
+    tbody tr.pla-row--low td:first-child {
+      box-shadow: inset 3px 0 0 var(--bs-info);
+    }
+
+    tbody tr.pla-row--high {
+      background-color: rgba(var(--bs-warning-rgb), 0.04);
+    }
+
+    tbody tr.pla-row--low {
+      background-color: rgba(var(--bs-info-rgb), 0.04);
+    }
+  }
+
+  .pla-orientation-card {
+    border-radius: 0.5rem;
+    border: 1px solid var(--bs-border-color-translucent);
+    border-inline-start: 3px solid var(--bs-warning);
+    background: var(--bs-body-bg);
+    transition: box-shadow 0.15s ease;
+
+    &:hover {
+      box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.04);
+    }
+  }
+
+  .pla-section-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bs-secondary);
+  }
+
+  .pla-history-btn {
+    border-radius: 0.5rem;
+    border: 1px solid var(--bs-border-color-translucent);
+    background: var(--bs-body-bg);
+    padding: 0.875rem 1rem;
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease,
+      border-color 0.15s ease,
+      background-color 0.15s ease;
+
+    &:hover {
+      border-color: rgba(var(--bs-primary-rgb), 0.35);
+      box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.06);
+      transform: translateY(-1px);
+      background: var(--bs-body-bg);
+    }
+
+    &:focus-visible {
+      outline: 0;
+      box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    }
+
+    &.pla-history-btn--selected {
+      border-color: var(--bs-primary);
+      background: rgba(var(--bs-primary-rgb), 0.06);
+      box-shadow: 0 0 0 1px rgba(var(--bs-primary-rgb), 0.2);
+    }
+  }
+
+  .pla-placeholder-card {
+    border-radius: 0.75rem;
+    border: 1px dashed var(--bs-border-color);
+    background: var(--bs-tertiary-bg);
+  }
+}

@@ -1,0 +1,30 @@
+.apexcharts-radialbar-area {
+    stroke-linecap: round;
+} 
+.apexcharts-svg{
+    .apexcharts-yaxis-texts-g{
+        text{
+            fill:var(--#{$variable-prefix}secondary);
+        }
+    }
+    .apexcharts-xaxis-texts-g{
+        text{
+            fill:var(--#{$variable-prefix}secondary);
+        }
+    }
+}
+.choices.is-disabled {
+	.choices__inner {
+		background-color: var(--bs-card-bg);
+	}
+	.choices__input {
+		background-color: var(--bs-card-bg);
+	}
+}
+.choices[data-type*=select-one] {
+	&:after {
+		border-color: var(--bs-body-color) transparent transparent;
+	}
+}
+
+

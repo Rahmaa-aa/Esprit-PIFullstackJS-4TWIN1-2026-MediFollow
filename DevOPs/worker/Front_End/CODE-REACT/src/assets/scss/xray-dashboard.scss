@@ -1,0 +1,30 @@
+/*!
+* Compl\u00e9ment dashboard de `xray-landing.scss` : composants xray riches, layout sidebar/menu
+* et styles plugins (apexchart, fullcalendar, choicejs, select2, etc.).
+*
+* Charg\u00e9 uniquement par `DefaultLayout` (lazy) afin que la landing publique (BlankLayout)
+* n\u2019embarque pas ces ~250 KB de CSS dans son chunk d\u2019entr\u00e9e.
+*
+* Les imports `functions/variables/mixins` ci-dessous ne g\u00e9n\u00e8rent pas de CSS : ils fournissent
+* le contexte SCSS (variables/mixins) attendu par les imports lourds qui suivent.
+*/
+
+@import "./bootstrap/functions";
+
+@import "./xray-design-system/variables";
+@import "./xray-design-system/variables-dark";
+@import "./xray-design-system/variables/index";
+@import "./bootstrap/variables";
+@import "./bootstrap/variables-dark";
+@import "./bootstrap/maps";
+@import "./bootstrap/mixins";
+@import "./bootstrap/utilities";
+
+@import "./xray-design-system/helper/mixins";
+
+// Composants riches (tables, cards, modal, profile, chart, calendar, etc.)
+@import "./xray-design-system/components/components";
+// Layouts dashboard (sidebars, menus)
+@import "./xray-design-system/layout-style/index";
+// Styles plugins (apexchart, fullcalendar, choicejs, select2, sweet-alert, fslightbox\u2026)
+@import "./xray-design-system/plugins/plugins";
