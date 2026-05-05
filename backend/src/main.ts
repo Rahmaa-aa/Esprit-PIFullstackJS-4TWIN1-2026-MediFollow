@@ -1,8 +1,7 @@
 import 'reflect-metadata';
 import * as dns from 'dns';
-// Utiliser Google DNS pour résoudre les enregistrements SRV (bloqués par certains FAI)
+// Keep IPv4 preference but let Kubernetes/CoreDNS handle resolver selection.
 dns.setDefaultResultOrder('ipv4first');
-dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 import { mkdirSync } from 'fs';
 import { join } from 'path';
