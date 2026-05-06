@@ -1,0 +1,26 @@
+# Sonatype Nexus 3 (OSS) for the MediFollow master VM.
+# Runs on the master alongside Jenkins/Sonar; UI on guest 8081 → host 8082 (Vagrantfile).
+# Docker hosted registries (default 8082/8083 inside Nexus) are reached on the *cluster network*
+# only — keep host-port mapping below in sync with what you publish in Nexus admin.
+
+services:
+  nexus:
+    image: sonatype/nexus3:latest
+    container_name: nexus
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    environment:
+      INSTALL4J_ADD_VM_PARAMS: "-Xms1g -Xmx1g -XX:MaxDirectMemorySize=1g"
+    ports:
+      # UI / API (mapped to host 8082 by Vagrant on the master)
+      - "8081:8081"
+      # Docker hosted registry — create one in Nexus admin pointing to this port.
+      - "8085:8085"
+    volumes:
+      - nexus-data:/nexus-data
+
+volumes:
+  nexus-data:
