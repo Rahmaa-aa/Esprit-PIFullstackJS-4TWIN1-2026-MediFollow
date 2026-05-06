@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -31,6 +32,7 @@ const {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(LoginAttempt.name) private loginAttemptModel: Model<LoginAttempt>,
@@ -563,22 +565,20 @@ export class AuthService {
       throw new UnauthorizedException('Accès administrateur requis');
     }
 
-    const token = this.emailService.generateToken();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    await this.loginAttemptModel.create({
-      userId: user._id.toString(),
-      token,
-      email: user.email,
-      used: false,
-      expiresAt,
-    });
-
-    await this.emailService.sendLoginConfirmation(user.email, token, user.name);
-
+    const payload = { sub: user._id, email: user.email, role: user.role };
+    const u = user.toObject();
     return {
-      pending: true,
-      message: 'Un lien de confirmation a été envoyé à votre adresse email. Cliquez dessus pour accéder à votre session.',
-      email: user.email,
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: u._id,
+        email: u.email,
+        name: u.name,
+        role: u.role,
+        profileImage: u.profileImage,
+        alternateEmail: u.alternateEmail,
+        languages: u.languages || [],
+        socialMedia: u.socialMedia || {},
+      },
     };
   }
 
