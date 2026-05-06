@@ -40,7 +40,17 @@ const isKeywordMatch = (text, keywords) => {
 const SignIn = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { isActive: handActive, startHandGesture, stopHandGesture, error: handError, setError: setHandError } = useHandGesture();
+  const {
+    isActive: handActive,
+    startHandGesture,
+    stopHandGesture,
+    error: handError,
+    setError: setHandError,
+    eyeTrackingEnabled,
+    eyeTrackingCalibrated,
+    requestEyeTrackingToggle,
+    openEyeCalibrationModal,
+  } = useHandGesture();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -50,11 +60,13 @@ const SignIn = () => {
   const [listeningField, setListeningField] = useState(null);
   const [speechError, setSpeechError] = useState("");
   const [isReadingPage, setIsReadingPage] = useState(false);
+  const [fingerMouseA11yMessage, setFingerMouseA11yMessage] = useState("");
   const [faceLoading, setFaceLoading] = useState(false);
   const [faceCameraOn, setFaceCameraOn] = useState(false);
   const [faceCameraReady, setFaceCameraReady] = useState(false);
   const [faceCameraBooting, setFaceCameraBooting] = useState(false);
   const [faceCameraError, setFaceCameraError] = useState("");
+  const [a11yTextMessage, setA11yTextMessage] = useState("");
   const recognitionRef = useRef(null);
   const utteranceRef = useRef(null);
   const faceVideoRef = useRef(null);
@@ -149,6 +161,16 @@ const SignIn = () => {
     setListeningField(null);
   }, []);
 
+  const handleStartFingerMouse = useCallback(() => {
+    startHandGesture();
+    setFingerMouseA11yMessage("Simulation souris par doigt activée.");
+  }, [startHandGesture]);
+
+  const handleStopFingerMouse = useCallback(() => {
+    stopHandGesture();
+    setFingerMouseA11yMessage("Simulation souris par doigt désactivée.");
+  }, [stopHandGesture]);
+
   const stopPageReading = useCallback(() => {
     if (SpeechSynthesis) {
       SpeechSynthesis.cancel();
@@ -200,6 +222,25 @@ const SignIn = () => {
   useEffect(() => {
     localStorage.setItem(LARGE_TEXT_STORAGE_KEY, largeTextEnabled ? "1" : "0");
   }, [largeTextEnabled]);
+
+  const toggleLargeTextAccessibility = useCallback(() => {
+    setLargeTextEnabled((prev) => {
+      const next = !prev;
+      setA11yTextMessage(next ? "Mode grand texte activé." : "Mode grand texte désactivé.");
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.altKey && event.key.toLowerCase() === "t") {
+        event.preventDefault();
+        toggleLargeTextAccessibility();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [toggleLargeTextAccessibility]);
 
   useEffect(() => {
     return () => {
@@ -475,7 +516,8 @@ const SignIn = () => {
                       <button
                         type="button"
                         className={`btn btn-sm a11y-btn ${largeTextEnabled ? "btn-primary" : "btn-outline-primary"}`}
-                        onClick={() => setLargeTextEnabled((v) => !v)}
+                        onClick={toggleLargeTextAccessibility}
+                        title="Raccourci clavier: Alt + T"
                         data-eye-clickable
                       >
                         <i className="ri-font-size me-1"></i>
@@ -490,6 +532,29 @@ const SignIn = () => {
                         >
                           <i className={`me-1 ${isReadingPage ? "ri-volume-mute-line" : "ri-volume-up-line"}`}></i>
                           {isReadingPage ? t("signIn.stopReading") : t("signIn.readPage")}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={`btn btn-sm a11y-btn ${eyeTrackingEnabled ? "btn-primary" : "btn-outline-primary"}`}
+                        onClick={requestEyeTrackingToggle}
+                        data-eye-clickable
+                        aria-pressed={eyeTrackingEnabled}
+                        title={t("signIn.eyeTrackingLoginTitle")}
+                      >
+                        <i className={`me-1 ${eyeTrackingEnabled ? "ri-eye-line" : "ri-eye-off-line"}`}></i>
+                        {eyeTrackingEnabled ? t("signIn.eyeTrackingDisable") : t("signIn.eyeTrackingEnable")}
+                      </button>
+                      {eyeTrackingCalibrated && (
+                        <button
+                          type="button"
+                          className="btn btn-sm a11y-btn btn-outline-secondary"
+                          onClick={openEyeCalibrationModal}
+                          data-eye-clickable
+                          title={t("signIn.eyeTrackingRecalibrate")}
+                        >
+                          <i className="ri-refresh-line me-1"></i>
+                          {t("signIn.eyeTrackingRecalibrate")}
                         </button>
                       )}
                     </div>
@@ -521,12 +586,22 @@ const SignIn = () => {
                   )}
                   <div className="assist-actions d-flex gap-2 flex-wrap align-items-center mb-2">
                     {!handActive ? (
-                      <button type="button" className="btn btn-sm assist-btn assist-btn-hand" onClick={startHandGesture}>
+                      <button
+                        type="button"
+                        className="btn btn-sm assist-btn assist-btn-hand"
+                        onClick={handleStartFingerMouse}
+                        data-eye-clickable
+                      >
                         <i className="ri-camera-line me-1"></i>
                         {t("signIn.startHandNav")}
                       </button>
                     ) : (
-                      <button type="button" className="btn btn-sm assist-btn assist-btn-hand is-active" onClick={stopHandGesture}>
+                      <button
+                        type="button"
+                        className="btn btn-sm assist-btn assist-btn-hand is-active"
+                        onClick={handleStopFingerMouse}
+                        data-eye-clickable
+                      >
                         <i className="ri-camera-off-line me-1"></i>
                         {t("signIn.stopHandNav")}
                       </button>
@@ -591,6 +666,9 @@ const SignIn = () => {
                   <p className="text-muted small mb-2" style={{ fontSize: "0.75rem" }}>
                     {t("signIn.handNavHelp")}
                   </p>
+                  <span className="visually-hidden" aria-live="polite">
+                    {fingerMouseA11yMessage}
+                  </span>
                   <div className="form-group mb-3">
                     <div className="d-flex align-items-center justify-content-between mb-1">
                       <label htmlFor="exampleInputEmail1" className="mb-0">{t("signIn.email")}</label>
@@ -619,6 +697,9 @@ const SignIn = () => {
                         </button>
                       )}
                     </div>
+                    <span className="visually-hidden" aria-live="polite">
+                      {a11yTextMessage}
+                    </span>
                   </div>
                   <div className="form-group mb-3">
                     <div className="d-flex justify-content-between mb-1">

@@ -5,6 +5,7 @@ import { Row, Col, Spinner, Alert, Table, Badge, Form, InputGroup, Button } from
 import Card from "../../components/Card";
 import PaginationBar from "../../components/PaginationBar";
 import { usePagination } from "../../hooks/usePagination";
+import A11yToolbar from "../../components/A11yToolbar";
 import { appointmentApi } from "../../services/api";
 import { hospitalDepartmentLabel } from "../../constants/hospitalDepartments";
 
@@ -121,6 +122,7 @@ const CareCoordinatorAppointments = () => {
 
   return (
     <>
+      <A11yToolbar />
       <Row>
         <Col sm={12}>
           <Card>
