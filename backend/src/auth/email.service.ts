@@ -22,6 +22,11 @@ export class EmailService {
         secure: port === 465,
         requireTLS: port !== 465,
         auth: { user, pass },
+        // Timeouts courts : en prod (Render/Vercel/etc.) on préfère échouer vite
+        // plutôt que laisser une requête HTTP pendre 10 minutes.
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 15_000,
       });
       if (isGmail) {
         const fromEmail = this.extractEmailFromFromHeader(process.env.SMTP_FROM || '');

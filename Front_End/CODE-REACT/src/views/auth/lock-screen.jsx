@@ -16,7 +16,6 @@ const LockScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [pending, setPending] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,14 +23,12 @@ const LockScreen = () => {
     setLoading(true);
     try {
       const data = await authApi.login(email || "admin@medifollow.com", password);
-      if (data.pending) {
-        setPending(true);
-      } else {
-        localStorage.setItem("adminToken", data.access_token);
-        localStorage.setItem("adminUser", JSON.stringify(data.user || { email, role: "admin" }));
-        navigate("/admin/dashboard");
-        window.location.reload();
-      }
+      localStorage.setItem("adminToken", data.access_token);
+      localStorage.setItem("adminUser", JSON.stringify(data.user || { email, role: "admin" }));
+      const role = data.user?.role;
+      const redirectPath = role === "superadmin" ? "/super-admin/dashboard" : "/admin/dashboard";
+      navigate(redirectPath);
+      window.location.reload();
     } catch (err) {
       setError(err.message || t("lockScreen.loginFailed"));
     } finally {
@@ -84,24 +81,11 @@ const LockScreen = () => {
                 <h4 className="mt-3 mb-0">{t("lockScreen.pageTitle")}</h4>
                 <p>{t("lockScreen.intro")}</p>
                 <Form className="mt-0" onSubmit={handleSubmit}>
-                  {pending && (
-                    <div className="alert alert-success py-2" role="alert">
-                      <i className="ri-mail-line me-2"></i>
-                      {t("lockScreen.pendingEmailCheck")}
-                    </div>
-                  )}
                   {error && (
                     <div className="alert alert-danger py-2" role="alert">
                       {error}
                     </div>
                   )}
-                  {pending && (
-                    <button type="button" className="btn btn-outline-secondary mt-2" onClick={() => { setPending(false); }}>
-                      {t("lockScreen.retryOtherLogin")}
-                    </button>
-                  )}
-                  {!pending && (
-                  <>
                   <Form.Group className="form-group mb-3" controlId="email">
                     <Form.Label className="mb-2">{t("lockScreen.email")}</Form.Label>
                     <Form.Control
@@ -143,8 +127,6 @@ const LockScreen = () => {
                       {loading ? t("lockScreen.signingIn") : t("lockScreen.signInButton")}
                     </button>
                   </div>
-                  </>
-                  )}
                   <div className="sign-info mt-3">
                     <span className="dark-color d-inline-block">
                       <Link to="/auth/sign-in">{t("lockScreen.userSignInLink")}</Link>
