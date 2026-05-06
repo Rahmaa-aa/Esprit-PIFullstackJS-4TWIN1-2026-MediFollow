@@ -1,0 +1,91 @@
+{
+  "name": "Appointment Email Confirmation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "appointment-confirmed",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook - Appointment Confirmed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "appointment-email-confirmation"
+    },
+    {
+      "parameters": {
+        "functionCode": "const item = $input.first().json;\nconst payload = item.body && typeof item.body === 'object' ? item.body : item;\nconst appointment = payload.appointment || payload;\nconst p = appointment.patientId;\nconst patient = p && typeof p === 'object' && !Array.isArray(p) ? p : {};\nconst patientEmail = String(patient.email || appointment.patientEmail || '').trim();\nconst doctorEmailRaw = String(appointment.doctorEmail || '').trim();\nconst patientName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Patient';\nconst id = appointment._id || appointment.id;\nconst doctorName = appointment.doctorName || 'Doctor';\nconst appointmentDate = appointment.date || '';\nconst appointmentTime = appointment.time || '';\nconst appointmentType = appointment.type || 'checkup';\nconst location = appointment.location || '';\nconst isVideoCall = !!appointment.isVideoCall;\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nconst videoTxtP = isVideoCall ? '\\n\\n▸ Video appointment\\n   A meeting link will be sent in a separate message.\\n' : '';\nconst emailTextPatient = [\n  `Dear ${patientName},`,\n  '',\n  'Your appointment is confirmed. Here is a summary:',\n  '',\n  '────────────────────────────────────────',\n  `  Date      ${appointmentDate || '—'}`,\n  `  Time      ${appointmentTime || '—'}`,\n  `  Type      ${appointmentType}`,\n  `  Doctor    ${doctorName}`,\n  `  Location  ${location || '—'}`,\n  '────────────────────────────────────────',\n  videoTxtP,\n  '',\n  'Please arrive about 15 minutes early. Bring a valid ID and insurance card if required.',\n  '',\n  'To reschedule or cancel, contact us at least 24 hours in advance.',\n  '',\n  'Thank you,',\n  'MediFollow Team',\n].join('\\n');\nconst videoTxtD = isVideoCall ? '\\n\\n▸ Video appointment — send the patient the meeting link.\\n' : '';\nconst emailTextDoctor = [\n  `Hello,`,\n  '',\n  `An appointment with **${patientName}** has been confirmed on your schedule.`,\n  '',\n  '────────────────────────────────────────',\n  `  Patient   ${patientName}`,\n  `  Date      ${appointmentDate || '—'}`,\n  `  Time      ${appointmentTime || '—'}`,\n  `  Type      ${appointmentType}`,\n  `  Location  ${location || '—'}`,\n  '────────────────────────────────────────',\n  videoTxtD,\n  '',\n  'This message was sent automatically by MediFollow.',\n].join('\\n').replace(/\\*\\*/g, '');\nconst eN = esc(patientName);\nconst eD = esc(doctorName);\nconst eL = esc(location);\nconst eDate = esc(appointmentDate);\nconst eTime = esc(appointmentTime);\nconst eType = esc(appointmentType);\nconst videoHtmlP = isVideoCall\n  ? '<p style=\"margin:16px 0 0;font-size:14px;color:#1a365d;background:#ebf8ff;padding:12px 14px;border-radius:8px;border-left:4px solid #3182ce;\"><strong>Video appointment</strong> — your meeting link will be sent separately.</p>'\n  : '';\nconst emailHtmlPatient = '<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body style=\"margin:0;padding:24px;background:#f7fafc;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#2d3748;line-height:1.5;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\"><table role=\"presentation\" width=\"560\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);\"><tr><td style=\"background:linear-gradient(135deg,#2b6cb0,#2c5282);color:#fff;padding:22px 28px;\"><h1 style=\"margin:0;font-size:20px;font-weight:600;\">Appointment confirmed</h1><p style=\"margin:6px 0 0;font-size:14px;opacity:.95;\">MediFollow</p></td></tr><tr><td style=\"padding:28px;\"><p style=\"margin:0 0 16px;font-size:16px;\">Dear <strong>' + eN + '</strong>,</p><p style=\"margin:0 0 20px;font-size:15px;\">Your appointment is confirmed. Details below:</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"font-size:14px;border-collapse:collapse;\"><tr><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;color:#718096;width:32%;\">Date</td><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;\"><strong>' + (eDate || '—') + '</strong></td></tr><tr><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;color:#718096;\">Time</td><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;\"><strong>' + (eTime || '—') + '</strong></td></tr><tr><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;color:#718096;\">Type</td><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;\"><strong>' + eType + '</strong></td></tr><tr><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;color:#718096;\">Doctor</td><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;\"><strong>' + eD + '</strong></td></tr><tr><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;color:#718096;\">Location</td><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;\"><strong>' + (eL || '—') + '</strong></td></tr></table>' + videoHtmlP + '<p style=\"margin:24px 0 0;font-size:14px;color:#4a5568;\">Please arrive about <strong>15 minutes early</strong>. Bring a valid ID and insurance card if required.</p><p style=\"margin:16px 0 0;font-size:14px;color:#4a5568;\">To reschedule or cancel, contact us at least <strong>24 hours</strong> in advance.</p><p style=\"margin:28px 0 0;font-size:14px;color:#2d3748;\">Thank you,<br><strong>MediFollow Team</strong></p></td></tr></table></td></tr></table></body></html>';\nconst videoHtmlD = isVideoCall\n  ? '<p style=\"margin:16px 0 0;font-size:14px;color:#744210;background:#fffaf0;padding:12px 14px;border-radius:8px;border-left:4px solid #d69e2e;\"><strong>Video appointment</strong> — remember to send the patient the meeting link.</p>'\n  : '';\nconst emailHtmlDoctor = '<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body style=\"margin:0;padding:24px;background:#f7fafc;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#2d3748;line-height:1.5;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\"><table role=\"presentation\" width=\"560\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);\"><tr><td style=\"background:linear-gradient(135deg,#285e61,#234e52);color:#fff;padding:22px 28px;\"><h1 style=\"margin:0;font-size:20px;font-weight:600;\">Confirmed appointment</h1><p style=\"margin:6px 0 0;font-size:14px;opacity:.95;\">MediFollow · Doctor notice</p></td></tr><tr><td style=\"padding:28px;\"><p style=\"margin:0 0 16px;font-size:16px;\">Hello,</p><p style=\"margin:0 0 20px;font-size:15px;\">An appointment with <strong>' + eN + '</strong> has been <strong>confirmed</strong> on your schedule.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"font-size:14px;border-collapse:collapse;\"><tr><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;color:#718096;width:32%;\">Patient</td><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;\"><strong>' + eN + '</strong></td></tr><tr><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;color:#718096;\">Date</td><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;\"><strong>' + (eDate || '—') + '</strong></td></tr><tr><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;color:#718096;\">Time</td><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;\"><strong>' + (eTime || '—') + '</strong></td></tr><tr><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;color:#718096;\">Type</td><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;\"><strong>' + eType + '</strong></td></tr><tr><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;color:#718096;\">Location</td><td style=\"padding:10px 0;border-bottom:1px solid #e2e8f0;\"><strong>' + (eL || '—') + '</strong></td></tr></table>' + videoHtmlD + '<p style=\"margin:28px 0 0;font-size:13px;color:#718096;\">Automated message from MediFollow.</p></td></tr></table></td></tr></table></body></html>';\nconst emailSubjectPatient = 'Appointment confirmed — ' + appointmentType;\nconst emailSubjectDoctor = 'Confirmed appointment — ' + patientName + (appointmentDate ? ' — ' + appointmentDate : '');\nconst out = [{\n  json: {\n    toEmail: patientEmail || 'noreply@example.invalid',\n    audience: 'patient',\n    appointmentId: id != null ? String(id) : '',\n    emailSubject: emailSubjectPatient,\n    emailText: emailTextPatient,\n    emailHtml: emailHtmlPatient,\n  },\n}];\nif (doctorEmailRaw && doctorEmailRaw.toLowerCase() !== patientEmail.toLowerCase()) {\n  out.push({\n    json: {\n      toEmail: doctorEmailRaw,\n      audience: 'doctor',\n      appointmentId: id != null ? String(id) : '',\n      emailSubject: emailSubjectDoctor,\n      emailText: emailTextDoctor,\n      emailHtml: emailHtmlDoctor,\n    },\n  });\n}\nreturn out;"
+      },
+      "id": "function-1",
+      "name": "Prepare Email Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "MediFollow <noreply@example.invalid>",
+        "toEmail": "={{ $json.toEmail }}",
+        "subject": "={{ $json.emailSubject }}",
+        "text": "={{ $json.emailText }}",
+        "html": "={{ $json.emailHtml }}",
+        "options": {}
+      },
+      "id": "email-1",
+      "name": "Send Confirmation Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const result = $input.first().json;\nreturn [{\n  json: {\n    success: true,\n    message: 'Appointment confirmation email sent successfully',\n    timestamp: new Date().toISOString(),\n    emailResult: result\n  }\n}];"
+      },
+      "id": "function-2",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Appointment Confirmed": {
+      "main": [
+        [
+          {
+            "node": "Prepare Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Email Data": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Confirmation Email": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

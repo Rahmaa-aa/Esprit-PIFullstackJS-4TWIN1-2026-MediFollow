@@ -1,0 +1,115 @@
+{
+  "name": "Appointment Reminder",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "appointment-reminder",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook - Appointment Reminder",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const item = $input.first().json;\nconst payload = item.body && typeof item.body === 'object' ? item.body : item;\nconst appointment = payload.appointment || payload;\nif (!appointment || typeof appointment !== 'object') {\n  return [{ json: { error: 'missing appointment', patientEmail: '', patientName: '', patientPhone: '' } }];\n}\nconst hoursBefore = payload.metadata?.hoursBefore || 24;\nconst p = appointment.patientId;\nconst patientInfo = p && typeof p === 'object' && !Array.isArray(p) ? p : {};\nconst id = appointment._id || appointment.id;\nreturn [{\n  json: {\n    patientEmail: patientInfo.email || appointment.patientEmail || '',\n    patientName: `${patientInfo.firstName || ''} ${patientInfo.lastName || ''}`.trim() || 'Patient',\n    patientPhone: patientInfo.phone || '',\n    doctorName: appointment.doctorName || 'Your Doctor',\n    appointmentDate: appointment.date || '',\n    appointmentTime: appointment.time || '',\n    appointmentType: appointment.type || 'checkup',\n    location: appointment.location || 'Medical Center',\n    isVideoCall: !!appointment.isVideoCall,\n    hoursBefore,\n    appointmentId: id != null ? String(id) : ''\n  }\n}];"
+      },
+      "id": "function-1",
+      "name": "Prepare Reminder Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "MediFollow <noreply@example.invalid>",
+        "toEmail": "={{ $json.patientEmail }}",
+        "subject": "Appointment Reminder - {{ $json.appointmentType }} Tomorrow",
+        "text": "Dear {{ $json.patientName }},\n\nThis is a friendly reminder about your upcoming appointment:\n\nAppointment Details:\n- Date: {{ $json.appointmentDate }}\n- Time: {{ $json.appointmentTime }}\n- Type: {{ $json.appointmentType }}\n- Doctor: {{ $json.doctorName }}\n- Location: {{ $json.location }}\n\n{{ $json.isVideoCall ? 'This is a video call appointment. Check your email for the meeting link.\\n\\n' : '' }}Please remember to:\n- Arrive 15 minutes early\n- Bring your ID and insurance card\n- Bring any relevant medical records\n- Take your regular medications unless instructed otherwise\n\nIf you need to reschedule or cancel, please call us as soon as possible.\n\nWe look forward to seeing you!\n\nMediFollow Team",
+        "options": {}
+      },
+      "id": "email-1",
+      "name": "Send Reminder Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const data = $node['Prepare Reminder Data'].json;\nif (data.patientPhone) {\n  return [{\n    json: {\n      to: data.patientPhone,\n      message: 'Reminder: Your appointment with ' + data.doctorName + ' is tomorrow at ' + data.appointmentTime + '. Reply CANCEL to reschedule.'\n    }\n  }];\n}\nreturn [{ json: { skippedSms: true } }];"
+      },
+      "id": "function-2",
+      "name": "Prepare SMS",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "functionCode": "const data = $node['Prepare Reminder Data'].json;\nreturn [{\n  json: {\n    success: true,\n    message: 'Appointment reminders sent successfully',\n    timestamp: new Date().toISOString(),\n    appointmentId: data.appointmentId,\n    hoursBefore: data.hoursBefore\n  }\n}];"
+      },
+      "id": "function-3",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "Webhook - Appointment Reminder": {
+      "main": [
+        [
+          {
+            "node": "Prepare Reminder Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Reminder Data": {
+      "main": [
+        [
+          {
+            "node": "Send Reminder Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Reminder Email": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare SMS": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

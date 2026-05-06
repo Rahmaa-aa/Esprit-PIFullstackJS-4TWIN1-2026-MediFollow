@@ -1,0 +1,859 @@
+/* Page dossier patient — session médecin */
+
+.doctor-patient-dossier-page {
+  background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 12%, transparent 28%);
+  min-height: 100%;
+}
+
+.dossier-page-wrap {
+  max-width: 1180px;
+}
+
+.dossier-page-toolbar {
+  padding-top: 0.15rem;
+}
+
+.dossier-breadcrumb__back {
+  color: #089bab;
+  font-size: 0.9375rem;
+}
+
+.dossier-breadcrumb__back:hover {
+  color: #067a86;
+}
+
+.dossier-breadcrumb__sep {
+  opacity: 0.45;
+  user-select: none;
+}
+
+.dossier-breadcrumb__current {
+  font-size: 0.875rem;
+}
+
+.dossier-hero-eyebrow {
+  letter-spacing: 0.1em;
+  font-size: 0.6875rem;
+}
+
+.dossier-hero-title {
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.dossier-hero-id {
+  letter-spacing: 0.04em;
+}
+
+.dossier-hero-chip {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  max-width: 100%;
+}
+
+/* Navigation rapide entre sections */
+.dossier-quick-nav {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 4;
+  padding: 0.35rem 0;
+  margin-left: -0.25rem;
+  margin-right: -0.25rem;
+}
+
+.dossier-quick-nav__scroll {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 0.85rem;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(8px);
+}
+
+.dossier-quick-nav__link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  text-decoration: none;
+  border-radius: 2rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #fff;
+  line-height: 1.3;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.dossier-quick-nav__link:hover {
+  color: #089bab;
+  border-color: rgba(8, 155, 171, 0.45);
+  background: rgba(8, 155, 171, 0.06);
+}
+
+[id^="dossier-section"] {
+  scroll-margin-top: 5.5rem;
+}
+
+.dossier-section-card__header {
+  border-bottom: 1px solid rgba(8, 155, 171, 0.12) !important;
+}
+
+.dossier-section-card__title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+}
+
+.dossier-section-card__body {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: #334155;
+}
+
+.dossier-section-card__body .text-muted {
+  color: #64748b !important;
+}
+
+.dossier-lead {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  max-width: 52rem;
+}
+
+.dossier-form-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.dossier-protocol-form .form-control,
+.dossier-protocol-form .form-select {
+  font-size: 0.9375rem;
+}
+
+/* Bouton « Ajouter » : ne pas dépendre du parent .dossier-protocol-form (2e Row sans cette classe) */
+button.dossier-protocol-addon-btn.btn {
+  font-size: 0.9375rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-width: 2px;
+  font-weight: 600;
+}
+
+/* Actif : texte toujours contrasté (évite fond teal plein sans libellé) */
+button.dossier-protocol-addon-btn.btn-outline-primary:not(:disabled):not(.disabled) {
+  color: #0f4c54 !important;
+  background-color: #ffffff !important;
+  border-color: #089bab !important;
+  -webkit-text-fill-color: #0f4c54;
+}
+
+button.dossier-protocol-addon-btn.btn-outline-primary:not(:disabled):not(.disabled):hover {
+  color: #06343a !important;
+  background-color: rgba(8, 155, 171, 0.12) !important;
+  border-color: #067a86 !important;
+  -webkit-text-fill-color: #06343a;
+}
+
+button.dossier-protocol-addon-btn:disabled,
+button.dossier-protocol-addon-btn.disabled,
+fieldset:disabled button.dossier-protocol-addon-btn {
+  opacity: 1 !important;
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b;
+  background-color: #e2e8f0 !important;
+  background-image: none !important;
+  border-color: #64748b !important;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+
+.dossier-protocol-divider {
+  border-color: rgba(148, 163, 184, 0.25) !important;
+}
+
+.dossier-data-table {
+  font-size: 0.875rem;
+}
+
+.dossier-data-table thead th {
+  font-size: 0.75rem;
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+.dossier-data-table tbody td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  vertical-align: middle;
+}
+
+.dossier-data-table tbody tr:nth-child(even) {
+  background-color: rgba(248, 250, 252, 0.85);
+}
+
+.dossier-data-table tbody tr:hover {
+  background-color: rgba(8, 155, 171, 0.06) !important;
+}
+
+.dossier-hero {
+  background: linear-gradient(145deg, rgba(8, 155, 171, 0.09) 0%, rgba(255, 255, 255, 0.95) 42%, #f8fafc 100%);
+  border: 1px solid rgba(8, 155, 171, 0.14);
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.06);
+}
+
+.dossier-hero-avatar {
+  width: 80px;
+  height: 80px;
+  font-size: 1.4rem;
+  letter-spacing: 0.02em;
+  background: linear-gradient(160deg, #089bab 0%, #0a7a88 100%);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(8, 155, 171, 0.35);
+}
+
+.dossier-breadcrumb a:hover {
+  color: #089bab !important;
+}
+
+.dossier-section-card {
+  border-radius: 1rem !important;
+  border: 1px solid rgba(148, 163, 184, 0.18) !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.045);
+  overflow: hidden;
+}
+
+.dossier-section-card .card-header {
+  background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+  border-bottom: 1px solid rgba(8, 155, 171, 0.1) !important;
+}
+
+.dossier-section-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 0.65rem;
+  background: linear-gradient(145deg, rgba(8, 155, 171, 0.12), rgba(8, 155, 171, 0.04));
+  color: #089bab;
+}
+
+.dossier-table-wrap {
+  border-radius: 0.65rem;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.dossier-table-wrap table {
+  margin-bottom: 0;
+}
+
+.dossier-table-wrap thead th {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dossier-table-wrap .dossier-data-table thead th {
+  font-size: 0.75rem;
+}
+
+.dossier-intake-card {
+  border-radius: 0.85rem !important;
+  border: 1px solid rgba(148, 163, 184, 0.14) !important;
+  transition: box-shadow 0.2s ease;
+}
+
+.dossier-intake-card:hover {
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.dossier-rdv-item {
+  border-radius: 0.65rem;
+  border: 1px solid rgba(148, 163, 184, 0.14) !important;
+  background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.dossier-rdv-item .fw-semibold {
+  color: #0f172a;
+}
+
+.dossier-symptoms {
+  border-radius: 0.85rem;
+  border: 1px dashed rgba(8, 155, 171, 0.25) !important;
+  background: rgba(8, 155, 171, 0.04);
+}
+
+.dossier-symptoms .small {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0f172a !important;
+}
+
+.dossier-symptoms .text-dark {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.dossier-recorded-bar {
+  border-bottom: 1px solid rgba(8, 155, 171, 0.15);
+}
+
+/* Bandeau unique SOS + alertes (clignotement urgence) */
+@keyframes dossier-vitals-emergency-urgent {
+  0%,
+  100% {
+    background-color: rgba(254, 226, 226, 0.97);
+    border-color: rgba(220, 53, 69, 0.5);
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.35);
+  }
+  50% {
+    background-color: rgba(255, 240, 240, 1);
+    border-color: rgba(185, 28, 28, 0.95);
+    box-shadow: 0 0 22px 6px rgba(220, 53, 69, 0.28);
+  }
+}
+
+@keyframes dossier-vitals-emergency-caution {
+  0%,
+  100% {
+    opacity: 1;
+    border-color: rgba(253, 126, 20, 0.45);
+  }
+  50% {
+    opacity: 0.92;
+    border-color: rgba(253, 126, 20, 0.75);
+  }
+}
+
+@keyframes dossier-vitals-emergency-icon-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+.dossier-vitals-emergency-bundle {
+  border-radius: 0.85rem;
+  border: 2px solid;
+  padding: 0.9rem 1rem 1rem;
+  color: #450a0a;
+}
+
+.dossier-vitals-emergency-bundle--urgent {
+  animation: dossier-vitals-emergency-urgent 1.05s ease-in-out infinite;
+}
+
+.dossier-vitals-emergency-bundle--caution {
+  background: linear-gradient(180deg, #fff7ed 0%, #fffefb 100%);
+  color: #7c2d12;
+  animation: dossier-vitals-emergency-caution 1.8s ease-in-out infinite;
+}
+
+.dossier-vitals-emergency-bundle__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.65rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(185, 28, 28, 0.2);
+}
+
+.dossier-vitals-emergency-bundle--caution .dossier-vitals-emergency-bundle__head {
+  border-bottom-color: rgba(234, 88, 12, 0.25);
+}
+
+.dossier-vitals-emergency-bundle__pulse-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  background: rgba(220, 53, 69, 0.15);
+  color: #b91c1c;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.dossier-vitals-emergency-bundle--urgent .dossier-vitals-emergency-bundle__pulse-icon {
+  animation: dossier-vitals-emergency-icon-pulse 1.05s ease-in-out infinite;
+}
+
+.dossier-vitals-emergency-bundle--caution .dossier-vitals-emergency-bundle__pulse-icon {
+  background: rgba(253, 126, 20, 0.15);
+  color: #c2410c;
+  animation: dossier-vitals-emergency-icon-pulse 1.8s ease-in-out infinite;
+}
+
+.dossier-vitals-emergency-bundle__title {
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.dossier-vitals-emergency-bundle__sos {
+  padding: 0.5rem 0;
+  color: #7f1d1d;
+}
+
+.dossier-vitals-emergency-bundle__list {
+  margin: 0;
+}
+
+.dossier-vitals-emergency-bundle__list--after-sos {
+  margin-top: 0.5rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(220, 53, 69, 0.22);
+}
+
+.dossier-vitals-emergency-bundle--caution .dossier-vitals-emergency-bundle__list--after-sos {
+  border-top-color: rgba(234, 88, 12, 0.22);
+}
+
+.dossier-vitals-emergency-bundle__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.15rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.45;
+  padding: 0.45rem 0.35rem;
+  margin: 0 -0.35rem;
+  border-radius: 0.45rem;
+}
+
+.dossier-vitals-emergency-bundle__item + .dossier-vitals-emergency-bundle__item {
+  margin-top: 0.15rem;
+}
+
+.dossier-vitals-emergency-bundle__item--danger {
+  background: rgba(254, 202, 202, 0.35);
+  color: #7f1d1d;
+}
+
+.dossier-vitals-emergency-bundle__item--warning {
+  background: rgba(254, 243, 199, 0.55);
+  color: #78350f;
+}
+
+.dossier-vitals-emergency-bundle__item i {
+  margin-top: 0.12rem;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dossier-vitals-emergency-bundle--urgent,
+  .dossier-vitals-emergency-bundle--caution,
+  .dossier-vitals-emergency-bundle--urgent .dossier-vitals-emergency-bundle__pulse-icon,
+  .dossier-vitals-emergency-bundle--caution .dossier-vitals-emergency-bundle__pulse-icon {
+    animation: none !important;
+  }
+
+  .dossier-vitals-emergency-bundle--urgent {
+    background-color: rgba(254, 226, 226, 0.97);
+    border-color: rgba(220, 53, 69, 0.65);
+  }
+
+  .dossier-sos-fs-modal__backdrop,
+  .dossier-sos-fs-modal__content,
+  .dossier-sos-fs-modal__pin-ring,
+  .dossier-sos-fs-modal__map-btn {
+    animation: none !important;
+  }
+}
+
+/* Modale plein écran SOS + animation urgence */
+@keyframes dossier-sos-backdrop-pulse {
+  0%,
+  100% {
+    background-color: rgba(127, 29, 29, 0.72);
+  }
+  50% {
+    background-color: rgba(185, 28, 28, 0.88);
+  }
+}
+
+@keyframes dossier-sos-modal-shake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-3px, 2px);
+  }
+  40% {
+    transform: translate(3px, -2px);
+  }
+  60% {
+    transform: translate(-2px, -1px);
+  }
+  80% {
+    transform: translate(2px, 1px);
+  }
+}
+
+@keyframes dossier-sos-pin-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.55);
+  }
+  70% {
+    transform: scale(1.06);
+    opacity: 1;
+    box-shadow: 0 0 0 22px rgba(220, 53, 69, 0);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+}
+
+@keyframes dossier-sos-map-btn-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0.5rem 1.25rem rgba(220, 53, 69, 0.45);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0.75rem 2rem rgba(220, 53, 69, 0.65);
+    transform: scale(1.03);
+  }
+}
+
+.dossier-sos-fs-modal .modal-dialog {
+  max-width: 100%;
+  margin: 0;
+  height: 100%;
+}
+
+.dossier-sos-fs-modal__backdrop.show {
+  animation: dossier-sos-backdrop-pulse 1.2s ease-in-out infinite;
+}
+
+.dossier-sos-fs-modal__content {
+  min-height: 100vh;
+  background: linear-gradient(165deg, #fff5f5 0%, #ffffff 38%, #fef2f2 100%) !important;
+  animation: dossier-sos-modal-shake 0.5s ease-in-out 3;
+  animation-delay: 0.1s;
+}
+
+.dossier-sos-fs-modal__header {
+  background: linear-gradient(90deg, #b91c1c 0%, #dc2626 50%, #b91c1c 100%) !important;
+  padding: 1rem 1.25rem !important;
+  box-shadow: 0 4px 20px rgba(185, 28, 28, 0.35);
+}
+
+.dossier-sos-fs-modal__title-icon {
+  display: inline-flex;
+  animation: dossier-vitals-emergency-icon-pulse 1s ease-in-out infinite;
+}
+
+.dossier-sos-fs-modal__subtitle {
+  font-size: 1.25rem;
+  color: #7f1d1d;
+  letter-spacing: -0.02em;
+}
+
+.dossier-sos-fs-modal__lead {
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.dossier-sos-fs-modal__pin-ring {
+  width: 7.5rem;
+  height: 7.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(220, 53, 69, 0.12);
+  animation: dossier-sos-pin-ring 1.8s ease-out infinite;
+}
+
+.dossier-sos-fs-modal__pin-inner {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #dc2626, #991b1b);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.25rem;
+  box-shadow: 0 8px 28px rgba(220, 53, 69, 0.45);
+}
+
+.dossier-sos-fs-modal__map-btn {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  animation: dossier-sos-map-btn-pulse 1.4s ease-in-out infinite;
+}
+
+.dossier-sos-fs-modal__map-btn:hover {
+  animation: none;
+  transform: scale(1.02);
+}
+
+/* Bloc « alertes constantes — clôture » : fond clair, texte lisible (évite alert-danger plein) */
+.dossier-vital-closure-panel {
+  border-radius: 0.85rem;
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  background: linear-gradient(165deg, #fff8f8 0%, #ffffff 55%);
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+  border-left: 4px solid #dc3545;
+}
+
+.dossier-vital-closure-panel__head {
+  padding: 1rem 1.15rem 0.65rem;
+}
+
+.dossier-vital-closure-panel__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 0.7rem;
+  background: rgba(220, 53, 69, 0.12);
+  color: #b02a37;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.dossier-vital-closure-panel__title {
+  font-weight: 600;
+  font-size: 1.02rem;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.dossier-vital-closure-panel__lead {
+  font-size: 0.8125rem;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0.35rem 0 0;
+  max-width: 52rem;
+}
+
+/* Bouton « Tout clôturer » : lisible actif et désactivé (évite outline-danger fané) */
+.dossier-vital-closure-panel .dossier-vital-resolve-all-btn {
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.45rem 1rem;
+  letter-spacing: 0.01em;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.22);
+}
+
+.dossier-vital-closure-panel .dossier-vital-resolve-all-btn:not(:disabled):hover {
+  box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
+}
+
+.dossier-vital-closure-panel .dossier-vital-resolve-all-btn:disabled,
+.dossier-vital-closure-panel .dossier-vital-resolve-all-btn.disabled {
+  opacity: 1 !important;
+  color: #334155 !important;
+  background-color: #e2e8f0 !important;
+  background-image: none !important;
+  border-color: #94a3b8 !important;
+  box-shadow: none !important;
+  font-weight: 600;
+}
+
+.dossier-vital-closure-panel__error {
+  margin: 0 1rem 0.75rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 0.5rem;
+  background: #fef2f2;
+  color: #9f1239;
+  font-size: 0.8125rem;
+  border: 1px solid rgba(220, 38, 38, 0.22);
+  line-height: 1.4;
+}
+
+.dossier-vital-closure-panel__list {
+  padding: 0 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.dossier-vital-closure-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 1rem 1.05rem 1.1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 0.85rem;
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(8, 155, 171, 0.05);
+}
+
+.dossier-vital-closure-row--stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Grille de constantes dans chaque ligne d’alerte */
+.dossier-vital-closure-row__vitals {
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 1rem 1rem 1.05rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(165deg, rgba(248, 250, 252, 0.92) 0%, #ffffff 48%, rgba(241, 245, 249, 0.5) 100%);
+  border: 1px solid rgba(8, 155, 171, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.dossier-vital-closure-row__vitals--empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.65rem;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  color: #64748b;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.dossier-vital-closure-row__vitals--empty i {
+  font-size: 1.25rem;
+  color: #089bab;
+  opacity: 0.85;
+}
+
+.dossier-vital-closure-row__vitals-head {
+  margin-bottom: 0.85rem;
+}
+
+.dossier-vital-closure-row__vitals-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #475569;
+}
+
+.dossier-vital-closure-row__vitals-title::before {
+  content: "";
+  width: 3px;
+  height: 1rem;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #089bab, #0a6b76);
+  flex-shrink: 0;
+}
+
+.dossier-vital-closure-row__vitals-grid {
+  margin-bottom: 0 !important;
+}
+
+.dossier-vital-closure-row__vitals-grid > [class*="col"] {
+  display: flex;
+}
+
+.dossier-vital-closure-row__vitals-grid > [class*="col"] > div {
+  width: 100%;
+}
+
+.dossier-vital-closure-row__instruction {
+  margin-top: 1rem !important;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.dossier-vital-closure-row__instruction-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155 !important;
+  margin-bottom: 0.4rem !important;
+}
+
+.dossier-vital-closure-row__textarea {
+  font-size: 0.875rem !important;
+  line-height: 1.5;
+  border-radius: 0.55rem;
+  border-color: rgba(148, 163, 184, 0.45);
+  resize: vertical;
+  min-height: 4.5rem;
+}
+
+.dossier-vital-closure-row__textarea:focus {
+  border-color: rgba(8, 155, 171, 0.55);
+  box-shadow: 0 0 0 0.2rem rgba(8, 155, 171, 0.12);
+}
+
+.dossier-vital-bulk-note {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.dossier-vital-closure-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.dossier-vital-closure-row__date {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.dossier-vital-closure-row__score {
+  font-size: 0.8125rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dossier-vital-closure-row .badge {
+  font-weight: 600;
+  font-size: 0.7rem;
+  padding: 0.35em 0.65em;
+  letter-spacing: 0.02em;
+}
+
+.dossier-vital-closure-row__action.btn {
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.5rem;
+}
+
+@media (max-width: 576px) {
+  .dossier-vital-closure-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dossier-vital-closure-row__action {
+    width: 100%;
+  }
+}

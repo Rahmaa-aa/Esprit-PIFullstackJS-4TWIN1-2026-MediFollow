@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    (function () {
+      const savedTheme = sessionStorage.getItem('themeColor');
+
+      if (savedTheme) {
+        const settings = JSON.parse(savedTheme);
+        document.documentElement.setAttribute('data-bs-theme', settings);
+      }
+    })();
+    (function () {
+      try {
+        if (localStorage.getItem("medifollow_dyslexia_mode") === "1") {
+          document.documentElement.classList.add("medifollow-dyslexia-mode");
+        }
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
+  <!-- Google Fonts : préchargement + application non bloquante (chemin critique / LCP) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Poppins:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200&family=Roboto:wght@400;700&family=Roboto+Condensed:wght@400;700&display=optional"
+    onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Poppins:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200&family=Roboto:wght@400;700&family=Roboto+Condensed:wght@400;700&display=optional" /></noscript>
+  <!-- BI + FA5 : copies locales avec font-display:optional et URLs absolues vers les fichiers woff2 CDN (non bloquant) -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preload" as="style" href="/assets/vendor/bootstrap-icons.min.css"
+    onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="/assets/vendor/bootstrap-icons.min.css" /></noscript>
+  <link rel="preload" as="style" href="/assets/vendor/fontawesome-all.min.css"
+    onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="/assets/vendor/fontawesome-all.min.css" /></noscript>
+  <title>MediFollow | React </title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <!-- TensorFlow.js pour le modèle d’émotion : importé dans src/services/face-emotions.js (pas en global : sinon conflit avec face-api.js / tfjs-core 1.7) -->
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>

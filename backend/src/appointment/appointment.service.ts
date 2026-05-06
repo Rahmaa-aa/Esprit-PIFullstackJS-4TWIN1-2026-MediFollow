@@ -3,16 +3,20 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Appointment } from './schemas/appointment.schema';
 import { Patient } from '../patient/schemas/patient.schema';
+import { Doctor } from '../doctor/schemas/doctor.schema';
 import { DoctorAvailabilityService, normalizeDateString, normalizeDoctorId, normalizeTime } from '../doctor-availability/doctor-availability.service';
 import { NotificationService } from '../notification/notification.service';
+import { N8nService } from '../n8n/n8n.service';
 
 @Injectable()
 export class AppointmentService {
   constructor(
     @InjectModel(Appointment.name) private appointmentModel: Model<Appointment>,
     @InjectModel(Patient.name) private patientModel: Model<Patient>,
+    @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
     private doctorAvailabilityService: DoctorAvailabilityService,
     private notificationService: NotificationService,
+    private n8nService: N8nService,
   ) {}
 
   private toObjectId(id: string) {
@@ -24,6 +28,50 @@ export class AppointmentService {
   private localTodayYmd(): string {
     const t = new Date();
     return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+  }
+
+  /** Resolves patient email/name for n8n webhooks (patientId is usually a bare ObjectId on create/update). */
+  private async appointmentPayloadForN8n(doc: Appointment | null): Promise<Record<string, unknown>> {
+    if (!doc) return {};
+    const plain =
+      typeof (doc as { toObject?: () => Record<string, unknown> }).toObject === 'function'
+        ? (doc as { toObject: () => Record<string, unknown> }).toObject()
+        : { ...(doc as unknown as Record<string, unknown>) };
+    const rawPid = plain.patientId;
+    const idStr =
+      rawPid && typeof rawPid === 'object' && (rawPid as { _id?: unknown })._id != null
+        ? String((rawPid as { _id: unknown })._id)
+        : String(rawPid ?? '');
+    let patientEmbed: unknown = rawPid;
+    if (idStr && Types.ObjectId.isValid(idStr)) {
+      const patient = await this.patientModel
+        .findById(idStr)
+        .select('email firstName lastName phone')
+        .lean()
+        .exec();
+      if (patient) {
+        patientEmbed = {
+          _id: patient._id,
+          email: patient.email,
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          phone: patient.phone,
+        };
+      }
+    }
+
+    const doctorIdNorm = normalizeDoctorId(String(plain.doctorId ?? ''));
+    let doctorEmail = '';
+    if (doctorIdNorm && Types.ObjectId.isValid(doctorIdNorm)) {
+      const doctorDoc = await this.doctorModel
+        .findById(doctorIdNorm)
+        .select('email firstName lastName')
+        .lean()
+        .exec();
+      if (doctorDoc?.email) doctorEmail = String(doctorDoc.email).trim();
+    }
+
+    return { ...plain, patientId: patientEmbed, doctorEmail };
   }
 
   async create(data: any) {
@@ -83,6 +131,9 @@ export class AppointmentService {
     if (status === 'confirmed' || status === 'scheduled') {
       try {
         await this.notificationService.notifyDoctorNewAppointment(doc.toObject());
+        const n8nAppt = await this.appointmentPayloadForN8n(doc);
+        await this.n8nService.triggerAppointmentCreated(n8nAppt as unknown as Appointment);
+        await this.n8nService.triggerDoctorNotified(n8nAppt as unknown as Appointment);
       } catch (e) {
         console.error('[Appointment] notifyDoctorNewAppointment:', e);
       }
@@ -91,6 +142,8 @@ export class AppointmentService {
     if (status === 'pending') {
       try {
         await this.notificationService.notifyAdminsAppointmentRequest(doc.toObject());
+        const n8nAppt = await this.appointmentPayloadForN8n(doc);
+        await this.n8nService.triggerAppointmentCreated(n8nAppt as unknown as Appointment);
       } catch (e) {
         console.error('[Appointment] notifyAdminsAppointmentRequest:', e);
       }
@@ -233,8 +286,28 @@ export class AppointmentService {
       if (becameConfirmed) {
         try {
           await this.notificationService.notifyDoctorNewAppointment(doc.toObject());
+          const n8nAppt = await this.appointmentPayloadForN8n(doc);
+          await this.n8nService.triggerAppointmentCreated(n8nAppt as unknown as Appointment);
+          await this.n8nService.triggerAppointmentApproved(n8nAppt as unknown as Appointment);
+          await this.n8nService.triggerDoctorNotified(n8nAppt as unknown as Appointment);
         } catch (e) {
           console.error('[Appointment] notifyDoctorNewAppointment (update):', e);
+        }
+      }
+      if (st === 'cancelled' && prevSt !== 'cancelled') {
+        try {
+          const n8nAppt = await this.appointmentPayloadForN8n(doc);
+          await this.n8nService.triggerAppointmentCancelled(n8nAppt as unknown as Appointment);
+        } catch (e) {
+          console.error('[Appointment] triggerAppointmentCancelled:', e);
+        }
+      }
+      if (st === 'completed' && prevSt !== 'completed') {
+        try {
+          const n8nAppt = await this.appointmentPayloadForN8n(doc);
+          await this.n8nService.triggerAppointmentCompleted(n8nAppt as unknown as Appointment);
+        } catch (e) {
+          console.error('[Appointment] triggerAppointmentCompleted:', e);
         }
       }
     }

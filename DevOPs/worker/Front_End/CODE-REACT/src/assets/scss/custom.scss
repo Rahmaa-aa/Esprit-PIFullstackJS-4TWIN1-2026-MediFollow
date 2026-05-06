@@ -1,0 +1,47 @@
+/*!
+* Version: 1.3.0
+* Template: xray Clinic And Patient Management Dashboard
+* Author: iqonic.design
+* Design and Developed by: iqonic.design
+* NOTE: This file contains the styling for Template.
+*
+*/
+
+// Configuration
+@import "./bootstrap/functions";
+
+// Xray Design system
+@import "./xray-design-system/variables";
+@import "./xray-design-system/variables-dark";
+@import "./xray-design-system/variables/index";
+@import "./bootstrap/variables";
+@import "./bootstrap/maps";
+@import "./bootstrap/mixins";
+@import "./bootstrap/utilities";
+
+// Xray Design System Mixin And Helper
+@import "./xray-design-system/helper/mixins";
+@import "./xray-design-system/helper/reboot";
+
+@import "./custom/auth/authentication";
+@import "./custom/ui-kit/ui-kit";
+@import "./custom/pages/chat.scss";
+@import "./custom/pages/_form-wizard-validate.scss";
+@import "./custom/pages/_form-wizard-vertical.scss";
+@import "./custom/pages/_form-wizard.scss";
+@import "./custom/pages/_forms.scss";
+@import "./custom/pages/doctor.scss";
+@import "./custom/pages/email.scss";
+@import "./custom/pages/dashboard-pages.scss";
+@import "./custom/pages/custom-style.scss";
+@import "./custom/pages/timeline.scss";
+@import "./custom/pages/_chart.scss";
+@import "./custom/pages/_icon.scss";
+
+// Customizer
+@import "./custom/customizer/layouts";
+
+
+
+///xray
+@import "./xray/custom/custom.scss";

@@ -1,0 +1,17 @@
+// text hover
+
+.sidebar{
+    &.text-hover{
+        &:not(.sidebar-color){
+            .nav-item {
+                &:not(.static-item){
+                    .nav-link{
+                        &.active, &[aria-expanded=true], &:hover{
+                            color: var(--#{$variable-prefix}primary);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

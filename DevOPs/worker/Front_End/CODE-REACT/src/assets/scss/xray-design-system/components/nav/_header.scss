@@ -1,0 +1,15 @@
+.sidebar.sidebar-mini+.main-content {
+    .iq-header-img {
+        transition: all 400ms;
+    }
+}
+
+@include media-breakpoint-down(md) {
+    .container-fluid{
+        &.content-inner{
+            &.mt-n5{
+                margin-top: unset !important;
+            }
+        }
+    }
+}

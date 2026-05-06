@@ -1,0 +1,25 @@
+.custom-table-effect{
+    .table{
+        tbody{
+            tr{
+                &:after{
+                    right: 0;
+                    border-top-left-radius: $border-radius;
+                    border-bottom-left-radius: $border-radius;
+                    border-top-right-radius: unset;
+                    border-bottom-right-radius: unset;
+                }   
+            }
+        }
+    }
+}
+
+table.dataTable thead>tr>th.sorting::after,
+table.dataTable thead>tr>th.sorting::before{
+    left: 10px;
+    right: auto;
+}
+
+table.dataTable thead th{
+    text-align: right;
+}

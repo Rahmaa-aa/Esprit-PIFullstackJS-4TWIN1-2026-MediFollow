@@ -1,0 +1,81 @@
+🎯 MEDI-FOLLOW N8N — TRIGGER WORKFLOWS WITHOUT THE APP (curl)
+================================================================
+
+Use these when you cannot create appointments in the UI. Pick ONE path: (A) backend forwards to n8n, or (B) n8n webhook directly.
+
+Services: Backend http://localhost:3000  |  n8n http://localhost:5678
+
+---
+📌 SHARED JSON (same appointment payload everywhere)
+
+Inner body uses nested patientId object so “Prepare Email Data” gets email + name:
+
+{"eventName":"appointment.approved","appointment":{"_id":"demo-appointment-123","patientId":{"email":"patient@test.com","firstName":"John","lastName":"Doe"},"doctorName":"Dr. Smith","date":"2026-05-15","time":"09:00","type":"checkup","location":"Main Clinic","isVideoCall":false},"timestamp":"2026-05-06T12:00:00.000Z"}
+
+For direct n8n calls you may shorten to only what the Code node needs:
+
+{"appointment":{"patientId":{"email":"patient@test.com","firstName":"John","lastName":"Doe"},"doctorName":"Dr. Smith","date":"2026-05-15","time":"09:00","type":"checkup","location":"Main Clinic","_id":"demo-appointment-123"}}
+
+---
+📋 COMMAND 1 — Backend health / n8n status
+
+curl -s http://localhost:3000/api/n8n/status
+
+---
+📋 COMMAND 2A — Trigger confirmation email workflow via BACKEND (recommended)
+
+Uses logical workflowId (matches backend/src/n8n/n8n.service.ts). Backend POSTs to n8n /webhook/appointment-confirmed.
+
+curl -s -X POST http://localhost:3000/api/n8n/trigger-workflow \
+  -H "Content-Type: application/json" \
+  -d '{"workflowId":"appointment-email-confirmation","data":{"eventName":"appointment.approved","appointment":{"_id":"demo-appointment-123","patientId":{"email":"patient@test.com","firstName":"John","lastName":"Doe"},"doctorEmail":"doctor@example.com","doctorName":"Dr. Smith","date":"2026-05-15","time":"09:00","type":"checkup","location":"Main Clinic","isVideoCall":false},"timestamp":"2026-05-06T12:00:00.000Z"}}'
+
+---
+📋 COMMAND 2B — Same workflow: call n8n WEBHOOK directly (workflow must be ACTIVE)
+
+Production URL when the workflow toggle is ON:
+
+curl -s -X POST http://localhost:5678/webhook/appointment-confirmed \
+  -H "Content-Type: application/json" \
+  -d '{"appointment":{"patientId":{"email":"patient@test.com","firstName":"John","lastName":"Doe"},"doctorName":"Dr. Smith","date":"2026-05-15","time":"09:00","type":"checkup","location":"Main Clinic","_id":"demo-appointment-123"}}'
+
+---
+📋 COMMAND 2C — Test URL while editing in n8n (workflow need not be active; click “Listen for test event” first)
+
+curl -s -X POST http://localhost:5678/webhook-test/appointment-confirmed \
+  -H "Content-Type: application/json" \
+  -d '{"appointment":{"patientId":{"email":"patient@test.com","firstName":"John","lastName":"Doe"},"doctorName":"Dr. Smith","date":"2026-05-15","time":"09:00","type":"checkup","location":"Main Clinic","_id":"demo-appointment-123"}}'
+
+---
+📋 COMMAND 3 — “Appointment created” workflow (logical id appointment-confirmation)
+
+curl -s -X POST http://localhost:3000/api/n8n/trigger-workflow \
+  -H "Content-Type: application/json" \
+  -d '{"workflowId":"appointment-confirmation","data":{"eventName":"appointment.created","appointment":{"_id":"demo-1","patientId":{"email":"patient@test.com","firstName":"John","lastName":"Doe"},"doctorName":"Dr. Smith","date":"2026-05-15","time":"09:00","type":"checkup","location":"Main Clinic"},"timestamp":"2026-05-06T12:00:00.000Z"}}'
+
+Direct n8n (import workflow with path appointment-confirmation first):
+
+curl -s -X POST http://localhost:5678/webhook/appointment-confirmation \
+  -H "Content-Type: application/json" \
+  -d '{"appointment":{"patientId":{"email":"patient@test.com","firstName":"John","lastName":"Doe"},"doctorName":"Dr. Smith","date":"2026-05-15","time":"09:00","type":"checkup","location":"Main Clinic"}}'
+
+---
+📋 COMMAND 4 — Reminder workflow
+
+curl -s -X POST http://localhost:3000/api/n8n/trigger-workflow \
+  -H "Content-Type: application/json" \
+  -d '{"workflowId":"appointment-reminder","data":{"eventName":"appointment.reminder","appointment":{"_id":"demo-1","patientId":{"email":"patient@test.com","firstName":"John","lastName":"Doe","phone":"+1234567890"},"doctorName":"Dr. Smith","date":"2026-05-16","time":"10:00","type":"checkup","location":"Main Clinic"},"timestamp":"2026-05-06T12:00:00.000Z","metadata":{"hoursBefore":24}}}'
+
+---
+📋 COMMAND 5 — Patient login (optional, only if you test authenticated APIs)
+
+curl -s -X POST http://localhost:3000/api/auth/patient-login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"patient@test.com","password":"Patient123!"}'
+
+---
+Notes:
+• workflowId in COMMAND 2A must be the LOGICAL id (e.g. appointment-email-confirmation), not an n8n UUID.
+• If nothing runs: turn the workflow ON (or Publish in n8n Cloud), confirm Webhook path is “appointment-confirmed”, and that N8N_BASE_URL in backend .env points to your n8n (default http://localhost:5678).
+• Webhook + Prepare Email OK but Send Email fails: configure SMTP credentials on the Email node inside n8n (not only backend .env). Align “From” with your SMTP account.
+• Team merge: import workflows from backend/src/n8n/workflows/, then each developer adds their own mail credentials — see backend/src/n8n/README.md section “Team merge checklist”.
