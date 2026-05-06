@@ -88,32 +88,48 @@ Open `http://localhost:5678` in your browser
 - **Trigger**: Webhook endpoint `/appointment-cancelled`
 - **Action**: Notifies doctor and admin about cancellation
 
-### 5. Test the Integration
+### 5. Team merge checklist (every developer after `git pull`)
 
-1. **Test n8n Connection**:
+n8n credentials and “activate/publish” **do not live in Git**. Each machine must:
+
+1. **Import or refresh workflows** from `backend/src/n8n/workflows/` (`appointment-email-confirmation.json`, `appointment-reminder.json`).
+2. **SMTP inside n8n**: Open **Send Confirmation Email** / **Send Reminder Email** → attach **SMTP** (or Gmail) credentials. This is separate from the NestJS `SMTP_*` vars in `.env` (those power the app’s own mailer).
+   - Use an app password for Gmail, allow SMTP, and set **From** to an address your provider accepts (often the same as the SMTP user unless you configured aliases).
+3. **Activate the workflow** so production webhooks work:
+   - Self-hosted: turn **Inactive → Active** on the workflow.
+   - n8n Cloud / projects UI: **Publish** when prompted so the production webhook URL is registered (otherwise only **Listen for test event** / `webhook-test/...` runs).
+4. **Backend `.env`**: set `N8N_BASE_URL` (see root `backend/.env.example`). Optional `N8N_API_KEY` only if your n8n instance requires it on webhook requests.
+5. **Webhook paths** must stay aligned with `backend/src/n8n/n8n.service.ts` (e.g. `appointment-email-confirmation` → `/webhook/appointment-confirmed`).
+
+Email templates in the JSON use **`{{ $json.field }}`** on the Send Email node so they still work if you duplicate nodes (avoid relying on fragile `$node['Prepare Email Data']` names). **Log Success** still references the Prepare node by name—keep that node named **Prepare Email Data** or adjust the expression after renames.
+
+### 6. Test the Integration
+
+1. **Status**:
 ```bash
-curl -X POST http://localhost:3000/n8n/test-connection
+curl -s http://localhost:3000/api/n8n/status
 ```
 
-2. **Test Webhook**:
+2. **Trigger confirmation workflow through the API** (same payload shape as production):
 ```bash
-curl -X POST http://localhost:3000/n8n/trigger-workflow \
+curl -s -X POST http://localhost:3000/api/n8n/trigger-workflow \
   -H "Content-Type: application/json" \
-  -d '{"workflowId": "appointment-email-confirmation", "data": {"test": true}}'
+  -d '{"workflowId":"appointment-email-confirmation","data":{"eventName":"appointment.approved","appointment":{"_id":"demo-1","patientId":{"email":"you@example.com","firstName":"Jane","lastName":"Doe"},"doctorName":"Dr. Smith","date":"2026-05-15","time":"09:00","type":"checkup","location":"Main Clinic","isVideoCall":false},"timestamp":"2026-05-06T12:00:00.000Z"}}'
 ```
 
-3. **Test Full Flow**:
-- Create an appointment via the API
-- Approve the appointment
-- Check for email notification
+3. **End-to-end**: confirm an appointment in the app (or use the curl above) and check **Executions** in n8n.
+
+See repo **`DEMONSTRATION_COMMANDS.txt`** for more curl examples (direct `webhook` vs `webhook-test`).
 
 ## API Endpoints
 
 ### n8n Controller Endpoints
 
-- `POST /n8n/test-connection` - Test n8n connectivity
-- `POST /n8n/trigger-workflow` - Manually trigger a workflow
-- `GET /n8n/status` - Get n8n integration status
+(Global prefix `api`, e.g. `GET /api/n8n/status`.)
+
+- `POST /api/n8n/test-connection` - Test n8n connectivity
+- `POST /api/n8n/trigger-workflow` - Manually trigger a workflow
+- `GET /api/n8n/status` - Get n8n integration status
 
 ### Appointment Triggers
 
@@ -189,14 +205,14 @@ npm install @nestjs/axios @types/node
 - Check network connectivity
 
 3. **Email Not Sending**:
-- Verify SMTP configuration in n8n email node
-- Check email credentials
-- Verify firewall settings
+- Configure **SMTP credentials on the Email node in n8n** (most common fix after Webhook + Code succeed).
+- Match **From** address to what your SMTP provider allows.
+- Backend `SMTP_*` vars do **not** configure n8n’s mail nodes.
 
 4. **Workflow Not Triggering**:
-- Check webhook URLs are correct
-- Verify workflows are active in n8n
-- Check n8n logs for errors
+- Use **`/webhook/...`** only when the workflow is **Active** / **Published**; use **`/webhook-test/...`** only while listening in the editor.
+- Check `N8N_BASE_URL` in backend `.env` matches where n8n runs.
+- Verify webhook paths (see `n8n.service.ts` mapping).
 
 ### Debug Mode
 

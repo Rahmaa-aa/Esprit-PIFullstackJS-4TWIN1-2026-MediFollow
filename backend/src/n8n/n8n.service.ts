@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 import { Appointment } from '../appointment/schemas/appointment.schema';
 
 export interface N8nWorkflowTrigger {
@@ -22,32 +23,58 @@ export class N8nService {
   private readonly n8nBaseUrl: string;
   private readonly n8nApiKey: string;
 
+  /** Maps our logical workflow id to the Webhook node path segment (see `src/n8n/workflows/*.json`). */
+  private static readonly WEBHOOK_PATH_BY_WORKFLOW: Record<string, string> = {
+    'appointment-confirmation': 'appointment-confirmation',
+    'appointment-email-confirmation': 'appointment-confirmed',
+    'appointment-reminder': 'appointment-reminder',
+    'appointment-cancellation': 'appointment-cancelled',
+    'appointment-followup': 'appointment-followup',
+    'doctor-notification': 'doctor-notification',
+    'admin-notification': 'admin-notification',
+  };
+
   constructor(private httpService: HttpService) {
     this.n8nBaseUrl = process.env.N8N_BASE_URL || 'http://localhost:5678';
     this.n8nApiKey = process.env.N8N_API_KEY || '';
   }
 
+  /**
+   * Triggers an n8n workflow by POSTing JSON to its Webhook URL.
+   * The workflow must be active in n8n; path must match the Webhook node's path.
+   */
   public async triggerWorkflow(workflowId: string, data: any): Promise<N8nWebhookResponse> {
+    const pathSegment =
+      N8nService.WEBHOOK_PATH_BY_WORKFLOW[workflowId] ?? workflowId.replace(/^\/+|\/+$/g, '');
+    const base = this.n8nBaseUrl.replace(/\/$/, '');
+    const url = `${base}/webhook/${pathSegment}`;
+    const payload = data ?? {};
+
     try {
-      const response = await this.httpService.post(
-        `${this.n8nBaseUrl}/api/v1/workflows/${workflowId}/activate`,
-        {},
-        {
+      const response = await firstValueFrom(
+        this.httpService.post(url, payload, {
           headers: {
-            'X-N8N-API-KEY': this.n8nApiKey,
             'Content-Type': 'application/json',
+            ...(this.n8nApiKey ? { 'X-N8N-API-KEY': this.n8nApiKey } : {}),
           },
-        },
-      ).toPromise();
+        }),
+      );
+
+      const body = response?.data as any;
+      const executionId =
+        body?.executionId ??
+        body?.data?.executionId ??
+        body?.data?.data?.executionId ??
+        body?.execution?.id;
 
       return {
         success: true,
         workflowId,
-        executionId: response?.data?.data?.executionId,
+        executionId,
         message: 'Workflow triggered successfully',
       };
     } catch (error) {
-      this.logger.error(`Failed to trigger n8n workflow ${workflowId}:`, error);
+      this.logger.error(`Failed to trigger n8n workflow ${workflowId} at ${url}:`, error);
       return {
         success: false,
         message: error.message,
@@ -128,14 +155,13 @@ export class N8nService {
 
   async testConnection(): Promise<boolean> {
     try {
-      await this.httpService.get(
-        `${this.n8nBaseUrl}/api/v1/workflows`,
-        {
+      await firstValueFrom(
+        this.httpService.get(`${this.n8nBaseUrl}/api/v1/workflows`, {
           headers: {
             'X-N8N-API-KEY': this.n8nApiKey,
           },
-        },
-      ).toPromise();
+        }),
+      );
 
       this.logger.log('n8n connection test successful');
       return true;

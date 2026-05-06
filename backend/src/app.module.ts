@@ -23,6 +23,7 @@ import { ChatbotModule } from './chatbot/chatbot.module';
 import { ContactModule } from './contact/contact.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { MlCnnModule } from './ml-cnn/ml-cnn.module';
+import { N8nModule } from './n8n/n8n.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { MlCnnModule } from './ml-cnn/ml-cnn.module';
     ChatbotModule,
     ContactModule,
     MlCnnModule,
+    N8nModule,
   ],
 })
 export class AppModule {}
