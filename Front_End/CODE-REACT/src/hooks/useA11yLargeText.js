@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
-
-const STORAGE_KEY = "medifollow_large_text";
+import { LARGE_TEXT_STORAGE_KEY } from "../constants/accessibility";
 
 export function useA11yLargeText() {
   const [largeText, setLargeText] = useState(
-    () => localStorage.getItem(STORAGE_KEY) === "1"
+    () => localStorage.getItem(LARGE_TEXT_STORAGE_KEY) === "1"
   );
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, largeText ? "1" : "0");
+    localStorage.setItem(LARGE_TEXT_STORAGE_KEY, largeText ? "1" : "0");
     if (largeText) {
       document.documentElement.classList.add("a11y-large-text");
     } else {
