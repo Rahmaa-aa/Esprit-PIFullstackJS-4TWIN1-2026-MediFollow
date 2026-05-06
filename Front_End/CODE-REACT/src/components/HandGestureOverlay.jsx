@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useHandGesture } from "../context/HandGestureContext";
 
 const CURSOR_SVG = `
@@ -10,7 +10,7 @@ const CURSOR_SVG = `
 const SCROLL_ZONE = 90;
 
 const HandGestureOverlay = () => {
-  const { isActive, cursorPosition, dwellProgress } = useHandGesture();
+  const { isActive, cursorPosition, gazePosition, dwellProgress, assistClickMode, targetedElement } = useHandGesture();
   const [winHeight, setWinHeight] = useState(window.innerHeight);
 
   useEffect(() => {
@@ -26,7 +26,12 @@ const HandGestureOverlay = () => {
 
   if (!isActive) return null;
 
-  const isClicking = dwellProgress > 0;
+  const blinkClick = assistClickMode === "blink";
+  /** Anneau « prêt à cligner » centré sur le regard, pas sur le doigt. */
+  const ringAnchor = blinkClick && gazePosition ? gazePosition : cursorPosition;
+  const showTargetRing = blinkClick ? !!targetedElement : dwellProgress > 0;
+  const ringProgress = blinkClick && targetedElement ? 100 : dwellProgress;
+  const isClicking = !blinkClick && dwellProgress > 0;
   const keyboardOpen = !!document.querySelector("[data-vk-container]");
   const scrollUp = cursorPosition.y < SCROLL_ZONE;
   const scrollDown = !keyboardOpen && cursorPosition.y > winHeight - SCROLL_ZONE;
@@ -121,13 +126,13 @@ const HandGestureOverlay = () => {
         }}
       />
 
-      {/* Arc de progression dwell */}
-      {dwellProgress > 0 && (
+      {/* Dwell progress or “ready — blink” ring */}
+      {showTargetRing && (
         <svg
           style={{
             position: "fixed",
-            left: cursorPosition.x - 14,
-            top: cursorPosition.y - 14,
+            left: ringAnchor.x - 14,
+            top: ringAnchor.y - 14,
             pointerEvents: "none",
             zIndex: 299998,
           }}
@@ -141,9 +146,9 @@ const HandGestureOverlay = () => {
             cy={14}
             r={12}
             fill="none"
-            stroke="rgba(25, 135, 84, 0.95)"
+            stroke={blinkClick ? "rgba(230, 57, 70, 0.95)" : "rgba(25, 135, 84, 0.95)"}
             strokeWidth={3}
-            strokeDasharray={`${(dwellProgress / 100) * 75.4} 75.4`}
+            strokeDasharray={`${(ringProgress / 100) * 75.4} 75.4`}
             strokeLinecap="round"
             transform="rotate(-90 14 14)"
           />

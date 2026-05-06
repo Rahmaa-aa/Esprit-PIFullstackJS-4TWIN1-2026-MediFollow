@@ -308,6 +308,10 @@ const Header = () => {
       stopHandGesture,
       error: handError,
       setError: setHandError,
+      eyeTrackingEnabled,
+      eyeTrackingCalibrated,
+      requestEyeTrackingToggle,
+      openEyeCalibrationModal,
    } = useHandGesture();
 
    const stopPageReading = useCallback(() => {
@@ -496,6 +500,35 @@ const Header = () => {
                         <i className={`me-2 ${handActive ? "ri-camera-off-line" : "ri-camera-line"}`} aria-hidden="true"></i>
                         {handActive ? t("signIn.stopHandNav") : t("signIn.startHandNav")}
                      </Dropdown.Item>
+                     <Dropdown.Item
+                        as="button"
+                        type="button"
+                        data-eye-clickable
+                        aria-pressed={eyeTrackingEnabled}
+                        aria-describedby="header-eye-tracking-help"
+                        onClick={(e) => {
+                           e.preventDefault();
+                           requestEyeTrackingToggle();
+                        }}
+                     >
+                        <i className={`me-2 ${eyeTrackingEnabled ? "ri-eye-line" : "ri-eye-off-line"}`} aria-hidden="true"></i>
+                        {eyeTrackingEnabled ? t("signIn.eyeTrackingDisable") : t("signIn.eyeTrackingEnable")}
+                     </Dropdown.Item>
+                     {eyeTrackingCalibrated && (
+                        <Dropdown.Item
+                           as="button"
+                           type="button"
+                           data-eye-clickable
+                           aria-describedby="header-eye-tracking-help"
+                           onClick={(e) => {
+                              e.preventDefault();
+                              openEyeCalibrationModal();
+                           }}
+                        >
+                           <i className="ri-refresh-line me-2" aria-hidden="true"></i>
+                           {t("signIn.eyeTrackingRecalibrate")}
+                        </Dropdown.Item>
+                     )}
                   </>
                )}
             </Dropdown.Menu>
@@ -509,9 +542,14 @@ const Header = () => {
          <Navbar className={`nav navbar-expand-xl navbar-light iq-navbar pt-2 pb-2 px-2 iq-header ${isScrolled ? "fixed-header" : ""} ${pageLayout === 'container-fluid' ? "" : "container-box"}`} id="boxid">
             <Container fluid className="navbar-inner">
                {isA11ySession && (
-                  <span id="header-hand-nav-help" className="visually-hidden">
-                     {t("nav.handNavHelp")}
-                  </span>
+                  <>
+                     <span id="header-hand-nav-help" className="visually-hidden">
+                        {t("nav.handNavHelp")}
+                     </span>
+                     <span id="header-eye-tracking-help" className="visually-hidden">
+                        {t("nav.eyeTrackingHelp")}
+                     </span>
+                  </>
                )}
                <Row className="flex-grow-1">
                   <Col lg={4} md={6} className="align-items-center d-flex">

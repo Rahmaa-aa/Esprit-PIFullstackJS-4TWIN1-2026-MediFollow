@@ -40,7 +40,17 @@ const isKeywordMatch = (text, keywords) => {
 const SignIn = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { isActive: handActive, startHandGesture, stopHandGesture, error: handError, setError: setHandError } = useHandGesture();
+  const {
+    isActive: handActive,
+    startHandGesture,
+    stopHandGesture,
+    error: handError,
+    setError: setHandError,
+    eyeTrackingEnabled,
+    eyeTrackingCalibrated,
+    requestEyeTrackingToggle,
+    openEyeCalibrationModal,
+  } = useHandGesture();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -522,6 +532,29 @@ const SignIn = () => {
                         >
                           <i className={`me-1 ${isReadingPage ? "ri-volume-mute-line" : "ri-volume-up-line"}`}></i>
                           {isReadingPage ? t("signIn.stopReading") : t("signIn.readPage")}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={`btn btn-sm a11y-btn ${eyeTrackingEnabled ? "btn-primary" : "btn-outline-primary"}`}
+                        onClick={requestEyeTrackingToggle}
+                        data-eye-clickable
+                        aria-pressed={eyeTrackingEnabled}
+                        title={t("signIn.eyeTrackingLoginTitle")}
+                      >
+                        <i className={`me-1 ${eyeTrackingEnabled ? "ri-eye-line" : "ri-eye-off-line"}`}></i>
+                        {eyeTrackingEnabled ? t("signIn.eyeTrackingDisable") : t("signIn.eyeTrackingEnable")}
+                      </button>
+                      {eyeTrackingCalibrated && (
+                        <button
+                          type="button"
+                          className="btn btn-sm a11y-btn btn-outline-secondary"
+                          onClick={openEyeCalibrationModal}
+                          data-eye-clickable
+                          title={t("signIn.eyeTrackingRecalibrate")}
+                        >
+                          <i className="ri-refresh-line me-1"></i>
+                          {t("signIn.eyeTrackingRecalibrate")}
                         </button>
                       )}
                     </div>
